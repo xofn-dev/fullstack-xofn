@@ -574,6 +574,23 @@ Butir 1–5, 7, dan 8 diverifikasi di Phase 0 (17 Nov 2026). Bukti: `proof/2026-
 13. Pelengkap guide §4.2: default config **mainnet** keenam arah sudah dibaca lewat `cast call` di Phase 0 (setara `lz:oapp:config:get:default`; `proof/2026-11-17-phase0/02-dvn-pathways.md`). ~~Default config dan `dstConfig` DVN testnet, serta contoh transaksi di LayerZero Scan~~ — **terverifikasi** (`proof/2026-11-17-phase0-addendum/notes.md`). Catatan: default testnet = 1 DVN LayerZero Labs (bukan Dead DVN), jadi tes testnet tanpa konfigurasi eksplisit tidak gagal seperti di mainnet; `nativeCap` dari Robinhood testnet = 0.
 14. ~~Pelengkap P2: USDG/USDT0/USDe sebagai OFT dan peer-nya ke/dari Robinhood~~ — **terverifikasi**: tidak ada rute OFT langsung Robinhood↔Base/Arbitrum; USDe dan USDG lewat Ethereum, USDT0 tidak ada di Robinhood.
 15. Foundry: v1.8.3 terpasang di mesin dev; v1.8.x tertinggi v1.8.7; rilis terbaru v1.9.0.
+
+### Versi yang dipin saat inisialisasi (Phase 1, 17 Nov 2026)
+
+Versi exact ada di `package.json`. Selisih dari baseline §1.1 atau dari rilis terbaru:
+
+| Paket | Dipin | Catatan |
+|---|---|---|
+| `next`, `eslint-config-next` | 16.4.6 | Baseline 16.3.x; 16.4.6 adalah rilis stabil terbaru |
+| `react`, `react-dom` | 19.3.1 | Baseline 19.2.x |
+| `typescript` | 5.9.3 | Rilis terbaru 7.0.2 **tidak dipakai**: baseline `^5.7`, dan kompatibilitasnya dengan `typescript-eslint` belum diperiksa |
+| `eslint` | 9.39.5 | Rilis terbaru 10.x tidak dipakai (baseline `^9.17`) |
+| `tailwindcss`, `@tailwindcss/postcss` | 4.3.3 | 4.3.4+ butuh Node ≥ 22.12 (`require()` atas `magic-string` ESM-only); mesin dev memakai Node 22.11 |
+| `vitest` | 4.1.12 | Vitest 5 butuh Node ≥ 22.12 |
+| `three`, `@types/three` | 0.187.0 | Baseline `^0.184` |
+| `gsap` / `lenis` | 3.15.1 / 1.3.27 | Baseline `^3.13` / `^1.1` |
+
+Paket tipe (`@types/node`, `@types/react`, `@types/react-dom`, `@types/three`) ditambahkan sebagai devDependency pendukung TypeScript. `vitest.config.mts` memakai ekstensi `.mts` karena `package.json` tidak ber-`"type": "module"`. Bila Node di mesin dev dinaikkan ke ≥ 22.12, Tailwind dan Vitest bisa dinaikkan ke rilis terbaru.
 16. Versi Hardhat + `@layerzerolabs/toolbox-hardhat` yang kompatibel dengan layout Foundry-root + Next. Hanya relevan bila PM mensyaratkan keluaran task devtools; pembacaan `cast call` sudah setara.
 17. Bentuk `deployments/local.json` untuk tiga chain simulasi (§10.3).
 18. Desain CREATE3 untuk alamat token seragam yang tidak bisa didahului pihak lain (P39).

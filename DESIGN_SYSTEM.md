@@ -524,10 +524,17 @@ Item `[Belum]` diputuskan owner atau desainer. Sampai diputuskan, pakai rekomend
 
 | Area | Status |
 |---|---|
-| Token & tipografi (`globals.css`, `layout.tsx`) | Belum mulai |
-| Chrome (NoticeBar, Nav, Footer, overlay) | Belum mulai |
-| Section landing 1–16 | Belum mulai |
-| 3D hero / arch / galaxy | Belum mulai |
-| Halaman aplikasi (§6.2) | Belum mulai |
+| Token & tipografi (`globals.css`, `layout.tsx`) | **Selesai (Phase 1, 17 Nov 2026).** Token di `@theme`; baseline CSS V8 diekstrak ke `src/app/styles/baseline.css`; font Inter Tight + JetBrains Mono (D3) |
+| Chrome (NoticeBar, Nav, Footer, overlay) | **Selesai (Phase 1, 17 Nov 2026).** Nav D12, menu mobile, modal dengan fokus terjebak, toast, scroll progress, side index, cursor aura |
+| Section landing 1–16 | **Selesai (Phase 1, 17 Nov 2026)**, mode preview. Copy home chain D15, status D16, copy operator D17 |
+| 3D hero / arch / galaxy | **Selesai (Phase 1, 17 Nov 2026).** three 0.187, lifecycle + dispose, fallback statis, galaxy mati di ≤860px (D5), mekanisme *split* (D2) |
+| Halaman aplikasi (§6.2) | Belum mulai (Phase 2 untuk `/check`, Phase 4 untuk sisanya) |
+
+Catatan implementasi Phase 1:
+- **Preflight Tailwind tidak dimuat.** Baseline ditulis di atas default browser, jadi hanya layer `theme` dan `utilities` yang dipakai. Utilitas border Tailwind perlu `border-solid` eksplisit.
+- **CSS baseline dipertahankan sebagai stylesheet berlapis** (`.v2 … .v8` di `<body>`), bukan ditulis ulang menjadi utilitas, supaya paritas visual terjaga. Warna di dalamnya belum semuanya memakai token; normalisasi bertahap adalah pekerjaan lanjutan.
+- Style inline ber-hex di markup HTML dipindah ke kelas di `globals.css` dan dinormalkan ke token terdekat.
+- Heading dipecah per baris di JSX (`SplitHeading`), tidak lewat `innerHTML` saat runtime.
+- Perbaikan di luar baseline: fokus terlihat (`:focus-visible` mint), kontras judul langkah graduation, baris baru di rincian modal, tautan Connect Wallet di menu mobile.
 
 Perbarui tabel ini di akhir setiap task UI, lengkap dengan tanggal.

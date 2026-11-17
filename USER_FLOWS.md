@@ -315,15 +315,15 @@ Edge case:
 
 | Flow | `preview` | `simulation` | `live` |
 |---|---|---|---|
-| A Jelajah landing | Belum mulai | Belum mulai | FROZEN |
-| B Wallet & network | Belum mulai | Belum mulai | FROZEN |
-| C XofN Check | Belum mulai (Check nyata hanya membaca, berlaku di semua mode) | — | FROZEN (rilis publik di Fase 1b) |
-| D Launch | Belum mulai | Belum mulai | FROZEN |
+| A Jelajah landing | **Selesai** (Phase 1, 17 Nov 2026). Langkah 5 (TierBadge → DvnList) dibuat bersama halaman aplikasi; di landing penjelasan tier ada di drawer | Belum mulai | FROZEN |
+| B Wallet & network | **Sebagian** (Phase 1): tombol Connect membuka modal "preview only". AppKit dan NetworkGuard di Phase 4 | Belum mulai | FROZEN |
+| C XofN Check | **Demo saja** (Phase 1): sampel berlabel simulasi; alamat apa pun tidak diberi hasil. Check nyata di Phase 2 | — | FROZEN (rilis publik di Fase 1b) |
+| D Launch | **Pratinjau di landing** (Phase 1): validasi form + modal ringkasan tanpa transaksi. Halaman `/launch` di Phase 4 | Belum mulai | FROZEN |
 | E Trading | Belum mulai | Belum mulai | FROZEN |
 | F.1 Graduate | Belum mulai | Belum mulai | FROZEN (Fase 1) |
 | F.2 Expand & lock | Belum mulai | Belum mulai | FROZEN (Fase 2) |
 | G Halaman token | Belum mulai | Belum mulai | FROZEN |
-| H Bridge | Belum mulai | Belum mulai | FROZEN (Fase 2) |
-| I Contracts & Proof | Belum mulai | Belum mulai | FROZEN |
+| H Bridge | **Pratinjau di landing** (Phase 1): widget + modal "preview only", rute hub dijelaskan. Halaman `/bridge` di Phase 4 | Belum mulai | FROZEN (Fase 2) |
+| I Contracts & Proof | **Section di landing** (Phase 1): semua status NOT DEPLOYED / PLANNED. Halaman `/contracts` dan `/proof` di Phase 4 | Belum mulai | FROZEN |
 
 Perbarui tabel ini di akhir setiap task yang menyentuh sebuah flow.

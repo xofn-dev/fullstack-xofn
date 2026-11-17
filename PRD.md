@@ -315,7 +315,7 @@ Phase **6 dan 7 (deploy) FROZEN total**: tidak dikerjakan sampai PM memberi peri
 | Phase | Fokus | Gerbang keluar | Status |
 |---|---|---|---|
 | **0** | Verifikasi riset (brief P0, guide §4): EID, DVN per pathway, semantik ULN, AMM, aset pasangan, paket, CreateX, lzRead. Hanya membaca docs/chain, **tanpa transaksi** | Tabel DVN per pathway dan rekomendasi P1–P9 terisi | Selesai 17 Nov 2026 + addendum home Robinhood (`proof/2026-11-17-phase0/09-addendum-robinhood-home.md`); **menunggu persetujuan gerbang** |
-| **1** | Fondasi repo (Next 16 di root dengan `src/`, Tailwind v4, env module, lint/test; ESLint/tsconfig mengabaikan `contracts/`, `test/`, `script/`, yang baru dibuat di Phase 3) + port landing HTML (mode preview, label NOT LIVE) | lint/typecheck/test/build lulus; landing setara HTML di 390/768/1280/1680; reduced motion OK | Belum mulai |
+| **1** | Fondasi repo (Next 16 di root dengan `src/`, Tailwind v4, env module, lint/test; ESLint/tsconfig mengabaikan `contracts/`, `test/`, `script/`, yang baru dibuat di Phase 3) + port landing HTML (mode preview, label NOT LIVE) | lint/typecheck/test/build lulus; landing setara HTML di 390/768/1280/1680; reduced motion OK | Selesai 17 Nov 2026; **menunggu persetujuan gerbang** (`proof/2026-11-17-phase1/notes.md`) |
 | **2** | XofN Check (brief P1): reader `getConfig` + `peers(eid)` + cache Supabase + kartu share. **Hanya membaca** OFT yang sudah ada di Robinhood, Base, Arbitrum | Hasil Check untuk 20 OFT populer cocok dengan pembacaan manual `getConfig` | Belum mulai |
 | **3** | Kontrak, **lokal saja**. **3a (tahap 1):** Token OFT, Curve impl + clone, Graduator `graduate()`, Registry. **3b (tahap 2):** Remote, `expandAndLock`, composer, `retryRemote`, multi-endpoint TestHelperOz5 | Semua tes wajib §9.2 lulus lokal | Belum mulai |
 | **4** | Integrasi frontend: `/launch`, `/t/[address]` (graduate + expand), `/bridge`, `/contracts`, `/proof` terhadap Anvil lokal / mode simulasi. Flow tahap 1 lebih dulu | Semua flow di `USER_FLOWS.md` jalan end-to-end di lokal | Belum mulai |
@@ -356,11 +356,12 @@ Angka minggu di brief adalah perkiraan awal dan harus direvisi setelah Phase 0 [
 - Gerbang "Standard tersedia di semua pathway" **belum lolos** sampai owner/PM memilih operator wajib pengganti (P1).
 
 **Phase 1**
-- [ ] Landing menampilkan semua section HTML dengan visual setara, dan 3D berjalan beserta fallback-nya.
-- [ ] Copy home chain = Robinhood (D15). Panel review "coin-lab" tidak ikut di-port (D1).
-- [ ] Semua data demo berlabel. Disclaimer LayerZero ada di footer. Klaim "omnichain" tampil sebagai rencana.
-- [ ] `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build` lulus.
-- [ ] Tidak ada overflow di 360px. Reduced motion mematikan semua animasi. Tidak ada kebocoran WebGL saat navigasi bolak-balik.
+- [x] Landing menampilkan semua section HTML dengan visual setara, dan 3D berjalan beserta fallback-nya. — `proof/2026-11-17-phase1/notes.md`
+- [x] Copy home chain = Robinhood (D15). Panel review "coin-lab" tidak ikut di-port (D1).
+- [x] Semua data demo berlabel. Disclaimer LayerZero ada di footer. Klaim "omnichain" tampil sebagai rencana.
+- [x] `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build` lulus.
+- [x] Tidak ada overflow di 360px. Reduced motion mematikan Lenis dan koreografi scroll.
+- [ ] Tidak ada kebocoran WebGL saat navigasi bolak-balik: belum bisa diuji di browser karena baru ada satu route; diuji di Phase 2 saat `/check` ada.
 
 **Phase 2**
 - [ ] `/check/[chain]/[address]` membaca OFT nyata di Robinhood, Base, dan Arbitrum.
