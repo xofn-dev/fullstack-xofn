@@ -1,0 +1,970 @@
+{
+  "$comment": "Peta alamat DVN -> operator per chain. Sumber: metadata LayerZero. Label dikunci pada pasangan (chain, alamat): alamat yang sama bisa dimiliki operator berbeda di chain lain.",
+  "sourceUrl": "https://metadata.layerzero-api.com/v1/metadata",
+  "verifiedAt": "2026-11-17T11:12:41Z",
+  "aliases": {
+    "layerzero": "layerzero-labs",
+    "googlecloud": "google-cloud",
+    "polyhedra": "polyhedra-network",
+    "dtmms": "deutsche-telekom",
+    "fcat": "fidelity"
+  },
+  "mainnet": {
+    "robinhood": [
+      {
+        "address": "0xc7b93c8089c75fc2f4f08cedb5c87193e85cf3fe",
+        "operatorId": "FurtherFP",
+        "operator": "FurtherFP",
+        "deprecated": false
+      },
+      {
+        "address": "0x43b4a08ec8dbbfdfb1c8d7d453a0c57ed75a9ac1",
+        "operatorId": "apedvn",
+        "operator": "ApeDVN",
+        "deprecated": false
+      },
+      {
+        "address": "0xdde8de68deb0080572e252f855d0485e8bbde14c",
+        "operatorId": "bitgo",
+        "operator": "BitGo",
+        "deprecated": true
+      },
+      {
+        "address": "0xe09a64787431d4c70dddf36cdb6cf5fc1536c04a",
+        "operatorId": "blockaid",
+        "operator": "Blockaid",
+        "deprecated": false
+      },
+      {
+        "address": "0x8d77d35604a9f37f488e41d1d916b2a0088f82dd",
+        "operatorId": "canary",
+        "operator": "Canary",
+        "deprecated": false
+      },
+      {
+        "address": "0xa03bb092b990c24fc0f2c7c8147a742dd70ca4d7",
+        "operatorId": "canary-sponsored",
+        "operator": "Canary Sponsored",
+        "deprecated": false
+      },
+      {
+        "address": "0x80008db0e86e421c50aab5f5b5eba904e9a54b69",
+        "operatorId": "canary-subsidized",
+        "operator": "Canary Subsidized",
+        "deprecated": false
+      },
+      {
+        "address": "0x70f5a195f6da203e839bb5f15e53d3a0fc796925",
+        "operatorId": "deutsche-telekom",
+        "operator": "Deutsche Telekom",
+        "deprecated": false
+      },
+      {
+        "address": "0xd03910e24e65d14de0c7b0a52b068f53ca59a4af",
+        "operatorId": "fidelity",
+        "operator": "Fidelity Center for Applied Technology",
+        "deprecated": false
+      },
+      {
+        "address": "0xc685167bc4546caf2d3f5263d199d17d3f732c4c",
+        "operatorId": "frax",
+        "operator": "Frax",
+        "deprecated": false
+      },
+      {
+        "address": "0x1258a278519c7f4bd997a9c3bfd4aa802a028d89",
+        "operatorId": "horizen-labs",
+        "operator": "Horizen",
+        "deprecated": false
+      },
+      {
+        "address": "0xd01ae6905d48315f7be10c7330aecf8360ef5b12",
+        "operatorId": "layerzero-labs",
+        "operator": "LayerZero Labs",
+        "deprecated": false
+      },
+      {
+        "address": "0x72b1d44c7b0bbd597831fc1e70bbcfdb97e90f0b",
+        "operatorId": "luganodes",
+        "operator": "Luganodes",
+        "deprecated": false
+      },
+      {
+        "address": "0x6788f52439aca6bff597d3eec2dc9a44b8fee842",
+        "operatorId": "lz-dead-dvn",
+        "operator": "LZDeadDVN",
+        "deprecated": true
+      },
+      {
+        "address": "0x965718b834b58a0a47a1723c1a28c2f1a7f1f7a0",
+        "operatorId": "nansen",
+        "operator": "Nansen",
+        "deprecated": false
+      },
+      {
+        "address": "0x0ffe02df012299a370d5dd69298a5826eacafdf8",
+        "operatorId": "nethermind",
+        "operator": "Twinstake",
+        "deprecated": false
+      },
+      {
+        "address": "0x5a4b54053baab2e0f7ec5bbae9d415c1a293750a",
+        "operatorId": "ondo",
+        "operator": "Ondo",
+        "deprecated": false
+      },
+      {
+        "address": "0xe6bad47e1b8bf044a85d8777362e9a26b828e580",
+        "operatorId": "ondo-staging",
+        "operator": "Ondo Staging",
+        "deprecated": false
+      },
+      {
+        "address": "0x8ed0a851964604bb1b6b1a703f4c8234ee684d76",
+        "operatorId": "p2p",
+        "operator": "P2P",
+        "deprecated": false
+      },
+      {
+        "address": "0x2832b240200c13d02250ec39bd0c20c199757891",
+        "operatorId": "paxos",
+        "operator": "Paxos",
+        "deprecated": false
+      },
+      {
+        "address": "0x786804435f1a9f583ca0cd7a4584ebbfcae35855",
+        "operatorId": "stablecoinx",
+        "operator": "StablecoinX",
+        "deprecated": false
+      },
+      {
+        "address": "0xa45caa85283f2d8153f6250686f6d0a16fad92da",
+        "operatorId": "superform",
+        "operator": "Superform",
+        "deprecated": false
+      }
+    ],
+    "base": [
+      {
+        "address": "0x922827caf098837cfbc2196cf65814e2e1160a38",
+        "operatorId": "01node",
+        "operator": "01node",
+        "deprecated": false
+      },
+      {
+        "address": "0xd863f288d3bb1947dfa13d7ccce80bc56974fa22",
+        "operatorId": "FurtherFP",
+        "operator": "FurtherFP",
+        "deprecated": false
+      },
+      {
+        "address": "0xb4001056811f032f6224140af2ada6118e33080b",
+        "operatorId": "apedvn",
+        "operator": "ApeDVN",
+        "deprecated": false
+      },
+      {
+        "address": "0xb3ce0a5d132cd9bf965aba435e650c55edce0062",
+        "operatorId": "bcw",
+        "operator": "BCW Group",
+        "deprecated": false
+      },
+      {
+        "address": "0x133e9fb2d339d8428476a714b1113b024343811e",
+        "operatorId": "bitgo",
+        "operator": "BitGo",
+        "deprecated": true
+      },
+      {
+        "address": "0x7a3d18e2324536294cd6f054cdde7c994f40391a",
+        "operatorId": "bitgo",
+        "operator": "BitGo",
+        "deprecated": true
+      },
+      {
+        "address": "0xa0b19a90b6fd5856cf4d08dde416edf6b15614de",
+        "operatorId": "blockaid",
+        "operator": "Blockaid",
+        "deprecated": false
+      },
+      {
+        "address": "0x2d0d29f7c5225e0bbd8b7deeea2ee005f82cc219",
+        "operatorId": "brale",
+        "operator": "Brale",
+        "deprecated": false
+      },
+      {
+        "address": "0xdd7b5e1db4aafd5c8ec3b764efb8ed265aa5445b",
+        "operatorId": "bware-labs",
+        "operator": "BWare",
+        "deprecated": true
+      },
+      {
+        "address": "0x554833698ae0fb22ecc90b01222903fd62ca4b47",
+        "operatorId": "canary",
+        "operator": "Canary",
+        "deprecated": false
+      },
+      {
+        "address": "0xd752c8dbb10158d66c91518437349002d6542986",
+        "operatorId": "canary-sponsored",
+        "operator": "Canary Sponsored",
+        "deprecated": false
+      },
+      {
+        "address": "0xdcacd7e37f392ffad4b2703a21f6a0c8e2451e96",
+        "operatorId": "canary-subsidized",
+        "operator": "Canary Subsidized",
+        "deprecated": false
+      },
+      {
+        "address": "0x4873d56816f45ef341a8819d7039e4746ed77c21",
+        "operatorId": "canary-wbtc",
+        "operator": "WBTC Canary",
+        "deprecated": false
+      },
+      {
+        "address": "0x99afc2a3b8f5cb86a4c4e1320ede1e8c34273854",
+        "operatorId": "citrea",
+        "operator": "Citrea",
+        "deprecated": false
+      },
+      {
+        "address": "0xc2a0c36f5939a14966705c7cec813163faeea1f0",
+        "operatorId": "deutsche-telekom",
+        "operator": "Deutsche Telekom",
+        "deprecated": false
+      },
+      {
+        "address": "0xeae72c81f3fce1313eeee26717f42af91e178516",
+        "operatorId": "fidelity",
+        "operator": "Fidelity Center for Applied Technology",
+        "deprecated": false
+      },
+      {
+        "address": "0x187cf227f81c287303ee765ee001e151347faaa2",
+        "operatorId": "frax",
+        "operator": "Frax",
+        "deprecated": false
+      },
+      {
+        "address": "0xd56e4eab23cb81f43168f9f45211eb027b9ac7cc",
+        "operatorId": "google-cloud",
+        "operator": "Google",
+        "deprecated": false
+      },
+      {
+        "address": "0xa7b5189bca84cd304d8553977c7c614329750d99",
+        "operatorId": "horizen-labs",
+        "operator": "Horizen",
+        "deprecated": false
+      },
+      {
+        "address": "0xc50a49186aa80427aa3b0d3c2cec19ba64222a29",
+        "operatorId": "lagrange-labs",
+        "operator": "Lagrange",
+        "deprecated": true
+      },
+      {
+        "address": "0x9e059a54699a285714207b43b055483e78faac25",
+        "operatorId": "layerzero-labs",
+        "operator": "LayerZero Labs",
+        "deprecated": false
+      },
+      {
+        "address": "0xa0af56164f02bdf9d75287ee77c568889f11d5f2",
+        "operatorId": "luganodes",
+        "operator": "Luganodes",
+        "deprecated": false
+      },
+      {
+        "address": "0x6498b0632f3834d7647367334838111c8c889703",
+        "operatorId": "lz-dead-dvn",
+        "operator": "LZDeadDVN",
+        "deprecated": true
+      },
+      {
+        "address": "0x761bc869351293c5572ed5581e23e7d5d9c6d3d1",
+        "operatorId": "mantle-bank",
+        "operator": "Mantle Bank",
+        "deprecated": false
+      },
+      {
+        "address": "0xa3858e2a9860c935fc9586a617e9b2a674c3e4c8",
+        "operatorId": "muon",
+        "operator": "Muon",
+        "deprecated": false
+      },
+      {
+        "address": "0x93ac538152e1bc4f093ae5666ee9fd1d84f4f4bf",
+        "operatorId": "nansen",
+        "operator": "Nansen",
+        "deprecated": false
+      },
+      {
+        "address": "0xcd37ca043f8479064e10635020c65ffc005d36f6",
+        "operatorId": "nethermind",
+        "operator": "Twinstake",
+        "deprecated": false
+      },
+      {
+        "address": "0xeede111103535e473451311e26c3e6660b0f77e1",
+        "operatorId": "omni-x",
+        "operator": "Omni X",
+        "deprecated": false
+      },
+      {
+        "address": "0xe6cd8c2e46ef396df88048449e5b1c75172b40c3",
+        "operatorId": "omnicat",
+        "operator": "Omnicat",
+        "deprecated": true
+      },
+      {
+        "address": "0xa9d11632ec5f9502d39aff28d66415f6cca37544",
+        "operatorId": "p-ops-team",
+        "operator": "P-OPS",
+        "deprecated": false
+      },
+      {
+        "address": "0x5b6735c66d97479ccd18294fc96b3084ecb2fa3f",
+        "operatorId": "p2p",
+        "operator": "P2P",
+        "deprecated": false
+      },
+      {
+        "address": "0x4fb4d1a9d7197248bce8954dd9d3427b944fb97f",
+        "operatorId": "paxos",
+        "operator": "Paxos",
+        "deprecated": false
+      },
+      {
+        "address": "0x8ddf05f9a5c488b4973897e278b58895bf87cb24",
+        "operatorId": "polyhedra-network",
+        "operator": "Polyhedra zkBridge",
+        "deprecated": true
+      },
+      {
+        "address": "0x8b4874a130d7f1f702d59115f6d31bcc3e0972c3",
+        "operatorId": "stablecoinx",
+        "operator": "StablecoinX",
+        "deprecated": false
+      },
+      {
+        "address": "0xcdf31d62140204c08853b547e64707110fbc6680",
+        "operatorId": "stargate",
+        "operator": "Stargate",
+        "deprecated": true
+      },
+      {
+        "address": "0xeb62f578497bdc351dd650853a751135212faf49",
+        "operatorId": "superform",
+        "operator": "Superform",
+        "deprecated": false
+      },
+      {
+        "address": "0x505e855810cb243b2f23e95fdbb8f28d22f87a8c",
+        "operatorId": "ubisoft",
+        "operator": "Ubisoft",
+        "deprecated": true
+      },
+      {
+        "address": "0x3acc906ca13fe210c98d8f75edd7db60e129d7fc",
+        "operatorId": "worldpay",
+        "operator": "Worldpay",
+        "deprecated": false
+      },
+      {
+        "address": "0xf80285efb7518d5c79f4e98e3baa59da5ee79621",
+        "operatorId": "wyoming",
+        "operator": "Wyoming",
+        "deprecated": true
+      },
+      {
+        "address": "0x6b34e842175c701f488e2dd335a98caaec49593f",
+        "operatorId": "zeeve",
+        "operator": "Zeeve",
+        "deprecated": false
+      },
+      {
+        "address": "0x9e930731cb4a6bf7ecc11f695a295c60bdd212eb",
+        "operatorId": "zenrock",
+        "operator": "Zenrock",
+        "deprecated": true
+      }
+    ],
+    "arbitrum": [
+      {
+        "address": "0x7a205ed4e3d7f9d0777594501705d8cd405c3b05",
+        "operatorId": "01node",
+        "operator": "01node",
+        "deprecated": false
+      },
+      {
+        "address": "0x1acff1ac63a77b48dc1186985cb36192599c9a6a",
+        "operatorId": "FurtherFP",
+        "operator": "FurtherFP",
+        "deprecated": false
+      },
+      {
+        "address": "0xddaa92ce2d2fac3f7c5eae19136e438902ab46cc",
+        "operatorId": "animoca-blockdaemon",
+        "operator": "Animoca-Blockdaemon",
+        "deprecated": false
+      },
+      {
+        "address": "0x7ebbe1305304f24c7d343d31a331aaf0ada64da7",
+        "operatorId": "apedvn",
+        "operator": "ApeDVN",
+        "deprecated": false
+      },
+      {
+        "address": "0x9d3979c7e3dd26653c52256307709c09f47741e0",
+        "operatorId": "axelar",
+        "operator": "Axelar",
+        "deprecated": true
+      },
+      {
+        "address": "0x78203678d264063815dac114ea810e9837cd80f7",
+        "operatorId": "bcw",
+        "operator": "BCW Group",
+        "deprecated": false
+      },
+      {
+        "address": "0xf2e89ed7e342c708ba8cd79b293ad9244f5fccb3",
+        "operatorId": "bera",
+        "operator": "Bera",
+        "deprecated": false
+      },
+      {
+        "address": "0x0711dd777ae626ef5e0a4f50e199c7a0e0666857",
+        "operatorId": "bitgo",
+        "operator": "BitGo",
+        "deprecated": true
+      },
+      {
+        "address": "0x4a6b9962945d866f53fd114bb76b38b8791b8c1d",
+        "operatorId": "bitgo",
+        "operator": "BitGo",
+        "deprecated": true
+      },
+      {
+        "address": "0xebdd2b83220c14ddd6928e0b5cba41db66d84e93",
+        "operatorId": "blockaid",
+        "operator": "Blockaid",
+        "deprecated": false
+      },
+      {
+        "address": "0xd074b6bbcbec2f2b4c4265de3d95e521f82bf669",
+        "operatorId": "blockhunters",
+        "operator": "Blockhunters",
+        "deprecated": true
+      },
+      {
+        "address": "0x66228c260b0edf66ae74d127251102a5f146ae5e",
+        "operatorId": "brale",
+        "operator": "Brale",
+        "deprecated": false
+      },
+      {
+        "address": "0x9bcd17a654bffaa6f8fea38d19661a7210e22196",
+        "operatorId": "bware-labs",
+        "operator": "BWare",
+        "deprecated": true
+      },
+      {
+        "address": "0xf2e380c90e6c09721297526dbc74f870e114dfcb",
+        "operatorId": "canary",
+        "operator": "Canary",
+        "deprecated": false
+      },
+      {
+        "address": "0xbacfe8d53f8728b8980b9f99e897d8b29334c922",
+        "operatorId": "canary-sponsored",
+        "operator": "Canary Sponsored",
+        "deprecated": false
+      },
+      {
+        "address": "0x4b61abbf0248a564c02fc252a22739d33b76dcf6",
+        "operatorId": "canary-subsidized",
+        "operator": "Canary Subsidized",
+        "deprecated": false
+      },
+      {
+        "address": "0xecb3ac94976f11a53ae74af1f36fb89e247faeef",
+        "operatorId": "canary-wbtc",
+        "operator": "WBTC Canary",
+        "deprecated": false
+      },
+      {
+        "address": "0xdf30c9f6a70ce65a152c5bd09826525d7e97ba49",
+        "operatorId": "delegate",
+        "operator": "Delegate",
+        "deprecated": false
+      },
+      {
+        "address": "0xeae839784e5f6c79bbaf34b6023a2f62e134ab39",
+        "operatorId": "deutsche-telekom",
+        "operator": "Deutsche Telekom",
+        "deprecated": false
+      },
+      {
+        "address": "0x40a341b4d69d7b2981cb5029f14701a5d3886964",
+        "operatorId": "fidelity",
+        "operator": "Fidelity Center for Applied Technology",
+        "deprecated": false
+      },
+      {
+        "address": "0xc07125d75bfa05a0108de0f64c4d6ebb12b357f6",
+        "operatorId": "flowdesk",
+        "operator": "Flowdesk",
+        "deprecated": false
+      },
+      {
+        "address": "0xb42726e41dbe96fc4ea6d73cd792167608353698",
+        "operatorId": "frax",
+        "operator": "Frax",
+        "deprecated": false
+      },
+      {
+        "address": "0x313328609a9c38459cae56625fff7f2ad6dcde3b",
+        "operatorId": "gitcoin",
+        "operator": "Gitcoin",
+        "deprecated": true
+      },
+      {
+        "address": "0x82c1d3209e32beb7a55069b2c8af5b6f62e2dbd1",
+        "operatorId": "gitcoin",
+        "operator": "Gitcoin",
+        "deprecated": false
+      },
+      {
+        "address": "0xd56e4eab23cb81f43168f9f45211eb027b9ac7cc",
+        "operatorId": "google-cloud",
+        "operator": "Google",
+        "deprecated": false
+      },
+      {
+        "address": "0x19670df5e16bea2ba9b9e68b48c054c5baea06b8",
+        "operatorId": "horizen-labs",
+        "operator": "Horizen",
+        "deprecated": false
+      },
+      {
+        "address": "0x021e401c2a1a60618c5e6353a40524971eba1e8d",
+        "operatorId": "lagrange-labs",
+        "operator": "Lagrange",
+        "deprecated": true
+      },
+      {
+        "address": "0x2f55c492897526677c5b68fb199ea31e2c126416",
+        "operatorId": "layerzero-labs",
+        "operator": "LayerZero Labs",
+        "deprecated": false
+      },
+      {
+        "address": "0x54dd79f5ce72b51fcbbcb170dd01e32034323565",
+        "operatorId": "luganodes",
+        "operator": "Luganodes",
+        "deprecated": false
+      },
+      {
+        "address": "0x758c419533ad64ce9d3413bc8d3a97b026098ec1",
+        "operatorId": "lz-dead-dvn",
+        "operator": "LZDeadDVN",
+        "deprecated": true
+      },
+      {
+        "address": "0x50ff206140cadada2d9d510f1a184be9221d86cf",
+        "operatorId": "mantle-bank",
+        "operator": "Mantle Bank",
+        "deprecated": false
+      },
+      {
+        "address": "0x7b8a0fd9d6ae5011d5cbd3e85ed6d5510f98c9bf",
+        "operatorId": "mercury",
+        "operator": "Shrapnel",
+        "deprecated": true
+      },
+      {
+        "address": "0x9e930731cb4a6bf7ecc11f695a295c60bdd212eb",
+        "operatorId": "mim",
+        "operator": "MIM",
+        "deprecated": false
+      },
+      {
+        "address": "0xa3858e2a9860c935fc9586a617e9b2a674c3e4c8",
+        "operatorId": "muon",
+        "operator": "Muon",
+        "deprecated": false
+      },
+      {
+        "address": "0x01f9aad7c53626bf8807d640d9ddf852254d6f63",
+        "operatorId": "nansen",
+        "operator": "Nansen",
+        "deprecated": false
+      },
+      {
+        "address": "0xa7b5189bca84cd304d8553977c7c614329750d99",
+        "operatorId": "nethermind",
+        "operator": "Twinstake",
+        "deprecated": false
+      },
+      {
+        "address": "0xd954bf7968ef68875c9100c9ec890f969504d120",
+        "operatorId": "nodes-guru",
+        "operator": "Nodes.Guru",
+        "deprecated": false
+      },
+      {
+        "address": "0x4c41b4edf85dee828c2cfcc80019cb2bbcfb69a5",
+        "operatorId": "nodit",
+        "operator": "Nodit",
+        "deprecated": false
+      },
+      {
+        "address": "0xabea0b6b9237b589e676dc16f6d74bf7612591f4",
+        "operatorId": "omni-x",
+        "operator": "Omni X",
+        "deprecated": false
+      },
+      {
+        "address": "0xd1c70192cc0eb9a89e3d9032b9facab259a0a1e9",
+        "operatorId": "omnicat",
+        "operator": "Omnicat",
+        "deprecated": true
+      },
+      {
+        "address": "0x4708a19824bfe71262a91cdefa36ce21cbffafe1",
+        "operatorId": "ondo",
+        "operator": "Ondo",
+        "deprecated": false
+      },
+      {
+        "address": "0x2f2f1c6025e8da125e2afd73ba17d3cbdfe3d093",
+        "operatorId": "ondo-staging",
+        "operator": "Ondo Staging",
+        "deprecated": false
+      },
+      {
+        "address": "0x8fa9eef18c2a1459024f0b44714e5acc1ce7f5e8",
+        "operatorId": "p-ops-team",
+        "operator": "P-OPS",
+        "deprecated": false
+      },
+      {
+        "address": "0xb3ce0a5d132cd9bf965aba435e650c55edce0062",
+        "operatorId": "p2p",
+        "operator": "P2P",
+        "deprecated": false
+      },
+      {
+        "address": "0x8e5f5825602bc5db725974bb9e60677d4adc5fbe",
+        "operatorId": "paxos",
+        "operator": "Paxos",
+        "deprecated": false
+      },
+      {
+        "address": "0xabc9b1819cc4d9846550f928b985993cf6240439",
+        "operatorId": "pearlnet",
+        "operator": "Pearlnet",
+        "deprecated": true
+      },
+      {
+        "address": "0xe6cd8c2e46ef396df88048449e5b1c75172b40c3",
+        "operatorId": "planetarium-labs",
+        "operator": "Planetarium Labs",
+        "deprecated": false
+      },
+      {
+        "address": "0x8ddf05f9a5c488b4973897e278b58895bf87cb24",
+        "operatorId": "polyhedra-network",
+        "operator": "Polyhedra zkBridge",
+        "deprecated": true
+      },
+      {
+        "address": "0x539008c98b17803a273edf98aba2d4414ee3f4d7",
+        "operatorId": "portal",
+        "operator": "Portal",
+        "deprecated": false
+      },
+      {
+        "address": "0x969a0bdd86a230345ad87a6a381de5ed9e6cda85",
+        "operatorId": "restake",
+        "operator": "Restake",
+        "deprecated": false
+      },
+      {
+        "address": "0x790a1946893df8cf85412e9b088c66c3ee1f5747",
+        "operatorId": "stablecoinx",
+        "operator": "StablecoinX",
+        "deprecated": false
+      },
+      {
+        "address": "0xcd37ca043f8479064e10635020c65ffc005d36f6",
+        "operatorId": "stablelab",
+        "operator": "StableLab",
+        "deprecated": false
+      },
+      {
+        "address": "0x6268950b2d11aa0516007b6361f6ee3facb3cb14",
+        "operatorId": "stakingcabin",
+        "operator": "StakingCabin",
+        "deprecated": true
+      },
+      {
+        "address": "0xb0646fb9028364ac1f04477271375ef32a8a5e62",
+        "operatorId": "stakingcabin",
+        "operator": "StakingCabin",
+        "deprecated": true
+      },
+      {
+        "address": "0x5756a74e8e18d8392605ba667171962b2b2826b5",
+        "operatorId": "stargate",
+        "operator": "Stargate",
+        "deprecated": true
+      },
+      {
+        "address": "0x5496d03d9065b08e5677e1c5d1107110bb05d445",
+        "operatorId": "superform",
+        "operator": "Superform",
+        "deprecated": false
+      },
+      {
+        "address": "0xcced05c3667877b545285b25f19f794436a1c481",
+        "operatorId": "switchboard",
+        "operator": "Switchboard",
+        "deprecated": false
+      },
+      {
+        "address": "0x77aaf86b4466a67869667babe02c6ebe7e7791d6",
+        "operatorId": "ubisoft",
+        "operator": "Ubisoft",
+        "deprecated": true
+      },
+      {
+        "address": "0xa8b8575fa41c305953f519c7d288cd7741727c7b",
+        "operatorId": "usdt0",
+        "operator": "USDT0",
+        "deprecated": false
+      },
+      {
+        "address": "0x6eb08810138317aa2af560c174c1390de6c413d4",
+        "operatorId": "worldpay",
+        "operator": "Worldpay",
+        "deprecated": false
+      },
+      {
+        "address": "0xcb1b1d524d013a32e976a5963bd541c388ec0517",
+        "operatorId": "wyoming",
+        "operator": "Wyoming",
+        "deprecated": true
+      },
+      {
+        "address": "0x7151c89f6ba70d6ab845289e4ec706530ffaf3cb",
+        "operatorId": "zeeve",
+        "operator": "Zeeve",
+        "deprecated": false
+      },
+      {
+        "address": "0x3b65e87e2a4690f14cae0483014259ded8215adc",
+        "operatorId": "zenrock",
+        "operator": "Zenrock",
+        "deprecated": true
+      }
+    ]
+  },
+  "testnet": {
+    "robinhood": [
+      {
+        "address": "0x52f615ecbcbf40e47a315c2d84d14fa2851e55b7",
+        "operatorId": "horizen-labs",
+        "operator": "Horizen",
+        "deprecated": false
+      },
+      {
+        "address": "0xa78a78a13074ed93ad447a26ec57121f29e8fec2",
+        "operatorId": "layerzero-labs",
+        "operator": "LayerZero Labs",
+        "deprecated": false
+      },
+      {
+        "address": "0x88b27057a9e00c5f05dda29241027aff63f9e6e0",
+        "operatorId": "lz-dead-dvn",
+        "operator": "LZDeadDVN",
+        "deprecated": true
+      },
+      {
+        "address": "0xcde82f74624525e24853b1f59c8b20a162a3d297",
+        "operatorId": "nethermind",
+        "operator": "Twinstake",
+        "deprecated": false
+      },
+      {
+        "address": "0x771d83e953ca8f113f02f18206ecf8bb93da3f0a",
+        "operatorId": "paxos",
+        "operator": "Paxos",
+        "deprecated": false
+      }
+    ],
+    "base": [
+      {
+        "address": "0x13a3d98d966a1e9b51efad2795039f481fbb9fb5",
+        "operatorId": "FurtherFP",
+        "operator": "FurtherFP",
+        "deprecated": false
+      },
+      {
+        "address": "0xdf04abb599c7b37dd5ffc0f8e94f6898120874ef",
+        "operatorId": "bitgo",
+        "operator": "BitGo",
+        "deprecated": true
+      },
+      {
+        "address": "0xfa1a1804effec9000f75cd15d16d18b05738d467",
+        "operatorId": "bitgo",
+        "operator": "BitGo",
+        "deprecated": true
+      },
+      {
+        "address": "0xb1b2319767b86800c4cfe8623a72c00d9d90cfb6",
+        "operatorId": "horizen-labs",
+        "operator": "Horizen",
+        "deprecated": false
+      },
+      {
+        "address": "0xe1a12515f9ab2764b887bf60b923ca494ebbb2d6",
+        "operatorId": "layerzero-labs",
+        "operator": "LayerZero Labs",
+        "deprecated": false
+      },
+      {
+        "address": "0x78551adc2553ef1858a558f5300f7018aad2fa7e",
+        "operatorId": "lz-dead-dvn",
+        "operator": "LZDeadDVN",
+        "deprecated": true
+      },
+      {
+        "address": "0xd9222cc3ccd1df7c070d700ea377d4ada2b86eb5",
+        "operatorId": "nethermind",
+        "operator": "Twinstake",
+        "deprecated": false
+      },
+      {
+        "address": "0x63ef73671245d1a290f2a675be9d906090f72a8d",
+        "operatorId": "p2p",
+        "operator": "P2P",
+        "deprecated": false
+      },
+      {
+        "address": "0xd888b45e1ab362fd692c81cc8c39f003063e05e8",
+        "operatorId": "paxos",
+        "operator": "Paxos",
+        "deprecated": false
+      }
+    ],
+    "arbitrum": [
+      {
+        "address": "0xc0354c93c78816d3b0cbf7c9f5a9c16e78cc9bee",
+        "operatorId": "FurtherFP",
+        "operator": "FurtherFP",
+        "deprecated": false
+      },
+      {
+        "address": "0x47cee39389206557f88118a54efdbce13b28b6a4",
+        "operatorId": "altlayer",
+        "operator": "AltLayer",
+        "deprecated": false
+      },
+      {
+        "address": "0x73805fd2342dcd7b53349e6bba7462fefc040910",
+        "operatorId": "anchorage",
+        "operator": "Anchorage",
+        "deprecated": false
+      },
+      {
+        "address": "0x0fbb88ff8d38cd1e917149cd14076852f13e088e",
+        "operatorId": "bitgo",
+        "operator": "BitGo",
+        "deprecated": true
+      },
+      {
+        "address": "0x500e6064cb1fe164974cc0a4fe9151928c870bbe",
+        "operatorId": "bitgo",
+        "operator": "BitGo",
+        "deprecated": true
+      },
+      {
+        "address": "0x9f529527a6810f1b661fb2aeea19378ce5a2c23e",
+        "operatorId": "bware-labs",
+        "operator": "BWare",
+        "deprecated": true
+      },
+      {
+        "address": "0x5e352bbde7376f817566927fb00b58d92d97e145",
+        "operatorId": "citrea",
+        "operator": "Citrea",
+        "deprecated": false
+      },
+      {
+        "address": "0xbc0c3eaee5d759f0ce13a59ad3113080ed7bd941",
+        "operatorId": "frax",
+        "operator": "Frax",
+        "deprecated": false
+      },
+      {
+        "address": "0xc7e652a4ac4f3a872024ba10b13ea0c53731af83",
+        "operatorId": "frax",
+        "operator": "Frax",
+        "deprecated": true
+      },
+      {
+        "address": "0xcdb4933d7f37560186aca8fdadfd5a3b3e27b088",
+        "operatorId": "frax",
+        "operator": "Frax",
+        "deprecated": true
+      },
+      {
+        "address": "0xc6cec4e6b8f3dc87e676d06a24864081311eda15",
+        "operatorId": "horizen-labs",
+        "operator": "Horizen",
+        "deprecated": false
+      },
+      {
+        "address": "0x7c84feb58183d3865e4e01d1b6c22ba2d227dc23",
+        "operatorId": "joc",
+        "operator": "Japan Blockchain Foundation",
+        "deprecated": false
+      },
+      {
+        "address": "0x53f488e93b4f1b60e8e83aa374dbe1780a1ee8a8",
+        "operatorId": "layerzero-labs",
+        "operator": "LayerZero Labs",
+        "deprecated": false
+      },
+      {
+        "address": "0xa85be08a6ce2771c730661766aacf2c8bb24c611",
+        "operatorId": "lz-dead-dvn",
+        "operator": "LZDeadDVN",
+        "deprecated": true
+      },
+      {
+        "address": "0x3a74f7174709842d3b8a14ce60b4aa2499f2a2f2",
+        "operatorId": "nethermind",
+        "operator": "Twinstake",
+        "deprecated": false
+      },
+      {
+        "address": "0x9051233c67a93020865cfe156429e0afab3e6b60",
+        "operatorId": "paxos",
+        "operator": "Paxos",
+        "deprecated": false
+      },
+      {
+        "address": "0x2e25112230bec11c632361861eeb29b080023c47",
+        "operatorId": "wyoming",
+        "operator": "Wyoming",
+        "deprecated": false
+      }
+    ]
+  }
+}

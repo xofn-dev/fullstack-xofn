@@ -304,6 +304,212 @@ button {
   line-height: 1.8;
 }
 
+/* ---------- Halaman aplikasi (Phase 2: /check). Disusun dari komponen terminal landing. ---------- */
+.app-page {
+  position: relative;
+  padding: 72px 0 110px;
+  min-height: 70vh;
+}
+.app-page .app-head {
+  max-width: 760px;
+  margin-bottom: 34px;
+}
+.app-page .app-head h1 {
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1.01;
+  letter-spacing: -0.07em;
+  font-weight: 600;
+  margin: 16px 0 18px;
+}
+.app-page .app-head p {
+  color: var(--color-muted);
+  font-size: 15px;
+  line-height: 1.75;
+  margin: 0;
+}
+.app-page .terminal {
+  max-width: 980px;
+}
+.check-form-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 9px;
+  align-items: center;
+}
+.check-form-row select.field {
+  width: auto;
+}
+@media (max-width: 640px) {
+  .check-form-row {
+    grid-template-columns: 1fr;
+  }
+  .check-form-row select.field {
+    width: 100%;
+  }
+  .app-page {
+    padding: 46px 0 80px;
+  }
+}
+.big-status.caution {
+  border-color: var(--color-caution-line);
+  color: var(--color-caution-text);
+  background: var(--color-caution-bg);
+}
+.big-status.muted {
+  border-color: var(--color-line);
+  color: var(--color-muted);
+  background: var(--color-panel);
+}
+.status.muted {
+  border-color: var(--color-line);
+  color: var(--color-muted);
+  background: var(--color-panel);
+}
+.check-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin-top: 18px;
+  font: 10px/1.6 var(--mono);
+  color: var(--color-muted);
+}
+.check-meta strong {
+  color: var(--color-text);
+  font-weight: 500;
+}
+.pathway-card {
+  margin-top: 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  padding: 16px 18px;
+}
+.pathway-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pathway-head h4 {
+  margin: 0;
+  font: 12px var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--color-text);
+  font-weight: 500;
+}
+.pathway-head h4 span {
+  color: var(--color-dim);
+}
+.pathway-note {
+  margin: 10px 0 0;
+  font: 11px/1.6 var(--mono);
+  color: var(--color-muted);
+}
+.direction-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+@media (max-width: 760px) {
+  .direction-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.direction {
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-sm);
+  padding: 13px 14px;
+  background: var(--color-bg-2);
+  min-width: 0;
+}
+.direction small {
+  display: block;
+  font: 9px var(--mono);
+  letter-spacing: 0.1em;
+  color: var(--color-dim);
+  margin-bottom: 6px;
+}
+.direction .direction-badge {
+  font: 600 19px var(--display);
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+}
+.direction dl {
+  margin: 10px 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 12px;
+  font: 10px/1.5 var(--mono);
+}
+.direction dt {
+  color: var(--color-dim);
+}
+.direction dd {
+  margin: 0;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+.dvn-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+  font: 10px/1.5 var(--mono);
+}
+.dvn-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+  color: var(--color-muted);
+}
+.dvn-list b {
+  color: var(--color-text);
+  font-weight: 500;
+}
+.dvn-list a {
+  color: var(--color-mint-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dvn-list em {
+  font-style: normal;
+  color: var(--color-warn-text);
+}
+.reason-list {
+  margin: 10px 0 0;
+  padding-left: 16px;
+  font: 10px/1.7 var(--mono);
+  color: var(--color-muted);
+}
+.check-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 20px;
+}
+.checker-error.is-visible a {
+  color: inherit;
+  text-decoration: underline;
+}
+.app-head .section-label a {
+  color: inherit;
+}
+.kv a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.pathway-note a {
+  color: var(--color-mint-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* Reduced motion: marquee berhenti (HTML hanya memendekkan durasi animasi). */
 @media (prefers-reduced-motion: reduce) {
   .marquee .track,

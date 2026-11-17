@@ -23,7 +23,8 @@ export function getModeCopy(mode: AppMode): ModeCopy {
     case 'preview':
       return {
         noticeChip: 'PREVIEW / NOT LIVE',
-        noticeText: 'NO TOKEN SALE OR LIVE VERIFICATION',
+        // D18: sejak Check nyata ada (Phase 2), teks tidak lagi berbunyi "no live verification".
+        noticeText: 'NO TOKEN SALE · CHECK READS PUBLIC CHAIN DATA',
         actionTag: 'PREVIEW',
       };
     case 'simulation':
