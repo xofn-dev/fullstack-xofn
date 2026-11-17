@@ -85,14 +85,24 @@ describe('cn', () => {
 describe('mode', () => {
   it('tanpa manifest selalu preview, apa pun jaringannya', () => {
     for (const network of NETWORKS) {
-      expect(resolveMode({ network, hasManifest: false })).toBe('preview');
+      expect(resolveMode({ network, manifest: 'none' })).toBe('preview');
     }
   });
 
-  it('manifest lokal berarti simulation; manifest publik berarti live', () => {
-    expect(resolveMode({ network: 'local', hasManifest: true })).toBe('simulation');
-    expect(resolveMode({ network: 'testnet', hasManifest: true })).toBe('live');
-    expect(resolveMode({ network: 'mainnet', hasManifest: true })).toBe('live');
+  it('manifest lokal berarti simulation; manifest publik berstatus live berarti live', () => {
+    expect(resolveMode({ network: 'local', manifest: 'local' })).toBe('simulation');
+    expect(resolveMode({ network: 'testnet', manifest: 'live' })).toBe('live');
+    expect(resolveMode({ network: 'mainnet', manifest: 'live' })).toBe('live');
+  });
+
+  it('alamat yang Deployed (dorman) belum Live: tetap preview (PRD P52)', () => {
+    expect(resolveMode({ network: 'testnet', manifest: 'deployed-dormant' })).toBe('preview');
+    expect(resolveMode({ network: 'mainnet', manifest: 'deployed-dormant' })).toBe('preview');
+  });
+
+  it('manifest lokal tidak pernah menyalakan jaringan publik, dan sebaliknya', () => {
+    expect(resolveMode({ network: 'mainnet', manifest: 'local' })).toBe('preview');
+    expect(resolveMode({ network: 'local', manifest: 'live' })).toBe('preview');
   });
 
   it('copy preview dan simulation tidak memuat klaim live', () => {
@@ -127,10 +137,15 @@ describe('chain registry', () => {
     expect(getChain('testnet', 'arbitrum')).toMatchObject({ chainId: 421614, eid: 40231 });
   });
 
-  it('EID lokal tidak ditebak', () => {
+  it('jaringan lokal: satu chain ID Anvil, EID mock 1/2/3, tanpa explorer dan tanpa alamat LZ publik', () => {
+    expect(getChains('local').map((chain) => [chain.chainId, chain.eid])).toEqual([
+      [31337, 1],
+      [31337, 2],
+      [31337, 3],
+    ]);
     for (const chain of getChains('local')) {
-      expect(chain.eid).toBeNull();
       expect(chain.explorer).toBeNull();
+      expect(chain.lz).toBeNull();
     }
   });
 

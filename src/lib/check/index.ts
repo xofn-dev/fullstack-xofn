@@ -10,8 +10,10 @@ import type { Address, CheckOutcome, CheckResult } from '@/types/domain';
 import type { ChainKey } from '@/types/enums';
 import { MemoryCheckCache, SupabaseCheckCache, type CheckCache } from '@/lib/check/cache';
 import { createRateLimiter } from '@/lib/check/rate-limit';
+import { checkChain } from '@/lib/check/local-lz';
 import { CheckReadError, readOft } from '@/lib/check/read';
 import { createViemReader } from '@/lib/check/viem-reader';
+import { readXofnVerify } from '@/lib/check/xofn-verify';
 
 // Orkestrasi XofN Check (server-only): validasi → cache → baca chain → simpan → hasil.
 // Dipakai oleh halaman /check/[chain]/[address] (RSC), route API, dan gambar OG.
@@ -79,9 +81,10 @@ export async function runCheck(request: CheckRequest): Promise<CheckOutcome> {
   if (!parsed.ok) return parsed.outcome;
   const { chain: chainKey, address } = parsed;
   const network = publicEnv.network;
-  const chain = getChain(network, chainKey);
-  const rpcUrl = serverEnv.checkRpc[chainKey] ?? chain.publicRpc;
-  if (!rpcUrl || !chain.lz) {
+  // Jaringan lokal memakai endpoint tiruan dari manifest Anvil (src/lib/check/local-lz.ts).
+  const chain = checkChain(network, chainKey);
+  const rpcUrl = serverEnv.checkRpc[chainKey] ?? getChain(network, chainKey).publicRpc;
+  if (!rpcUrl || !chain) {
     return {
       ok: false,
       code: 'network_unavailable',
@@ -112,11 +115,14 @@ export async function runCheck(request: CheckRequest): Promise<CheckOutcome> {
   const task = (async (): Promise<CheckOutcome> => {
     try {
       const readNames = getChains(network).map((item) => item.key);
-      const [result, otherDeployments] = await Promise.all([
-        readOft(createViemReader(rpcUrl), { network, chain, address }),
-        listOtherDeployments(address, readNames),
+      const local = network === 'local';
+      const [result, otherDeployments, verify] = await Promise.all([
+        // Anvil tidak punya Multicall3, dan alamat lokal tidak dikenal OFT API.
+        readOft(createViemReader(rpcUrl, { multicall: !local }), { network, chain, address }),
+        local ? Promise.resolve(null) : listOtherDeployments(address, readNames),
+        readXofnVerify(network, chainKey, address),
       ]);
-      const complete: CheckResult = { ...result, otherDeployments };
+      const complete: CheckResult = { ...result, otherDeployments, verify };
       try {
         await store.set(complete);
       } catch {

@@ -1,10 +1,23 @@
 import type { AppMode, Network } from '@/types/enums';
 
-// Mode aplikasi (ARCHITECTURE §10.4). Ditentukan dari jaringan aktif dan ada-tidaknya manifest
-// deployment yang sah. Klien hanya memakai mode untuk memilih tombol; validasi tetap di kontrak.
-export function resolveMode(input: { network: Network; hasManifest: boolean }): AppMode {
-  if (!input.hasManifest) return 'preview';
-  return input.network === 'local' ? 'simulation' : 'live';
+/**
+ * Status manifest deployment untuk jaringan aktif (PRD P52, ARCHITECTURE §5.6.1):
+ * - `none`: belum ada manifest;
+ * - `local`: manifest Anvil (`deployments/local.json`);
+ * - `deployed-dormant`: kontrak publik sudah ada tetapi `registrar` Registry masih kosong;
+ * - `live`: Safe sudah memanggil `setRegistrar`.
+ */
+export type ManifestState = 'none' | 'local' | 'deployed-dormant' | 'live';
+
+// Mode aplikasi (ARCHITECTURE §10.4). Klien hanya memakai mode untuk memilih tombol; validasi
+// tetap di kontrak. Alamat yang Deployed (dorman) belum Live, jadi tetap `preview` (P52).
+export function resolveMode(input: { network: Network; manifest: ManifestState }): AppMode {
+  if (input.manifest === 'none' || input.manifest === 'deployed-dormant') return 'preview';
+  if (input.manifest === 'local') {
+    // Manifest lokal hanya sah untuk jaringan lokal; di jaringan lain ia diabaikan.
+    return input.network === 'local' ? 'simulation' : 'preview';
+  }
+  return input.network === 'local' ? 'preview' : 'live';
 }
 
 export interface ModeCopy {

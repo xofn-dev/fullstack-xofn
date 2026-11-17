@@ -1,4 +1,13 @@
-import type { ChainKey, Network } from '@/types/enums';
+import type {
+  ChainKey,
+  DisplayStatus,
+  ExpansionStep,
+  GraduatorStatus,
+  Network,
+  RemoteState,
+  Tier,
+  TradeSide,
+} from '@/types/enums';
 
 // Tipe domain XofN Check. Semua nilai bigint dari chain disimpan sebagai string/number
 // supaya aman diserialisasi ke JSON (API, cache, RSC).
@@ -93,8 +102,21 @@ export interface CheckResult {
   noPeer: ChainKey[];
   /** Deployment lain dari OFT API yang tidak dibaca di MVP (P19); null bila OFT API tidak terbaca. */
   otherDeployments: string[] | null;
-  /** XofN: hasil verify() Registry. null selama belum ada manifest deployment (mode preview). */
-  verify: null;
+  /**
+   * XofN: hasil verify() Registry chain ini. null bila belum ada manifest deployment (mode
+   * preview) atau alamat ini bukan token yang terdaftar di Registry XofN.
+   */
+  verify: XofnVerify | null;
+}
+
+export interface XofnVerify {
+  status: 'read' | 'unread';
+  locked: boolean | null;
+  tier: Tier | null;
+  /** `registrar` Registry adalah kontrak yang dikenal manifest (Graduator / Remote). */
+  registrarKnown: boolean | null;
+  /** Token home yang berpadanan, untuk tautan ke halaman token; null bila tidak diketahui. */
+  homeToken: Address | null;
 }
 
 export type CheckErrorCode =
@@ -109,3 +131,128 @@ export type CheckErrorCode =
 export type CheckOutcome =
   | { ok: true; result: CheckResult; cache: { hit: boolean; backend: 'supabase' | 'memory' } }
   | { ok: false; code: CheckErrorCode; message: string };
+
+// ───────────────────────── Token XofN (Phase 4) ─────────────────────────
+// Semua jumlah on-chain (wei, unit token 18 desimal) disimpan sebagai string desimal.
+
+
+export interface CurveState {
+  address: Address;
+  ethRaised: string;
+  tokensSold: string;
+  saleSupply: string;
+  graduationThreshold: string;
+  /** Wei per 1 token (1e18 unit). */
+  currentPrice: string;
+  thresholdReached: boolean;
+  /** Progres ke ambang graduation dalam basis poin (0–10000). */
+  progressBps: number;
+}
+
+export interface Trade {
+  side: TradeSide;
+  trader: Address;
+  /** ETH yang benar-benar dipakai/diterima (bukan msg.value). */
+  ethAmount: string;
+  tokenAmount: string;
+  /** `ethRaised` curve setelah trade ini. */
+  ethRaised: string;
+  blockNumber: string;
+  txHash: Hex;
+  logIndex: number;
+}
+
+/**
+ * Pembacaan `verify()` Registry di satu chain.
+ * `absent` = token belum ada di chain itu (ekspansi belum sampai); `unread` = RPC gagal.
+ */
+export interface VerifyReading {
+  chain: ChainKey;
+  eid: number;
+  /** Alamat token di chain ini (alamat remote berbeda dari home). */
+  token: Address | null;
+  status: 'read' | 'absent' | 'unread';
+  /** Hasil `Registry.verify(token).locked`; null bila tidak terbaca atau token belum ada. */
+  locked: boolean | null;
+  /** `registrar` Registry = kontrak yang dikenal manifest (Graduator di home, Remote di ekspansi). */
+  registrarKnown: boolean | null;
+  owner: Address | null;
+  delegate: Address | null;
+  totalSupply: string | null;
+  checkedAt: string;
+}
+
+export interface ExpansionChainState {
+  chain: ChainKey;
+  eid: number;
+  step: ExpansionStep;
+  remoteToken: Address | null;
+  /** State di kontrak Remote chain tujuan. `unread` bila tidak terbaca. */
+  remoteState: RemoteState | 'unread';
+  remotePool: Address | null;
+  /** Escrow fee yang tersisa di Graduator untuk langkah kirim likuiditas. */
+  feeEscrow: string;
+  /** Fee `retryRemote` saat ini (wei); '0' bila tidak ada yang bisa diulang dari home. */
+  retryQuote: string;
+}
+
+/** Rencana DVN satu pathway (home → chain ekspansi) untuk tier token, dari `Graduator.pathwayOf`. */
+export interface TokenPathway {
+  chain: ChainKey;
+  eid: number;
+  required: Address[];
+  optional: Address[];
+  optionalThreshold: number;
+}
+
+export interface TokenSummary {
+  address: Address;
+  name: string;
+  symbol: string;
+  tier: Tier;
+  creator: Address;
+  curve: Address;
+  /** EID ekspansi yang dipilih saat launch. */
+  eids: number[];
+  status: DisplayStatus;
+  graduatorStatus: GraduatorStatus;
+  progressBps: number;
+  /** Titik harga (wei per token) dari trade curve, untuk sparkline. Kosong bila belum ada trade. */
+  spark: string[];
+}
+
+export interface TokenEconomics {
+  callerReward: string;
+  expansionPairEth: string;
+  startPrice: string;
+}
+
+export interface TokenDetail extends TokenSummary {
+  curveState: CurveState;
+  /** Pool home chain; null sebelum graduation. */
+  pool: Address | null;
+  /** Cadangan pool home (tiruan lokal); null bila belum ada atau tidak terbaca. */
+  poolReserves: { token: string; eth: string } | null;
+  tokensPerChain: string;
+  trades: Trade[];
+  expansion: ExpansionChainState[];
+  /** DVN per pathway sesuai tier. Sebelum ekspansi ini baru rencana ("applied at expansion"). */
+  pathways: TokenPathway[];
+  /** Home chain lebih dulu, lalu chain ekspansi sesuai urutan `eids`. */
+  verify: VerifyReading[];
+  economics: TokenEconomics;
+  checkedAt: string;
+  /**
+   * Hanya simulasi lokal: jumlah pesan lintas chain yang masih menunggu di `LocalRelay`.
+   * null di jaringan tanpa relay, atau bila tidak terbaca.
+   */
+  relayPending: number | null;
+}
+
+export type TokenErrorCode =
+  | 'invalid_address'
+  | 'network_unavailable'
+  | 'not_found'
+  | 'rpc_failed'
+  | 'unauthorized'
+  | 'not_configured';

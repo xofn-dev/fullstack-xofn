@@ -2,7 +2,7 @@ import 'server-only';
 
 // Satu-satunya pembaca env server. Aturan: tidak ada fallback nilai; variabel wajib yang hilang
 // melempar error. Variabel opsional dibaca sebagai null dan keputusannya dibuat eksplisit
-// oleh pemanggil. CRON_SECRET ditambahkan bersama route cron (Phase 4).
+// oleh pemanggil.
 
 export class ServerEnvError extends Error {
   constructor(name: string) {
@@ -44,4 +44,9 @@ export const serverEnv = {
     arbitrum: optional(process.env.CHECK_RPC_ARBITRUM),
   },
   supabase: readSupabase(),
+  /**
+   * Rahasia untuk route cron (Phase 4). Kosong → route cron menolak semua panggilan (503),
+   * supaya tidak pernah terbuka tanpa otorisasi.
+   */
+  cronSecret: optional(process.env.CRON_SECRET),
 } as const;

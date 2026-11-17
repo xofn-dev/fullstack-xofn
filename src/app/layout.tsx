@@ -6,8 +6,10 @@ import { Footer } from '@/components/layout/footer';
 import { Nav } from '@/components/layout/nav';
 import { NoticeBar } from '@/components/layout/notice-bar';
 import { OverlayProvider } from '@/components/ui/overlay-provider';
+import { Web3Provider } from '@/components/wallet/web3-provider';
 import { getModeCopy, resolveMode } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
+import { getManifestState } from '@/lib/web3/addresses';
 import './globals.css';
 
 // D3 (rekomendasi, menunggu keputusan owner): Inter Tight + JetBrains Mono, fallback Arial/mono sistem.
@@ -48,20 +50,30 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  // Phase 1: belum ada manifest deployment, jadi mode selalu `preview` (ARCHITECTURE §10.4).
-  const mode = resolveMode({ network: publicEnv.network, hasManifest: false });
+  // Mode ditentukan di server dari jaringan aktif dan status manifest (ARCHITECTURE §10.4, P52).
+  const mode = resolveMode({
+    network: publicEnv.network,
+    manifest: getManifestState(publicEnv.network),
+  });
   const copy = getModeCopy(mode);
+
+  const shell = (
+    <>
+      <NoticeBar mode={mode} />
+      <Nav tag={`PROTOCOL ${copy.actionTag}`} mode={mode} />
+      {children}
+      <Footer mode={mode} />
+      <Ambient />
+    </>
+  );
 
   return (
     <html lang="en" className={`${display.variable} ${mono.variable}`}>
       {/* Kelas v2…v8 mengaktifkan lapisan CSS baseline (lihat src/app/styles/baseline.css). */}
       <body className="v2 v3 v4 v5 v6-galaxy v7 v8">
         <OverlayProvider>
-          <NoticeBar mode={mode} />
-          <Nav tag={`PROTOCOL ${copy.actionTag}`} />
-          {children}
-          <Footer />
-          <Ambient />
+          {/* Wallet dan polling data hanya dipasang di luar mode preview (USER_FLOWS Flow B). */}
+          {mode === 'preview' ? shell : <Web3Provider>{shell}</Web3Provider>}
         </OverlayProvider>
       </body>
     </html>

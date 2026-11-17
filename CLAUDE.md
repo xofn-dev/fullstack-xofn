@@ -70,7 +70,7 @@ Konflik yang belum diputuskan tercantum di `PRD.md` §11 (P#), `DESIGN_SYSTEM.md
 | **1** | Fondasi repo + port landing HTML (mode `preview`) | Selesai 17 Nov 2026; menunggu persetujuan gerbang (`proof/2026-11-17-phase1/notes.md`) |
 | **2** | XofN Check: baca OFT yang sudah ada di Robinhood/Base/Arbitrum + cache + kartu share | Selesai 17 Nov 2026; menunggu persetujuan gerbang (`proof/2026-11-17-phase2/notes.md`) |
 | **3** | Kontrak **lokal saja**. **3a** tahap 1: Token (OFT), Curve (implementation + clone), Graduator `graduate()`, Registry. **3b** tahap 2: Remote, `expandAndLock`, composer, `retryRemote`, multi-endpoint | **Belum selesai**: temuan HIGH `PoolSeeder` (PRD P55) menunggu persetujuan owner untuk perubahan kontrak. Opsi A deploy dorman sudah diuji tanpa mengubah kontrak (`test/lz/GoLive.t.sol`). Rincian di `proof/2026-11-17-phase3/notes.md` |
-| **4** | Integrasi frontend aplikasi terhadap Anvil lokal / mode `simulation` (flow tahap 1 lebih dulu) | Belum mulai |
+| **4** | Integrasi frontend aplikasi terhadap Anvil lokal / mode `simulation` (flow tahap 1 lebih dulu) | Selesai 17 Nov 2026 (mode simulation); menunggu persetujuan gerbang (`proof/2026-11-17-phase4/notes.md`). Dimulai walau P55 terbuka atas izin owner; kontrak tidak disentuh. P55 wajib tertutup sebelum Phase 5 dan sebelum deploy publik apa pun |
 | **5** | Hardening & paket audit (audit eksternal wajib sebelum deploy mainnet 1b) | Belum mulai |
 | **6** | **Deploy Fase 1** (guide §5–6): 1a Robinhood testnet → 1b Robinhood mainnet + rilis publik XofN Check | **FROZEN total** |
 | **7** | **Deploy Fase 2** (guide §7–8): 2a omnichain testnet → 2b omnichain mainnet | **FROZEN total** |

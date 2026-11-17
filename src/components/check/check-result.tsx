@@ -4,6 +4,7 @@ import { cn } from '@/lib/cn';
 import { formatUtc, shortAddress } from '@/lib/format';
 import { isNilConfirmations } from '@/lib/lz/decode';
 import { LABEL_COPY } from '@/lib/lz/label';
+import { getTierInfo } from '@/lib/tiers';
 import type { CheckResult, DirectionReading, DvnInfo, PathwayLabel, PathwayReading } from '@/types/domain';
 import { CheckActions } from '@/components/check/check-actions';
 
@@ -265,6 +266,44 @@ export function CheckResultView({
               </strong>
             </div>
           </div>
+
+          {result.verify && (
+            <div className="pathways">
+              <div className="field-label">XOFN REGISTRY · VERIFY() ON {chain.shortName}</div>
+              <div className="pathway-card">
+                <div className="pathway-head">
+                  <h4>
+                    {result.verify.tier ? getTierInfo(result.verify.tier).badge : 'XofN token'}
+                    <span> · registered in the XofN Registry</span>
+                  </h4>
+                  <span
+                    className={cn(
+                      'status',
+                      result.verify.status === 'unread' ? 'muted' : result.verify.locked ? '' : 'blue',
+                    )}
+                  >
+                    {result.verify.status === 'unread'
+                      ? 'VERIFY() NOT READ'
+                      : result.verify.locked
+                        ? 'VERIFY() TRUE'
+                        : 'VERIFY() FALSE'}
+                  </span>
+                </div>
+                <p className="pathway-note">
+                  {result.verify.status === 'unread'
+                    ? 'The Registry could not be read. No result is assumed.'
+                    : result.verify.locked
+                      ? 'The Registry on this chain reports the token as locked: owner 0, delegate 0 and configuration matching its tier.'
+                      : 'The Registry on this chain does not report the token as locked. Before expansion completes this is expected.'}
+                  {result.verify.registrarKnown === false &&
+                    ' The Registry registrar is not the contract listed in the deployment manifest.'}{' '}
+                  {result.verify.homeToken && (
+                    <Link href={`/t/${result.verify.homeToken}`}>Open the token page ↗</Link>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="pathways">
             <div className="field-label">PATHWAYS READ IN THIS CHECK</div>
