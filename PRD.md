@@ -146,7 +146,14 @@ Aturan tambahan:
 - Tier dipilih saat launch dan **tidak bisa diturunkan**.
 - Factory menolak tier dengan kurang dari 2 DVN wajib, atau DVN di luar daftar putih.
 - Jika pathway Base ↔ Robinhood tidak punya 3 operator DVN, Fortress **tidak ditawarkan** untuk ekspansi ke Robinhood, dan UI menjelaskan alasannya.
-- Alamat DVN per chain diambil dari halaman *DVN addresses* LayerZero. Ketersediaan tiap DVN per pathway [Belum] dicek di Phase 0 (P1).
+- Alamat DVN per chain diambil dari halaman *DVN addresses* LayerZero.
+- **Ketersediaan per pathway — terverifikasi Phase 0 (17 Nov 2026, `proof/2026-11-17-phase0/02-dvn-pathways.md`):**
+  - LayerZero Labs, Deutsche Telekom, dan FCAT tersedia di Base, Arbitrum, dan Robinhood, di semua arah.
+  - Google Cloud tersedia di Base dan Arbitrum, **tidak ada di Robinhood**.
+  - Polyhedra **deprecated** di Base dan Arbitrum, dan tidak ada di Robinhood.
+  - Akibatnya: Standard seperti tabel di atas terpenuhi di Base ↔ Arbitrum, tetapi **tidak** di Base ↔ Robinhood; Fortress seperti tabel di atas tidak terpenuhi di pathway mana pun tanpa DVN deprecated.
+  - Standard butuh 4 operator berbeda per pathway (2 wajib + 2 opsional) dan Fortress 5, bukan 3.
+  - Tiga belas operator lain tersedia di ketiga chain. Pemilihan operator pengganti adalah keputusan owner (P1, P18). Tabel di atas **tidak diubah** sampai owner memutuskan.
 
 ### 5.4 Graduation — urutan wajib [Brief]
 1. Curve mencapai ambang. **Siapa pun** bisa memanggil `graduate()`, dan pemanggil menerima insentif kecil yang tetap (P15).
@@ -167,7 +174,7 @@ Catatan:
 - Hanya menerima panggilan dari endpoint LayerZero, dan hanya untuk `XofNToken` yang terdaftar sebagai sumber.
 - Pembuatan pool **dan** penambahan likuiditas terjadi dalam satu panggilan `lzCompose`, untuk mencegah manipulasi harga awal.
 - Enforced options wajib mengisi gas untuk `lzReceive` **dan** `lzCompose`.
-- Perilaku saat compose gagal [Belum] (P3). Jalur `retryCompose` harus aman.
+- Perilaku saat compose gagal (P3): jawaban awal dari source sudah ada (Phase 0: token sudah berada di composer, compose bisa dijalankan ulang oleh siapa pun); pembuktian lewat tes tetap [Belum] sampai Phase 3. Jalur `retryCompose` harus aman.
 - Aset pasangan untuk pool di chain ekspansi belum ditentukan (P2). Pilihannya: native drop executor, stablecoin OFT, atau pool satu sisi.
 
 ### 5.6 `XofNRegistry.verify(token)` [Brief]
@@ -272,7 +279,7 @@ Phase **6 dan 7 (deploy testnet dan mainnet) FROZEN**: tidak dikerjakan sampai a
 
 | Phase | Fokus | Gerbang keluar | Status |
 |---|---|---|---|
-| **0** | Verifikasi riset (brief P0): DVN per pathway, AMM per chain, opsi aset pasangan, EID, perilaku ULN nilai 0. Hanya membaca docs/chain, **tanpa transaksi** | Tabel ketersediaan DVN per pathway dan rekomendasi untuk P1–P9 terisi | Belum mulai |
+| **0** | Verifikasi riset (brief P0): DVN per pathway, AMM per chain, opsi aset pasangan, EID, perilaku ULN nilai 0. Hanya membaca docs/chain, **tanpa transaksi** | Tabel ketersediaan DVN per pathway dan rekomendasi untuk P1–P9 terisi | Selesai 17 Nov 2026; **menunggu persetujuan gerbang** (`proof/2026-11-17-phase0/notes.md`) |
 | **1** | Fondasi repo (Next 16, Tailwind v4, env module, lint/test) + port landing HTML (mode preview, label NOT LIVE) | lint/typecheck/test/build lulus; landing setara HTML di 390/768/1280/1680; reduced motion OK | Belum mulai |
 | **2** | XofN Check (brief P1): reader `getConfig` + OFT API + cache Supabase + kartu share. **Hanya membaca** OFT yang sudah ada | Hasil Check untuk 20 OFT populer cocok dengan pembacaan manual `getConfig` | Belum mulai |
 | **3** | Kontrak (brief P2–P3), **lokal saja**: Token, Curve, Graduator, Remote, Registry, `verify()`. Foundry unit/fuzz/invariant, multi-endpoint, fork test read-only, Anvil | Semua tes wajib (§9.2) lulus lokal, termasuk retry setelah kegagalan disengaja dan `verify()` = false untuk token yang sengaja tidak dikunci | Belum mulai |
@@ -304,9 +311,10 @@ Angka minggu di brief adalah perkiraan awal dan harus direvisi setelah Phase 0 [
 
 ### 9.1 Per phase (yang aktif)
 **Phase 0**
-- [ ] Untuk setiap pathway (Base↔Arbitrum, Base↔Robinhood), terdapat tabel DVN: Labs, Google Cloud, Polyhedra, DT MMS, FCAT, masing-masing tersedia atau tidak, beserta alamatnya. Sumbernya halaman DVN addresses LZ.
-- [ ] EID mainnet/testnet ketiga chain terkonfirmasi (`ARCHITECTURE.md` §4).
-- [ ] Ada rekomendasi untuk P1–P9 dan P13.
+- [x] Untuk setiap pathway (Base↔Arbitrum, Base↔Robinhood), terdapat tabel DVN: Labs, Google Cloud, Polyhedra, DT MMS, FCAT, masing-masing tersedia atau tidak, beserta alamatnya. Sumbernya halaman DVN addresses LZ. — `proof/2026-11-17-phase0/02-dvn-pathways.md`
+- [x] EID mainnet/testnet ketiga chain terkonfirmasi (`ARCHITECTURE.md` §4). — `01-chains-eid.md`
+- [x] Ada rekomendasi untuk P1–P9 dan P13. — `08-recommendations.md`. Catatan: P4 dan P7 baru terukur di Phase 3, P6 hanya estimasi fee DVN, P8 milik owner.
+- Gerbang brief P0 ("Standard tersedia di kedua pathway") **belum lolos untuk Robinhood** sampai owner memilih operator wajib kedua (P1).
 
 **Phase 1**
 - [ ] Landing menampilkan semua section HTML dengan visual setara, dan 3D berjalan beserta fallback-nya.
@@ -383,30 +391,32 @@ Jangan memutuskan item berikut diam-diam. Ikuti rekomendasi yang tertulis, atau 
 
 | # | Topik | Fakta | Rekomendasi / pemilik keputusan |
 |---|---|---|---|
-| P1 | DVN tersedia per pathway (Base↔Arbitrum, Base↔Robinhood); Fortress bisa dipenuhi? | Belum dicek [Brief] | Phase 0; owner memutuskan penawaran tier per chain |
-| P2 | Aset pasangan pool di chain ekspansi | Opsi: native drop executor, stablecoin OFT (mis. USDT0), pool satu sisi [Brief] | Developer membandingkan biaya dan risiko di Phase 0; owner memutuskan |
-| P3 | Nasib token jika `lzCompose` gagal; desain `retryCompose` | Belum jelas dari docs [Brief] | Diuji di Phase 3 dengan multi-endpoint test |
+| P1 | DVN tersedia per pathway (Base↔Arbitrum, Base↔Robinhood); Fortress bisa dipenuhi? | **Terverifikasi Phase 0 (17 Nov 2026):** Labs, DT, FCAT ada di ketiga chain. Google tidak ada di Robinhood. Polyhedra deprecated di Base/Arbitrum dan tidak ada di Robinhood. Standard brief hanya terpenuhi di Base↔Arbitrum; Fortress brief tidak terpenuhi di mana pun tanpa DVN deprecated. 13 operator alternatif tersedia di ketiganya (`proof/2026-11-17-phase0/02-dvn-pathways.md`) | **Owner:** pilih operator wajib kedua untuk pathway Robinhood dan operator wajib ketiga untuk Fortress. Rekomendasi developer: tier didefinisikan lewat jumlah, opsional tetap DT + FCAT, Polyhedra tidak dipakai (`proof/2026-11-17-phase0/08-recommendations.md`) |
+| P2 | Aset pasangan pool di chain ekspansi | Opsi: native drop executor, stablecoin OFT (mis. USDT0), pool satu sisi [Brief]. **Phase 0:** native drop dibatasi 0,24 ETH (ke Arbitrum) dan 0,301 ETH (ke Robinhood) per pesan; satu-satunya stablecoin OFT di ketiga chain adalah USDe; pool satu sisi hanya di Uniswap v3/v4 (`proof/2026-11-17-phase0/04-amm-pair-asset.md`) | **Owner.** Rekomendasi developer: native drop + Uniswap v2 bila likuiditas pasangan per chain ≤ ±0,2 ETH; selain itu pool satu sisi Uniswap v3. Stablecoin OFT tidak direkomendasikan untuk MVP |
+| P3 | Nasib token jika `lzCompose` gagal; desain `retryCompose` | **Jawaban awal dari source (Phase 0):** token sudah dikreditkan ke composer sebelum compose; compose yang gagal tetap tersimpan di endpoint dan bisa dijalankan ulang oleh siapa pun, tanpa kedaluwarsa (`proof/2026-11-17-phase0/03-uln-semantics.md` §7) | Diuji di Phase 3 dengan multi-endpoint test; jalur keluar untuk kegagalan permanen dirancang di Phase 3 |
 | P4 | Gas `lzReceive` pesan deploy dan gas compose pembuatan pool | Belum diukur | Ukur di Phase 3 (lokal); validasi testnet di Phase 6 |
-| P5 | Apakah nilai 0 di ULN custom berarti default? (`UlnBase.sol`) | [Brief] | Phase 0; konfigurasi selalu eksplisit |
-| P6 | Biaya per pesan Standard vs Fortress | Harga DVN tidak dipublikasikan; brief meminta `quoteSend` di testnet | Testnet frozen, jadi UI menampilkan "NOT QUOTED" sampai Phase 6 |
-| P7 | Gas `verify()` untuk 3 chain; perlu `verifyEid`? | [Brief] | Ukur di Phase 3; sediakan `verifyEid` [Usulan] |
+| P5 | Apakah nilai 0 di ULN custom berarti default? (`UlnBase.sol`) | **Terverifikasi Phase 0: ya.** 0 = default untuk konfirmasi, jumlah DVN wajib, dan jumlah DVN opsional; nol sebenarnya ditulis `type(uint64).max` / `255` (`proof/2026-11-17-phase0/03-uln-semantics.md` §1) | Konfigurasi selalu eksplisit; [Usulan] factory menolak tier dengan field 0 |
+| P6 | Biaya per pesan Standard vs Fortress | Harga DVN tidak dipublikasikan; brief meminta `quoteSend` di testnet. **Phase 0:** estimasi dari `DVN.getFee` mainnet (bukan quote): porsi DVN Fortress ±25% di atas Standard bila operator tambahan sekelas (`proof/2026-11-17-phase0/08-recommendations.md`) | Testnet frozen, jadi UI menampilkan "NOT QUOTED" sampai Phase 6. Estimasi hanya untuk perencanaan internal |
+| P7 | Gas `verify()` untuk 3 chain; perlu `verifyEid`? | [Brief]. **Phase 0:** ±8 panggilan view eksternal per EID; gas belum terukur. `receiveLibraryTimeout` perlu ikut diperiksa | Ukur di Phase 3; sediakan `verifyEid` [Usulan] |
 | P8 | Parameter bonding curve & ambang graduation (ETH) | Owner yang memutuskan [Brief] | Owner |
-| P9 | AMM per chain (Uniswap V2/V3/V4 atau lainnya) | [Brief] | Phase 0; owner |
-| P10 | Robinhood didukung ReadLib1002 (lzRead)? | Belum terkonfirmasi [Brief] | Backlog |
+| P9 | AMM per chain (Uniswap V2/V3/V4 atau lainnya) | **Terverifikasi Phase 0:** Uniswap v2, v3, dan v4 ada di Base, Arbitrum, dan Robinhood (`proof/2026-11-17-phase0/04-amm-pair-asset.md`) | **Owner.** Rekomendasi developer: satu versi yang sama di ketiga chain; v2 bila P2 = native drop, v3 bila P2 = satu sisi |
+| P10 | Robinhood didukung ReadLib1002 (lzRead)? | **Phase 0:** metadata LayerZero tidak mencantumkan ReadLib1002 untuk Robinhood (mainnet maupun testnet) per 17 Nov 2026 | Backlog |
 | P11 | Domain, handle X, ticker $XOFN | [Brief] | Owner |
 | P12 | Opini hukum (Indonesia, POJK 23/2025) | [Brief] | Owner, sebelum Phase 7 |
-| P13 | Bagaimana `verify()` di Base mengetahui state di Arbitrum/Robinhood | HTML konsep mencatat ini belum terselesaikan [Desain] | [Usulan] Registry di **setiap** chain dengan `verifyEid` lokal. Status global "Locked" = semua registry true, dikonfirmasi lewat ack LZ dari Remote ke Graduator, plus dibaca indexer. lzRead menyusul. Owner + auditor |
+| P13 | Bagaimana `verify()` di Base mengetahui state di Arbitrum/Robinhood | HTML konsep mencatat ini belum terselesaikan [Desain]. **Phase 0:** Robinhood tidak punya ReadLib1002, jadi lzRead tidak bisa dipakai; Registry di Base hanya bisa membaca konfigurasi sisi Base (`proof/2026-11-17-phase0/08-recommendations.md`) | [Usulan] Registry di **setiap** chain dengan `verifyEid` lokal. Status global "Locked" = semua registry true, dikonfirmasi lewat ack LZ dari Remote ke Graduator, plus dibaca indexer. lzRead menyusul. Owner + auditor |
 | P14 | Siapa yang membayar fee LZ untuk `retryRemote` | Belum diatur | [Usulan] Siapa pun boleh memanggil retry dan membayar fee sendiri; parameter tetap |
 | P15 | Besaran insentif pemanggil `graduate()` | "Kecil dan tetap" [Brief] | Owner |
 | P16 | Pembagian 999M: porsi curve vs porsi likuiditas per chain | Tidak dirinci di brief | Owner, bersama P8 |
 | P17 | Fee trading di curve | Brief hanya melarang pajak token; fee curve tidak disebut | Owner. Default [Usulan]: tidak ada fee sampai diputuskan |
-| P18 | Standard: DVN wajib kedua Google Cloud **atau** Polyhedra — tetap per pathway, atau creator memilih? | [Brief] ambigu | [Usulan] Ditentukan per pathway oleh daftar putih (bukan pilihan creator); badge tetap `2+1/2` |
+| P18 | Standard: DVN wajib kedua Google Cloud **atau** Polyhedra — tetap per pathway, atau creator memilih? | [Brief] ambigu. **Phase 0:** Google tidak ada di Robinhood dan Polyhedra deprecated, jadi DVN wajib kedua pathway Robinhood harus operator lain (lihat P1) | [Usulan] Ditentukan per pathway oleh daftar putih (bukan pilihan creator); badge tetap `2+1/2` |
 | P19 | Chain yang dibaca XofN Check di MVP | Brief: Base, Arbitrum, Robinhood | [Usulan] Tiga chain itu dulu; pathway ke chain lain tampil "not read" |
 | P20 | Frekuensi re-check untuk mendeteksi status Changed | "Secara berkala" [Brief] | [Usulan] Token XofN tiap 6 jam, hasil Check publik saat diminta + cache 15 menit |
-| P21 | Provider RPC dan kebutuhan API key OFT API | [Belum] | Phase 0 |
+| P21 | Provider RPC dan kebutuhan API key OFT API | **Phase 0:** OFT API `/list` gratis tanpa key (`LZ_OFT_API_KEY` tidak diperlukan) dan tidak memuat Robinhood. RPC publik Robinhood dibatasi rate; docs Robinhood merekomendasikan Alchemy (`proof/2026-11-17-phase0/07-oft-api-rpc.md`) | RPC publik untuk pengembangan dan gerbang Phase 2. **Owner:** provider dan akun RPC untuk produksi |
 | P22 | Wallet library | Pola Cognita/Assize = Reown AppKit | [Usulan] AppKit + wagmi + viem (multi-network). Owner konfirmasi WalletConnect project ID |
 | P23 | Desain: font, mekanisme buka koin, panel coin-lab, jumlah canvas | Lihat `DESIGN_SYSTEM.md` §14 (D1–D14) | Owner / desainer |
 | P24 | Halaman aplikasi (`/launch`, `/t`, `/check`, …) tidak ada di HTML; HTML hanya landing satu halaman | [Desain] vs [Brief] | Bangun dari komponen section landing (`DESIGN_SYSTEM.md` §6.2) |
 | P25 | Bahasa status: brief memakai *Terkunci/Berubah*, HTML memakai bahasa Inggris | — | [Usulan] Copy UI Inggris: Bonding / Locked / Changed |
 | P26 | Penyimpanan logo & metadata token (Supabase Storage vs IPFS) | Tidak disebut di brief | [Usulan] Supabase Storage di MVP; hash gambar dicatat di event launch. Owner |
 | P27 | Deploy testnet & mainnet | — | **FROZEN** sampai brief tambahan dari owner |
+| P28 | Urutan graduation: likuiditas (langkah 4) dikirim sebelum konfigurasi dan peer (langkah 5) | **Temuan Phase 0:** tidak bisa dijalankan. `send` revert `NoPeer` tanpa peer, dan default pathway ke/dari Robinhood adalah Dead DVN, jadi pesan tanpa ULN eksplisit tidak akan terkirim (`proof/2026-11-17-phase0/03-uln-semantics.md` §6, `02-dvn-pathways.md`) | **Owner** (aturan protokol brief). Rekomendasi developer: pasang konfigurasi token sebelum mengirim likuiditas; langkah lain tetap. Harus diputuskan sebelum Phase 3 |
+| P29 | Topologi pathway: perlu Arbitrum↔Robinhood langsung? | Dokumen hanya menyebut dua pathway dari Base; kriteria MVP §9.3 menyebut bridge dua arah antar ketiga chain. DVN untuk pathway ketiga tersedia | **Owner.** Pilihan: mesh penuh (3 pathway) atau hub lewat Base (2 pathway). Harus diputuskan sebelum Phase 3 |

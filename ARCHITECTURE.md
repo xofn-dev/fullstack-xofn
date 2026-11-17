@@ -55,10 +55,10 @@ Tidak dipakai:
 | Lapisan | Pilihan | Versi baseline | Asal / alasan |
 |---|---|---|---|
 | Toolchain | **Foundry** (forge/anvil/cast), dipin dengan `foundryup --install <versi>` | v1.8.x | [Pola: Cognita/Assize] |
-| Solidity | `solc` **0.8.24**, `evm_version = cancun`, optimizer 200 runs, `via_ir = false` | 0.8.24 | [Pola: semua]. [Belum] cek kompatibilitas dengan paket LayerZero, termasuk apakah Robinhood mendukung cancun (Cognita sudah deploy cancun di 4663) |
-| Library | OpenZeppelin Contracts v5 | 5.x | [Pola: semua]; dibutuhkan oleh OFT V2 |
-| LayerZero | `@layerzerolabs/oft-evm`, `@layerzerolabs/oapp-evm`, `@layerzerolabs/lz-evm-protocol-v2`, `@layerzerolabs/lz-evm-messagelib-v2`, `@layerzerolabs/test-devtools-evm-foundry` (TestHelperOz5) | [Belum] | [Usulan]. Diinstal lewat npm di `contracts/package.json`, lalu di-remap dari `node_modules` |
-| Alamat seragam | **CreateX** (CREATE3) | — | [Brief]. [Belum] cek CreateX tersedia di Robinhood |
+| Solidity | `solc` **0.8.24**, `evm_version = cancun`, optimizer 200 runs, `via_ir = false` | 0.8.24 | [Pola: semua]. **Terverifikasi Phase 0 (17 Nov 2026):** paket LayerZero di bawah terkompilasi dan lulus tes dengan konfigurasi ini; opcode cancun berjalan di Robinhood (4663 dan 46630) **kecuali `BLOBBASEFEE`**, sama seperti Arbitrum One. Jangan memakai `block.blobbasefee`. Bukti: `proof/2026-11-17-phase0/05-packages.md`, `06-robinhood-chain.md` |
+| Library | OpenZeppelin Contracts v5 | 5.x (smoke build Phase 0 memakai 5.6.1) | [Pola: semua]; dibutuhkan oleh OFT V2. Sebagian file OZ 5.6 ber-pragma `^0.8.26` dan tidak boleh diimpor selama solc dipin 0.8.24 |
+| LayerZero | `@layerzerolabs/oft-evm`, `@layerzerolabs/oapp-evm`, `@layerzerolabs/lz-evm-protocol-v2`, `@layerzerolabs/lz-evm-messagelib-v2`, `@layerzerolabs/test-devtools-evm-foundry` (TestHelperOz5) | oft-evm **4.0.1**, oapp-evm **0.4.1**, protocol-v2 **3.0.168**, messagelib-v2 **3.0.168**, test-devtools **8.0.1** (terbaru di npm per 17 Nov 2026) | [Usulan]. Diinstal lewat npm di `contracts/package.json`, lalu di-remap dari `node_modules`. Paket ini mewajibkan peer `@layerzerolabs/lz-evm-v1-0.7` (3.0.168) dan `solidity-bytes-utils` (0.8.4), yang **belum** tercantum di daftar ini dan butuh persetujuan owner sebelum Phase 3 (`CLAUDE.md` §5.2) |
+| Alamat seragam | **CreateX** (CREATE3) | `0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed` | [Brief]. **Terverifikasi Phase 0:** bytecode identik di Base, Arbitrum, Robinhood, dan Robinhood testnet. Alamat EndpointV2 Robinhood berbeda dari Base/Arbitrum, jadi alamat seragam butuh CREATE3, bukan CREATE2 |
 | Test | forge unit + fuzz + invariant + fork **read-only** + multi-endpoint | — | [Pola: Cognita/Assize] + [Brief] |
 
 ---
@@ -164,13 +164,19 @@ Satu-satunya sumber chain ID, EID, nama, RPC, explorer, dan peran. **Jangan menu
 
 | Chain | Chain ID | EID LayerZero | Peran | Status data |
 |---|---|---|---|---|
-| Base | 8453 | 30184 | Home: curve, pool pertama, registry | [Belum] verifikasi EID ke docs LZ |
-| Arbitrum One | 42161 | 30110 | Ekspansi | [Belum] verifikasi EID |
-| Robinhood Chain | 4663 | **[Belum]** | Ekspansi | Ambil dari docs LZ (deployments/chains/robinhood) di Phase 0 |
-| Base Sepolia | 84532 | 40245 | Testnet (Phase 6, FROZEN) | [Belum] |
-| Arbitrum Sepolia | 421614 | 40231 | Testnet (Phase 6, FROZEN) | [Belum] |
-| Robinhood testnet | 46630 | **[Belum]** | Testnet (Phase 6, FROZEN) | [Belum] |
+| Base | 8453 | 30184 | Home: curve, pool pertama, registry | Terverifikasi 17 Nov 2026 |
+| Arbitrum One | 42161 | 30110 | Ekspansi | Terverifikasi 17 Nov 2026 |
+| Robinhood Chain | 4663 | **30416** | Ekspansi | Terverifikasi 17 Nov 2026 |
+| Base Sepolia | 84532 | 40245 | Testnet (Phase 6, FROZEN) | Terverifikasi 17 Nov 2026 |
+| Arbitrum Sepolia | 421614 | 40231 | Testnet (Phase 6, FROZEN) | Terverifikasi 17 Nov 2026 |
+| Robinhood testnet | 46630 | **40451** | Testnet (Phase 6, FROZEN) | Terverifikasi 17 Nov 2026 |
 | Anvil lokal | 31337 (+ instance tambahan, lihat §15) | EID mock dari TestHelperOz5 | Dev | — |
+
+"Terverifikasi" berarti cocok antara metadata LayerZero (`https://metadata.layerzero-api.com/v1/metadata`) dan pembacaan on-chain `chain-id` + `EndpointV2.eid()`. Alamat EndpointV2, SendUln302, ReceiveUln302, Executor, dan Dead DVN per chain ada di `proof/2026-11-17-phase0/01-chains-eid.md`. Catatan:
+- EndpointV2 Robinhood (`0x6f475642a6e85809b1c36fa62763669b1b48dd5b`) **berbeda** dari Base/Arbitrum (`0x1a44076050125825900e736c501f859c50fe728c`).
+- Robinhood tidak punya ReadLib1002 (mainnet maupun testnet).
+- Explorer resmi Robinhood menurut docs Robinhood: `https://robinhoodchain.blockscout.com`; testnet `https://explorer.testnet.chain.robinhood.com`.
+- RPC publik Robinhood dibatasi rate dan tidak untuk produksi.
 
 - Bentuk data: `ChainInfo { key: 'base'|'arbitrum'|'robinhood'; chainId; eid; name; explorer; lzScan; rpcEnvKey; role }`.
 - Slug URL `/check/[chain]/...` memakai `key` (`base`, `arbitrum`, `robinhood`).
@@ -208,7 +214,7 @@ Factory **menolak**:
   - `ExecutorConfig { maxMessageSize, executor }`;
   - enforced options untuk `lzReceive` dan `lzCompose`.
 - **Array DVN wajib terurut naik dan unik.** ULN memvalidasi ini; urutan yang salah membuat transaksi revert.
-- Nilai 0 bisa berarti "pakai default" (P5). Karena itu konfigurasi **selalu diisi eksplisit** dan tidak pernah bergantung pada default.
+- Nilai 0 **berarti** "pakai default" (P5, terverifikasi Phase 0 dari `UlnBase.sol`): berlaku untuk `confirmations`, `requiredDVNCount`, `optionalDVNCount`, serta `maxMessageSize` dan `executor` di executor config. Karena itu konfigurasi **selalu diisi eksplisit** dengan nilai bukan nol dan tidak pernah bergantung pada default.
 - `tierHash(eid) = keccak256(abi.encode(sendLib, receiveLib, ulnSend, ulnReceive, executorCfg))` disimpan di Registry untuk perbandingan [Usulan].
 - **Daftar putih DVN dan label operator** dimiliki Safe 2-of-3 [Brief]. Perubahan daftar putih tidak memengaruhi token yang sudah terkunci, dan harus diumumkan sebelum dieksekusi.
 
@@ -275,11 +281,11 @@ Sampai ada brief tambahan, **hanya** `contracts/script/local/*` (Anvil) yang bol
 | Modul | Isi |
 |---|---|
 | `abi.ts` | Subset ABI EndpointV2: `getConfig(oapp, lib, eid, configType)`, `getSendLibrary(sender, eid)`, `getReceiveLibrary(receiver, eid)` → `(lib, isDefault)`, `isDefaultSendLibrary`, `delegates(oapp)`. OFT/OApp: `owner()`, `endpoint()`, `peers(eid)`, `token()`, `sharedDecimals()`, `oftVersion()`, `quoteSend`, `send` |
-| `config-types.ts` | `CONFIG_TYPE_EXECUTOR = 1`, `CONFIG_TYPE_ULN = 2` [Belum] konfirmasi |
+| `config-types.ts` | `CONFIG_TYPE_EXECUTOR = 1`, `CONFIG_TYPE_ULN = 2`. Terverifikasi dari `SendUln302.sol` (Phase 0). ReceiveUln302 hanya mengenal tipe 2; tipe 1 pada receive library revert `LZ_ULN_InvalidConfigType` |
 | `decode.ts` | Decode `UlnConfig` dan `ExecutorConfig` dari bytes `getConfig` (fungsi murni, dites Vitest) |
 | `label.ts` | Algoritma label pathway (di bawah), fungsi murni, dites Vitest |
 | `dvn-labels.ts` | Peta alamat DVN → nama operator per chain. Sumbernya halaman DVN addresses LZ, disimpan juga di tabel `dvn_labels` dengan `source_url` dan `verified_at` |
-| `oft-api.ts` | Klien OFT API LayerZero untuk menemukan deployment lain sebuah OFT. [Belum] endpoint, auth, dan rate limit |
+| `oft-api.ts` | Klien OFT API LayerZero untuk menemukan deployment lain sebuah OFT. Terverifikasi Phase 0: `GET https://metadata.layerzero-api.com/v1/metadata/experiment/ofts/list` (parameter `chainNames`, `symbols`, `protocols`, `contractAddresses`), **gratis tanpa key**. Per 17 Nov 2026 tidak memuat deployment Robinhood, dan daftar deployment bukan daftar peer, jadi hanya pelengkap pemindaian `peers(eid)`. [Belum] rate limit (tidak didokumentasikan) |
 | `scan.ts` | Builder URL LayerZero Scan untuk GUID pesan |
 
 **Algoritma label per pathway** [Brief + Usulan]. Arah *send* dan *receive* dicek terpisah, dan label pathway mengikuti arah yang **terburuk**:
@@ -287,11 +293,15 @@ Sampai ada brief tambahan, **hanya** `contracts/script/local/*` (Anvil) yang bol
 - `effective ≤ 1` → **"1-of-1"** (merah).
 - `effective ≥ 2` → **"2+"** (kuning).
 - `effective ≥ 2` **dan** owner=0 **dan** delegate=0 **dan** library bukan default → **"2+ & locked"** (hijau).
-- Pathway tanpa peer → tidak ditampilkan. DVN "dead"/blocked → label khusus "blocked" [Belum] identifikasi alamat dead DVN.
+- Pathway tanpa peer → tidak ditampilkan. DVN "dead"/blocked → label khusus "blocked". Alamat LZ Dead DVN per chain terverifikasi di Phase 0: Base `0x6498b0632f3834d7647367334838111c8c889703`, Arbitrum `0x758c419533ad64ce9d3413bc8d3a97b026098ec1`, Robinhood `0x6788f52439aca6bff597d3eec2dc9a44b8fee842`. Per 17 Nov 2026, konfigurasi **default** semua pathway ke dan dari Robinhood adalah Dead DVN.
 
-Catatan baca [Belum]:
-- Apakah `getConfig` mengembalikan konfigurasi efektif (gabungan dengan default) atau hanya konfigurasi app? Check perlu menampilkan **keduanya**: nilai efektif, dan apakah aplikasi masih bergantung pada default (default bisa berubah [Brief]).
-- OFT tidak menyediakan daftar EID. Daftar EID diambil dari OFT API, atau dengan memindai `peers(eid)` untuk EID di registry chain.
+Catatan baca (terverifikasi Phase 0, `proof/2026-11-17-phase0/03-uln-semantics.md`):
+- `endpoint.getConfig` mengembalikan konfigurasi **efektif** (gabungan custom + default). Konfigurasi mentah aplikasi dibaca lewat `getAppUlnConfig(oapp, eid)` di library. Check menampilkan **keduanya**; field mentah bernilai 0 berarti bergantung pada default (default bisa berubah [Brief]).
+- Di konfigurasi custom, 0 = default; `type(uint64).max` / `255` = benar-benar nol.
+- Library: `isDefaultSendLibrary(sender, eid)` dan `getReceiveLibrary(receiver, eid) → (lib, isDefault)`. Perlu juga membaca `receiveLibraryTimeout(receiver, eid)` (grace period library lama).
+- Endpoint mengizinkan `msg.sender == oapp` **atau** delegate. Owner = 0 dan delegate = 0 hanya berarti terkunci bila kontrak OApp sendiri tidak punya jalur ke fungsi konfigurasi; proxy dengan admin tidak boleh diberi label "locked" [Usulan Phase 0: baca slot EIP-1967].
+- Label operator dikunci pada pasangan (chain, alamat): alamat yang sama bisa dimiliki operator berbeda di chain lain.
+- OFT tidak menyediakan daftar EID. Daftar EID diambil dengan memindai `peers(eid)` untuk EID di registry chain; OFT API hanya pelengkap.
 
 ---
 
@@ -433,7 +443,7 @@ Hanya **nama** yang dicantumkan; nilai tidak pernah ditulis di dokumen, kode, at
 | `RPC_URL_BASE`, `RPC_URL_ARBITRUM`, `RPC_URL_ROBINHOOD` | server | RPC untuk Check & indexer |
 | `SUPABASE_SERVICE_ROLE_KEY` | server | Tulis cache/index |
 | `CRON_SECRET` | server | Proteksi `/api/cron/*` |
-| `LZ_OFT_API_KEY` | server | [Belum] bila OFT API butuh key |
+| `LZ_OFT_API_KEY` | server | **Tidak diperlukan** (Phase 0): endpoint `/list` gratis tanpa key; key hanya untuk `/transfer`, yang tidak dipakai XofN. Variabel ini tidak perlu dibuat |
 | `FORK_RPC_BASE`, `FORK_RPC_ARBITRUM`, `FORK_RPC_ROBINHOOD` | Foundry | Fork test read-only |
 
 Aturan [Pola: Fademan]:
@@ -474,12 +484,23 @@ Aturan [Pola: Fademan]:
 
 ## 15. Hal yang belum diverifikasi
 
-1. EID Robinhood mainnet/testnet; EID Base/Arbitrum dan testnet dicek ulang ke docs LZ.
-2. Ketersediaan DVN (Labs, Google Cloud, Polyhedra, DT MMS, FCAT) per pathway (P1).
-3. Versi paket `@layerzerolabs/*` yang kompatibel dengan solc 0.8.24 + OZ 5.x; dukungan cancun di Robinhood.
-4. Ketersediaan CreateX di Robinhood Chain.
-5. Semantik `getConfig` (efektif vs app) dan nilai 0 di ULN (P5); konstanta `CONFIG_TYPE_*`; alamat dead DVN.
+Butir 1–5, 7, dan 8 diverifikasi di Phase 0 (17 Nov 2026). Bukti: `proof/2026-11-17-phase0/`.
+
+1. ~~EID Robinhood mainnet/testnet; EID Base/Arbitrum dan testnet~~ — **terverifikasi** (§4).
+2. ~~Ketersediaan DVN per pathway (P1)~~ — **terverifikasi**. Google Cloud dan Polyhedra tidak ada di Robinhood; Polyhedra deprecated di Base dan Arbitrum; Labs, DT, FCAT tersedia di ketiganya. Pemilihan operator pengganti: owner (P1).
+3. ~~Versi paket `@layerzerolabs/*`; dukungan cancun di Robinhood~~ — **terverifikasi** (§1.2).
+4. ~~Ketersediaan CreateX di Robinhood Chain~~ — **terverifikasi** (§1.2).
+5. ~~Semantik `getConfig` dan nilai 0 di ULN (P5); `CONFIG_TYPE_*`; alamat dead DVN~~ — **terverifikasi** (§7).
 6. Cara integrasi lokal multi-chain untuk Phase 4. Opsinya: beberapa instance Anvil + relayer lokal sederhana, atau mode simulasi yang memutar event hasil `TestHelperOz5`. [Usulan] Mulai dari mode simulasi; putuskan di akhir Phase 3.
-7. Endpoint, auth, dan rate limit OFT API LayerZero.
-8. AMM di ketiga chain (P9) dan antarmukanya untuk compose.
+7. OFT API LayerZero — endpoint dan auth **terverifikasi** (§7). Rate limit tetap [Belum].
+8. ~~AMM di ketiga chain (P9)~~ — **terverifikasi**: Uniswap v2, v3, v4 ada di Base, Arbitrum, dan Robinhood. Antarmuka untuk compose mengikuti keputusan P2/P9.
 9. Perbedaan API three r170 (HTML) → ≥ r184 (npm), misalnya `OutputPass`, `RoomEnvironment`, dan clipping. Cek saat port.
+
+Temuan Phase 0 yang masih terbuka:
+
+10. Pola URL LayerZero Scan untuk `scan.ts` (situs merespons 429 saat diperiksa). Cek di Phase 2.
+11. Interface `ILayerZeroEndpointV2` di paket tidak memuat `delegates(address)`; Registry butuh interface sendiri.
+12. `block.number` di Arbitrum dan Robinhood adalah perkiraan blok L1; batas ukuran kode Robinhood 96 KB; biaya = gas L2 + data L1.
+13. Urutan state machine §5.3 (`LIQ_SENT` sebelum `CONFIGURED`) tidak bisa dijalankan: `send` butuh peer, dan default pathway Robinhood adalah Dead DVN. Menunggu keputusan P28 sebelum Phase 3.
+14. Apakah Arbitrum ↔ Robinhood menjadi pathway langsung (P29).
+15. Foundry: v1.8.3 terpasang di mesin dev; v1.8.x tertinggi v1.8.7; rilis terbaru v1.9.0.

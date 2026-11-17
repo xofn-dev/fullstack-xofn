@@ -58,6 +58,17 @@ Gerbang brief P0 ("tier Standard tersedia di Base ↔ Arbitrum dan Base ↔ Robi
 | Syarat pakai OFT API | Belum ditinjau |
 | Blokir DNS Telkomsel untuk `*.robinhood.com` | Tidak muncul selama sesi ini; tidak ada item yang dilewati |
 
+## Label `[Belum]` yang tersisa di dokumen setelah Phase 0
+
+| Dokumen | Yang tersisa | Alasan |
+|---|---|---|
+| `ARCHITECTURE.md` §7, §15 | Rate limit OFT API | Tidak didokumentasikan LayerZero |
+| `PRD.md` §5.5 | Pembuktian perilaku compose gagal (P3) | Butuh tes multi-endpoint Phase 3 |
+| `PRD.md` §6.2 | Penyimpanan gambar/metadata (P26) | Keputusan owner; relevan di Phase 4 |
+| `DESIGN_SYSTEM.md` §3, §14 | D2 (mekanisme buka koin), D3 (font) | Keputusan desain owner; bukan lingkup Phase 0 |
+
+Label lain yang memuat `[Belum]` hanyalah legenda di kepala dokumen dan kalimat aturan di `CLAUDE.md`.
+
 ## Catatan lingkungan
 
 - Foundry v1.8.3 sudah terpasang di `~/.foundry` sebelum sesi ini (tidak ada di PATH). Installer `foundryup` yang dijalankan hanya memperbarui binary `foundryup`; versi forge/cast tidak berubah.
