@@ -5,6 +5,7 @@ import { Explore } from '@/components/landing/explore';
 import { Graduation } from '@/components/landing/graduation';
 import { Hero } from '@/components/landing/hero';
 import { InsideCoin } from '@/components/landing/inside-coin';
+import { IntroLoader } from '@/components/landing/intro-loader';
 import { LandingMotion } from '@/components/landing/landing-motion';
 import { LaunchDemo } from '@/components/landing/launch-demo';
 import { Manifesto } from '@/components/landing/manifesto';
@@ -30,6 +31,8 @@ export default function LandingPage() {
 
   return (
     <TierProvider>
+      {/* D19: intro loader hanya di landing; halaman aplikasi tidak ditunda. */}
+      <IntroLoader />
       <GalaxyBackdrop />
       <main id="top">
         <Hero {...chains} />

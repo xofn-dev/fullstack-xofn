@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { getGsap } from '@/lib/client/gsap';
+import { whenIntroDone } from '@/lib/client/intro';
 import { prefersReducedMotion } from '@/lib/client/use-reduced-motion';
 
 const REVEAL_SUBJECTS =
@@ -113,16 +114,31 @@ export function LandingMotion() {
           ...$$('.hero h1>span'),
           ...$$('.hero .hero-desc,.hero .hero-actions,.hero .hero-foot'),
         ];
-        gsap.from(intro, {
-          yPercent: 35,
-          opacity: 0,
-          filter: 'blur(14px)',
-          duration: 1.15,
-          ease: 'power3.out',
-          stagger: 0.085,
-          delay: 0.1,
-          clearProps: 'transform,filter,opacity',
-        });
+        // Intro hero menunggu intro loader (D19): baris disembunyikan sekarang, dimainkan saat iris terbuka.
+        const fromLoader = document.querySelector('[data-intro-loader]') !== null;
+        const heroIntro = gsap.timeline({ paused: true });
+        heroIntro.from(
+          intro,
+          {
+            yPercent: 35,
+            opacity: 0,
+            filter: 'blur(14px)',
+            duration: 1.15,
+            ease: 'power3.out',
+            stagger: 0.085,
+            clearProps: 'transform,filter,opacity',
+          },
+          0.1,
+        );
+        if (fromLoader) {
+          // Zoom out: lanjutan dari kamera loader yang menyelam masuk.
+          heroIntro.fromTo(
+            hero,
+            { scale: 1.07 },
+            { scale: 1, duration: 1.5, ease: 'power3.out', immediateRender: false, clearProps: 'transform' },
+            0,
+          );
+        }
         gsap.to('.hero-copy', {
           yPercent: -9,
           opacity: 0.12,
@@ -134,16 +150,20 @@ export function LandingMotion() {
         if (supply) {
           const target = Number((supply.textContent ?? '').replace(/,/g, ''));
           const counter = { v: 0 };
-          gsap.to(counter, {
-            v: target,
-            duration: 1.9,
-            delay: 0.9,
-            ease: 'power2.out',
-            onUpdate: () => {
-              supply.textContent = Math.round(counter.v).toLocaleString('en-US');
+          heroIntro.to(
+            counter,
+            {
+              v: target,
+              duration: 1.9,
+              ease: 'power2.out',
+              onUpdate: () => {
+                supply.textContent = Math.round(counter.v).toLocaleString('en-US');
+              },
             },
-          });
+            0.9,
+          );
         }
+        cleanups.push(whenIntroDone(() => heroIntro.play()));
       }
 
       /* ---- heading: reveal per baris (baris sudah dipecah oleh <SplitHeading>) ---- */
