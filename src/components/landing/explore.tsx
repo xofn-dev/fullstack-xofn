@@ -8,6 +8,9 @@ import { useDialogFocus, useOverlay } from '@/components/ui/overlay-provider';
 import { SplitHeading } from '@/components/landing/split-heading';
 import { TIER_COPY } from '@/components/landing/tier-context';
 import { DEMO_TOKENS, STATUS_COPY, TONE_VAR, type DemoToken } from '@/components/landing/demo-data';
+import { ExploreLive } from '@/components/token/explore-live';
+import { TokenCard } from '@/components/token/token-card';
+import type { AppMode } from '@/types/enums';
 
 // D16: filter menambah "Graduated" untuk token yang lulus lokal dan menunggu ekspansi.
 const FILTERS = [
@@ -20,8 +23,37 @@ type FilterKey = (typeof FILTERS)[number]['key'];
 
 type TradeMode = 'Buy' | 'Sell';
 
-// Section 7 — contoh token fiktif + drawer detail (mode preview).
-export function Explore({ home }: { home: ChainInfo }) {
+const HEADING = (
+  <div>
+    <div className="section-label">03 / DISCOVER</div>
+    <SplitHeading
+      lines={[
+        'The next generation',
+        <>
+          of <span className="accent">provable tokens.</span>
+        </>,
+      ]}
+    />
+  </div>
+);
+
+// Section 7. Mode preview: contoh token fiktif + drawer detail. Mode simulation: token nyata dari
+// chain lokal, kartu membuka /t/[address] (USER_FLOWS Flow A langkah 4).
+export function Explore({ home, mode }: { home: ChainInfo; mode: AppMode }) {
+  if (mode === 'simulation') {
+    return (
+      <section className="section alt" id="explore">
+        <div className="container">
+          <div className="sec-head">{HEADING}</div>
+          <ExploreLive />
+        </div>
+      </section>
+    );
+  }
+  return <ExploreDemo home={home} />;
+}
+
+function ExploreDemo({ home }: { home: ChainInfo }) {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [selected, setSelected] = useState<DemoToken | null>(null);
   const [tradeMode, setTradeMode] = useState<TradeMode>('Buy');
@@ -46,17 +78,7 @@ export function Explore({ home }: { home: ChainInfo }) {
     <section className="section alt" id="explore">
       <div className="container">
         <div className="sec-head">
-          <div>
-            <div className="section-label">03 / DISCOVER</div>
-            <SplitHeading
-              lines={[
-                'The next generation',
-                <>
-                  of <span className="accent">provable tokens.</span>
-                </>,
-              ]}
-            />
-          </div>
+          {HEADING}
           <div className="explore-headline">
             <div className="filters" role="group" aria-label="Filter demo token examples">
               {FILTERS.map((item) => (
@@ -79,62 +101,26 @@ export function Explore({ home }: { home: ChainInfo }) {
             const status = STATUS_COPY[token.status];
             const points = sparklinePoints(token.seed);
             return (
-              // Kartu berisi heading dan paragraf, jadi tetap <article> ber-role button
-              // (seperti di HTML) agar markup sah dan tetap bisa dioperasikan dengan keyboard.
-              <article
+              <TokenCard
                 key={token.id}
-                className="token-card"
-                role="button"
-                tabIndex={0}
-                aria-label={`Open fictional token ${token.name}`}
-                onClick={() => setSelected(token)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    setSelected(token);
-                  }
-                }}
-              >
-                <div className="token-top">
-                  <div className="token-id">
-                    <div className="token-glyph" style={{ color: tone }}>
-                      {token.glyph}
-                    </div>
-                    <div>
-                      <h3>{token.name}</h3>
-                      <p>${token.ticker} · FICTIONAL</p>
-                    </div>
-                  </div>
-                  <span className={cn('status', status.className)}>{status.badge}</span>
-                </div>
-                <svg className="token-chart" viewBox="0 0 250 68" preserveAspectRatio="none" aria-hidden="true">
-                  <defs>
-                    <linearGradient id={`spark-${token.id}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={tone} stopOpacity=".23" />
-                      <stop offset="100%" stopColor={tone} stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <polygon points={`0,68 ${points} 250,68`} fill={`url(#spark-${token.id})`} />
-                  <polyline
-                    points={points}
-                    fill="none"
-                    stroke={tone}
-                    strokeWidth="1.7"
-                    vectorEffect="non-scaling-stroke"
-                  />
-                </svg>
-                <div className="token-info">
-                  <span>GRADUATION / SAMPLE</span>
-                  <strong>{token.progress}%</strong>
-                </div>
-                <div className="progress">
-                  <div style={{ width: `${token.progress}%` }} />
-                </div>
-                <div className="token-bottom">
-                  <span className="token-badge">{TIER_COPY[token.tier].badge}*</span>
-                  <span className="card-more">Preview details ↗</span>
-                </div>
-              </article>
+                id={String(token.id)}
+                glyph={token.glyph}
+                tone={tone}
+                title={token.name}
+                subtitle={`$${token.ticker} · FICTIONAL`}
+                status={<span className={cn('status', status.className)}>{status.badge}</span>}
+                points={points}
+                progressLabel="GRADUATION / SAMPLE"
+                progressPercent={token.progress}
+                ariaLabel={`Open fictional token ${token.name}`}
+                onActivate={() => setSelected(token)}
+                footer={
+                  <>
+                    <span className="token-badge">{TIER_COPY[token.tier].badge}*</span>
+                    <span className="card-more">Preview details ↗</span>
+                  </>
+                }
+              />
             );
           })}
           {tokens.length === 0 && <p className="preview-note">No tokens in this state yet.</p>}

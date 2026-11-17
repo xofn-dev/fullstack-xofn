@@ -429,19 +429,20 @@ Migrasi bernomor `supabase/migrations/0001_*.sql` [Pola: Cognita]. Tipe dihasilk
 ## 10. Web3 client (`src/lib/web3`)
 
 ### 10.1 Modul
+Status: **diimplementasikan di Phase 4 (17 Nov 2026)**. Builder transaksi bersifat murni (alamat, ABI, argumen, value, gas) dan diuji tanpa wallet; `use-tx-flow.ts` menyimulasikan lalu menandatangani di wallet pengguna.
+
 | File | Isi |
 |---|---|
-| `config.ts` | `WagmiAdapter` (cookieStorage, `ssr: true`) dengan **semua network aktif** (Robinhood, Base, Arbitrum untuk mode yang dipilih). `projectId` dari public env. `isWeb3Configured = !!projectId`. Tanpa `'use client'` karena diimpor juga oleh server [Pola: Assize] |
-| `addresses.ts` | Membaca `deployments/<network>.json` (§10.3); helper `lc()`; **satu-satunya** tempat alamat kontrak |
-| `public-client.ts` | viem public client per chain (server & client) |
-| `launch.ts` | Simulasi + tulis tx launch di Robinhood |
-| `curve-trade.ts` | Quote + buy/sell di curve (dan pool Robinhood setelah graduate), dengan slippage |
-| `graduate.ts` | `graduate()` di Robinhood (tanpa fee LZ; pemanggil menerima insentif) |
-| `expand-and-lock.ts` | Quote fee LZ total + `expandAndLock(token)` |
-| `retry-remote.ts` | Quote + `retryRemote(eid)` |
-| `bridge-send.ts` | `quoteSend` **tepat sebelum** `send`; hitung dust (`amount mod 10^(decimals-6)`); rute lewat Robinhood |
-| `verify.ts` | Baca `verify`/`verifyEid` di Registry setiap chain |
-| `use-network-guard.ts` | Deteksi network salah, lalu tawarkan switch lewat AppKit |
+| `config.ts` | Ada project ID → `WagmiAdapter` (cookieStorage, `ssr: true`). Jaringan `local` tanpa project ID → `createConfig` biasa dengan konektor akun dev Anvil (P56). Selain itu wallet nonaktif. `isAppKitConfigured = !!projectId`; `isWeb3Configured` = AppKit **atau** jaringan lokal. Di lokal hanya satu chain wallet (31337) karena ketiga "chain" berbagi chain ID |
+| `addresses.ts` | Satu-satunya sumber alamat. Validasi manifest dengan guard tulisan tangan, `lc()`, EID/chain ID wajib cocok dengan `src/lib/chains`; `getManifestState()` untuk P52 |
+| `abi/xofn.ts`, `abi/local.ts`, `abi/errors.ts` | ABI ditulis tangan (`parseAbi`), dicocokkan dengan artefak `out/` oleh `tests/web3.test.ts`. `errors.ts` menggabungkan error semua kontrak yang bisa muncul dalam satu transaksi |
+| `public-client.ts` | Public client per chain, tanpa Multicall3 (batch JSON-RPC) |
+| `launch.ts`, `curve-trade.ts`, `graduate.ts`, `expand-and-lock.ts`, `retry-remote.ts` (`retryRemote(token, eid)`, `reAck`, `retryCompose`), `bridge-send.ts`, `pool-trade.ts`, `local-relay.ts` | Builder per aksi. `pool-trade.ts` hanya untuk `MockV2Router` lokal; adapter Router02 belum ada (P59) |
+| `decode-revert.ts` | Revert → kalimat untuk pengguna; alasan tak dikenal ditulis apa adanya |
+| `use-network-guard.ts`, `use-tx-flow.ts` | Guard chain per aksi; mesin status tx (`Checking…` → `Confirm in wallet…` → `Pending…`) |
+| `dev-account.ts` | Konektor `mock` wagmi untuk akun dev Anvil yang ter-unlock. Hanya `local`, tanpa key |
+
+Pembacaan token sisi server ada di `src/lib/tokens/` (`read.ts`, `status.ts`, `steps.ts`, `service.ts`, `store.ts`); `verify()` dibaca di sana per chain, bukan di `src/lib/web3/verify.ts`.
 
 ### 10.2 Pola komponen wallet [Pola: Cognita/Assize]
 - Hook AppKit (`useAppKit`, `useAppKitAccount`, `useAppKitNetwork`) **hanya** dipanggil di komponen `*Active` yang dirender saat `isWeb3Configured`.
@@ -466,7 +467,9 @@ Migrasi bernomor `supabase/migrations/0001_*.sql` [Pola: Cognita]. Tipe dihasilk
 |---|---|---|
 | `preview` | Default. Manifest untuk network aktif tidak ada | Seperti HTML konsep: data demo berlabel `DEMO`/`FICTIONAL`/`*`, tombol aksi membuka modal "preview only", tidak ada tx. **XofN Check tetap live** (hanya membaca OFT yang ada) |
 | `simulation` | `NEXT_PUBLIC_XOFN_NETWORK=local` + `deployments/local.json` | Terhubung ke Anvil lokal (Phase 3–4) |
-| `live` | Manifest testnet/mainnet ada dan terverifikasi | Phase 6–7 (**FROZEN**) |
+| `live` | Manifest testnet/mainnet ber-`status: "live"` | Phase 6–7 (**FROZEN**) |
+
+[Phase 4] `resolveMode({ network, manifest })` menerima status manifest (`none` / `local` / `deployed-dormant` / `live`). `deployed-dormant` tetap `preview` (P52). Manifest lokal tidak pernah menyalakan jaringan publik dan sebaliknya. Form launch juga membaca `registry.registrar()` on-chain dan menolak bila bukan Graduator manifest.
 
 Mode ditentukan di server dan diteruskan ke klien. Klien hanya memilih tombol mana yang tampil; validasi tetap terjadi di kontrak.
 
@@ -533,7 +536,7 @@ Hanya **nama** yang dicantumkan; nilai tidak pernah ditulis di dokumen, kode, at
 | `CHECK_RPC_ROBINHOOD`, `CHECK_RPC_BASE`, `CHECK_RPC_ARBITRUM` | server | RPC untuk XofN Check & indexer [Guide] | Phase 2 |
 | `CHECK_DATABASE_URL` | server | [Guide] Koneksi cache Check. Di XofN diisi koneksi Postgres Supabase bila dibutuhkan; akses utama lewat Supabase client (P30) | Phase 2 (opsional) |
 | `SUPABASE_SERVICE_ROLE_KEY` | server | Tulis cache/index | Phase 2 |
-| `CRON_SECRET` | server | Proteksi `/api/cron/*` | Phase 2 |
+| `CRON_SECRET` | server | Proteksi `/api/cron/*` (`Authorization: Bearer`). Kosong → route cron menjawab 503 | Phase 4 |
 | `FORK_RPC_ROBINHOOD`, `FORK_RPC_BASE`, `FORK_RPC_ARBITRUM` | Foundry | Fork test **read-only** | Phase 3 |
 | `RH_TESTNET_RPC`, `RH_MAINNET_RPC`, `BASE_SEPOLIA_RPC`, `ARB_SEPOLIA_RPC`, `BASE_RPC`, `ARB_RPC` | deploy | [Guide] RPC deploy | **Phase 6–7, FROZEN** |
 | `RH_BLOCKSCOUT_API`, `BASESCAN_API_KEY`, `ARBISCAN_API_KEY` | deploy | [Guide] verifikasi source | **FROZEN** |
@@ -589,7 +592,7 @@ Butir 1–5, 7, dan 8 diverifikasi di Phase 0 (17 Nov 2026). Bukti: `proof/2026-
 3. ~~Versi paket `@layerzerolabs/*`; dukungan cancun di Robinhood~~ — **terverifikasi** (§1.2).
 4. ~~Ketersediaan CreateX di Robinhood Chain~~ — **terverifikasi** (§1.2).
 5. ~~Semantik `getConfig` dan nilai 0 di ULN (P5); `CONFIG_TYPE_*`; alamat dead DVN~~ — **terverifikasi** (§7).
-6. Cara integrasi lokal multi-chain untuk Phase 4. **[Phase 3] Rekomendasi:** satu node Anvil dengan tiga endpoint LayerZero tiruan (EID 1/2/3) dan `LocalRelay` yang mengantar pesan saat `deliverNext()` dipanggil. Sudah berjalan: `script/local/DeployLocal.s.sol`, siklus penuh sampai `verify()` = true lewat `cast` (PRD P46). Chain ID ketiga "chain" sama (31337), jadi UI membedakannya lewat EID dan alamat dari manifest.
+6. ~~Cara integrasi lokal multi-chain untuk Phase 4~~ — **diimplementasikan di Phase 4** (`tests/anvil/lifecycle.test.ts`); pengantaran relay butuh batas gas eksplisit (P57). **[Phase 3] Rekomendasi:** satu node Anvil dengan tiga endpoint LayerZero tiruan (EID 1/2/3) dan `LocalRelay` yang mengantar pesan saat `deliverNext()` dipanggil. Sudah berjalan: `script/local/DeployLocal.s.sol`, siklus penuh sampai `verify()` = true lewat `cast` (PRD P46). Chain ID ketiga "chain" sama (31337), jadi UI membedakannya lewat EID dan alamat dari manifest.
 7. OFT API LayerZero — endpoint dan auth **terverifikasi** (§7). Rate limit tetap [Belum].
 8. ~~AMM di ketiga chain (P9)~~ — **terverifikasi**: Uniswap v2, v3, v4 ada di Robinhood, Base, dan Arbitrum. Antarmuka compose mengikuti keputusan P2/P9.
 9. Perbedaan API three r170 (HTML) → ≥ r184 (npm), misalnya `OutputPass`, `RoomEnvironment`, dan clipping. Cek saat port.

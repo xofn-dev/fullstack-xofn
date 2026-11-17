@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { CheckForm } from '@/components/check/check-form';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
+import { checkLzAddresses } from '@/lib/check/local-lz';
 import { getChains } from '@/lib/chains';
 import { publicEnv } from '@/lib/public-env';
 
@@ -13,7 +14,9 @@ export const metadata: Metadata = {
 // "/check" — pintu masuk XofN Check. Hanya membaca chain; tidak butuh wallet.
 export default function CheckPage() {
   const chains = getChains(publicEnv.network);
-  const available = chains.some((chain) => chain.lz !== null && chain.publicRpc !== null);
+  const available = chains.some(
+    (chain) => checkLzAddresses(publicEnv.network, chain.key) !== null && chain.publicRpc !== null,
+  );
   const options = chains.map((chain) => ({ key: chain.key, name: chain.name }));
 
   return (

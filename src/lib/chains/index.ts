@@ -21,7 +21,7 @@ export interface ChainInfo {
   /** Nama ringkas untuk chip/label mono uppercase. */
   shortName: string;
   chainId: number;
-  /** EID LayerZero. null = belum ditetapkan (EID mock lokal baru ada di Phase 3). */
+  /** EID LayerZero. Di jaringan lokal ini EID mock dari manifest Anvil. */
   eid: number | null;
   /** Explorer resmi; null untuk jaringan lokal. */
   explorer: string | null;
@@ -123,12 +123,15 @@ const TESTNET: Registry = {
   },
 };
 
-// Simulasi lokal (Phase 3–4): peran dan nama sama, tetapi chain ID Anvil, EID mock, dan alamat
-// endpoint baru ditetapkan saat kontrak dan manifest lokal dibuat. Sengaja null, tidak ditebak.
+// Simulasi lokal (Phase 3–4): satu node Anvil memerankan ketiga chain (ARCHITECTURE §15 butir 6).
+// Chain ID-nya sama (31337); yang membedakan adalah EID mock 1/2/3 dan alamat di manifest lokal.
+// EID di sini dicocokkan dengan `deployments/local.json` oleh `src/lib/web3/addresses.ts`.
+// `lz` tetap null: endpoint tiruan dibaca dari manifest, bukan dari registry ini.
+const LOCAL_RPC = 'http://127.0.0.1:8545';
 const LOCAL: Registry = {
-  robinhood: { ...MAINNET.robinhood, chainId: 31337, eid: null, explorer: null, publicRpc: null, lz: null },
-  base: { ...MAINNET.base, chainId: 31337, eid: null, explorer: null, publicRpc: null, lz: null },
-  arbitrum: { ...MAINNET.arbitrum, chainId: 31337, eid: null, explorer: null, publicRpc: null, lz: null },
+  robinhood: { ...MAINNET.robinhood, chainId: 31337, eid: 1, explorer: null, publicRpc: LOCAL_RPC, lz: null },
+  base: { ...MAINNET.base, chainId: 31337, eid: 2, explorer: null, publicRpc: LOCAL_RPC, lz: null },
+  arbitrum: { ...MAINNET.arbitrum, chainId: 31337, eid: 3, explorer: null, publicRpc: LOCAL_RPC, lz: null },
 };
 
 const REGISTRIES: Record<Network, Registry> = {
@@ -168,4 +171,8 @@ export function findChainByEid(network: Network, eid: number): ChainInfo | undef
 
 export function explorerAddressUrl(chain: ChainInfo, address: string): string | null {
   return chain.explorer ? `${chain.explorer}/address/${address}` : null;
+}
+
+export function explorerTxUrl(chain: ChainInfo, hash: string): string | null {
+  return chain.explorer ? `${chain.explorer}/tx/${hash}` : null;
 }

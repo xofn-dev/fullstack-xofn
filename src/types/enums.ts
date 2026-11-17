@@ -26,3 +26,23 @@ export type ArchStation = (typeof ARCH_STATIONS)[number];
 
 export const ARCH_MODES = ['run', 'overview', 'xray'] as const;
 export type ArchMode = (typeof ARCH_MODES)[number];
+
+// Status token yang ditampilkan. `unread` = pembacaan chain gagal; status tidak ditebak (CLAUDE.md §3).
+export type DisplayStatus = TokenStatus | 'unread';
+
+// Padanan enum `XofNGraduator.Status` (uint8 0–4). Indeks = nilai on-chain.
+export const GRADUATOR_STATUSES = ['none', 'bonding', 'graduated', 'expanding', 'locked'] as const;
+export type GraduatorStatus = (typeof GRADUATOR_STATUSES)[number];
+
+// Padanan enum `XofNGraduator.Step` per EID (uint8 0–4). Indeks = nilai on-chain.
+export const EXPANSION_STEPS = ['none', 'deploy-sent', 'configured', 'liquidity-sent', 'remote-locked'] as const;
+export type ExpansionStep = (typeof EXPANSION_STEPS)[number];
+
+// Padanan enum `XofNRemote.State` (uint8 0–2). Indeks = nilai on-chain.
+export const REMOTE_STATES = ['none', 'configured', 'locked'] as const;
+export type RemoteState = (typeof REMOTE_STATES)[number];
+
+export type TradeSide = 'buy' | 'sell';
+
+/** Keadaan satu langkah di panel ekspansi (DESIGN_SYSTEM §5.7). */
+export type StepState = 'pending' | 'ok' | 'failed';

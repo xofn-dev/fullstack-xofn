@@ -1,0 +1,8 @@
+ ✓ tests/anvil/lifecycle.test.ts > siklus token XofN di Anvil lokal > Flow D: launch Fortress → Bonding, owner dan delegate = Graduator, verify() false 4091ms
+ ✓ tests/anvil/lifecycle.test.ts > siklus token XofN di Anvil lokal > Flow E: buy dan sell di curve dengan batas slippage dari quote 12076ms
+ ✓ tests/anvil/lifecycle.test.ts > siklus token XofN di Anvil lokal > Flow E: slippage terlampaui → revert dengan pesan jelas 6ms
+ ✓ tests/anvil/lifecycle.test.ts > siklus token XofN di Anvil lokal > Flow F.1: graduate ditolak sebelum ambang; setelah ambang curve tertutup dan graduate berhasil 8082ms
+ ✓ tests/anvil/lifecycle.test.ts > siklus token XofN di Anvil lokal > Flow F.2: expandAndLock → Expanding; Locked hanya setelah verify() true di semua chain 36446ms
+ ✓ tests/anvil/lifecycle.test.ts > siklus token XofN di Anvil lokal > Flow H: bridge token Locked ke chain ekspansi; dust tetap di wallet pengirim 8057ms
+ ✓ tests/anvil/lifecycle.test.ts > siklus token XofN di Anvil lokal > Flow F.2 retry: ack yang tertunda terdeteksi dan dipulihkan dengan reAck 36174ms
+      Tests  7 passed (7)

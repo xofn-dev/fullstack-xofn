@@ -3,31 +3,22 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { cn } from '@/lib/cn';
-import { useOverlay } from '@/components/ui/overlay-provider';
+import { ConnectButton } from '@/components/wallet/connect-button';
+import type { AppMode } from '@/types/enums';
 
-// D12: urutan nav aplikasi. Route yang sudah ada dituju langsung (/check, Phase 2); sisanya masih
-// menunjuk ke anchor di "/" sampai halamannya dibuat di Phase 4, tanpa mengubah label.
+// D12: urutan nav aplikasi. Explore tetap section di "/" (discovery ada di landing, PRD §6.1);
+// sisanya halaman sendiri sejak Phase 4.
 const LINKS = [
   { href: '/#explore', label: 'Explore' },
   { href: '/check', label: 'XofN Check' },
-  { href: '/#launch', label: 'Launch' },
-  { href: '/#bridge', label: 'Bridge' },
-  { href: '/#proof', label: 'Proof' },
-  { href: '/#contracts', label: 'Contracts' },
+  { href: '/launch', label: 'Launch' },
+  { href: '/bridge', label: 'Bridge' },
+  { href: '/proof', label: 'Proof' },
+  { href: '/contracts', label: 'Contracts' },
 ] as const;
 
-export function Nav({ tag }: { tag: string }) {
+export function Nav({ tag, mode }: { tag: string; mode: AppMode }) {
   const [open, setOpen] = useState(false);
-  const { openModal } = useOverlay();
-
-  // Mode preview: tombol wallet hanya menjelaskan, tidak membuka koneksi (USER_FLOWS Flow B).
-  const explainWallet = () =>
-    openModal({
-      title: 'Wallet connection — preview only',
-      copy: 'This build is a preview. It deliberately does not request signatures, connect to wallet providers, or process transfers.',
-      detail:
-        'Production integration: wallet client + supported EVM chains + quote simulation + user-signed transactions. Never enter a seed phrase or private key on any website.',
-    });
 
   return (
     <div className="nav-wrap">
@@ -45,23 +36,14 @@ export function Nav({ tag }: { tag: string }) {
             </Link>
           ))}
           {/* ≤640px tombol Connect di bar disembunyikan CSS, jadi disediakan juga di dalam menu. */}
-          <a
-            href="#connect"
-            className="nav-connect-mobile"
-            onClick={(event) => {
-              event.preventDefault();
-              setOpen(false);
-              explainWallet();
-            }}
-          >
-            Connect Wallet ↗
-          </a>
+          <span className="nav-connect-mobile">
+            <ConnectButton mode={mode} className="nav-connect-link" onDone={() => setOpen(false)} />
+          </span>
         </nav>
         <div className="nav-right">
           <span className="nav-tag">◉ {tag}</span>
-          <button className="btn secondary small" type="button" onClick={explainWallet}>
-            Connect Wallet <span className="arr">↗</span>
-          </button>
+          {/* Anak langsung .nav-right: aturan CSS ≤640px menyembunyikan tombol ini di bar. */}
+          <ConnectButton mode={mode} />
           <button
             className="btn secondary iconOnly mobile-menu-btn"
             type="button"

@@ -16,14 +16,17 @@ import { Thesis } from '@/components/landing/thesis';
 import { TierProvider } from '@/components/landing/tier-context';
 import { Vision } from '@/components/landing/vision';
 import { getExpansionChains, getHomeChain } from '@/lib/chains';
+import { resolveMode } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
+import { getManifestState } from '@/lib/web3/addresses';
 
-// "/" — landing + discovery (mode preview). Urutan section mengikuti DESIGN_SYSTEM §6.1.
+// "/" — landing + discovery. Explore menampilkan token nyata di mode simulation. Urutan section mengikuti DESIGN_SYSTEM §6.1.
 // Nama chain selalu diambil dari registry, tidak ditulis langsung di komponen.
 export default function LandingPage() {
   const home = getHomeChain(publicEnv.network);
   const expansions = getExpansionChains(publicEnv.network);
   const chains = { home, expansions };
+  const mode = resolveMode({ network: publicEnv.network, manifest: getManifestState(publicEnv.network) });
 
   return (
     <TierProvider>
@@ -35,7 +38,7 @@ export default function LandingPage() {
         <Thesis />
         <Architecture {...chains} />
         <Manifesto />
-        <Explore home={home} />
+        <Explore home={home} mode={mode} />
         <CheckDemo {...chains} />
         <InsideCoin />
         <Security />

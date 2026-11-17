@@ -315,15 +315,15 @@ Edge case:
 
 | Flow | `preview` | `simulation` | `live` |
 |---|---|---|---|
-| A Jelajah landing | **Selesai** (Phase 1, 17 Nov 2026). Langkah 5 (TierBadge → DvnList) dibuat bersama halaman aplikasi; di landing penjelasan tier ada di drawer | Belum mulai | FROZEN |
-| B Wallet & network | **Sebagian** (Phase 1): tombol Connect membuka modal "preview only". AppKit dan NetworkGuard di Phase 4 | Belum mulai | FROZEN |
-| C XofN Check | **Selesai** (Phase 2, 17 Nov 2026): `/check` dan `/check/[chain]/[address]` membaca chain, cache 15 menit, Re-check, Share + kartu OG; sampel di landing tetap berlabel simulasi. Belum: hasil `verify()` untuk token XofN (butuh manifest) | — | FROZEN (rilis publik di Fase 1b) |
-| D Launch | **Pratinjau di landing** (Phase 1): validasi form + modal ringkasan tanpa transaksi. Halaman `/launch` di Phase 4 | Belum mulai | FROZEN |
-| E Trading | Belum mulai | Belum mulai | FROZEN |
-| F.1 Graduate | Belum mulai | UI belum mulai. Kontrak siap (Phase 3): `XofNGraduator.graduate(token)` | FROZEN (Fase 1) |
-| F.2 Expand & lock | Belum mulai | UI belum mulai. Kontrak siap: `expandAndLock(token)`, `retryRemote(token, eid)`, `quoteExpandAndLock`, `quoteRetry`; di chain ekspansi `XofNRemote.reAck` dan `endpoint.lzCompose` (retryCompose). Siklus penuh berjalan di Anvil lewat `script/local` | FROZEN (Fase 2) |
-| G Halaman token | Belum mulai | Belum mulai | FROZEN |
-| H Bridge | **Pratinjau di landing** (Phase 1): widget + modal "preview only", rute hub dijelaskan. Halaman `/bridge` di Phase 4 | Belum mulai | FROZEN (Fase 2) |
-| I Contracts & Proof | **Section di landing** (Phase 1): semua status NOT DEPLOYED / PLANNED. Halaman `/contracts` dan `/proof` di Phase 4 | Belum mulai | FROZEN |
+| A Jelajah landing | **Selesai** (Phase 1, 17 Nov 2026). Langkah 5 (TierBadge → DvnList) dibuat bersama halaman aplikasi; di landing penjelasan tier ada di drawer | **Selesai** (Phase 4, 17 Nov 2026): Explore membaca `/api/tokens`, filter D16, kartu menuju `/t/[address]`, keadaan kosong/gagal baca | FROZEN |
+| B Wallet & network | **Selesai** (Phase 1–4): tombol Connect membuka modal "preview only" | **Selesai** (Phase 4): AppKit bila `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` diisi (kode ada, **belum teruji** tanpa project ID) + konektor "Anvil dev account" khusus jaringan lokal (P56); NetworkGuard per aksi. Di Anvil ketiga chain ber-ID 31337, jadi "Switch to <chain>" tidak pernah muncul | FROZEN |
+| C XofN Check | **Selesai** (Phase 2, 17 Nov 2026): `/check` dan `/check/[chain]/[address]` membaca chain, cache 15 menit, Re-check, Share + kartu OG; sampel di landing tetap berlabel simulasi | **Selesai** (Phase 4): Check membaca Anvil (endpoint tiruan dari manifest, tanpa Multicall3) dan menampilkan `verify()` Registry + tautan ke halaman token | FROZEN (rilis publik di Fase 1b) |
+| D Launch | **Pratinjau** (Phase 1); `/launch` memakai form pratinjau yang sama | **Selesai** (Phase 4): validasi = aturan kontrak, tier per chain dari `tierAvailable`, gerbang registrar (P52), modal review → tanda tangan → redirect `/t/[address]`. Logo hanya hash (P26) | FROZEN |
+| E Trading | Halaman token tidak tersedia ("TOKEN PAGES ARE NOT LIVE") | **Selesai** (Phase 4): buy/sell curve dengan quote, slippage, minimum diterima, approve sebelum sell; setelah graduation trading di pool AMM **tiruan** (tanpa batas slippage on-chain, berlabel) | FROZEN |
+| F.1 Graduate | — | **Selesai** (Phase 4): tombol muncul saat ambang tercapai + caller reward; setelahnya "Robinhood Chain pool created", owner/delegate tetap Graduator, `verify()` false sebagai fakta | FROZEN (Fase 1) |
+| F.2 Expand & lock | — | **Selesai** (Phase 4): fee `quoteExpandAndLock` berlabel SIMULATION QUOTE, 5 langkah per chain (F8), Retry (`retryRemote`), `reAck`, kontrol relay lokal berlabel SIMULATION; Locked hanya bila `verify()` true di semua chain. `retryCompose`: builder ada, **tidak teruji** (relay lokal tidak meninggalkan compose gagal) dan belum ada tombolnya | FROZEN (Fase 2) |
+| G Halaman token | Pesan "not live" | **Selesai** (Phase 4): badge + status, chart dari trade, tabel keamanan per chain (owner, delegate, supply, `verify()`, checked at), invariant 999M, DvnList per pathway (D17) | FROZEN |
+| H Bridge | **Pratinjau** (Phase 1); `/bridge` memakai widget pratinjau | **Selesai** (Phase 4): hanya token Locked, ↕, hub dua langkah, dust, `quoteSend` tepat sebelum `send`, konfirmasi ulang bila fee naik >10%. Tautan LayerZero Scan belum ada (tidak ada di Anvil) | FROZEN (Fase 2) |
+| I Contracts & Proof | `/contracts` dan `/proof`: semua NOT DEPLOYED / PLANNED | **Selesai** (Phase 4): `/contracts` dari manifest ("LOCAL SIMULATION ONLY · SOURCE NOT VERIFIED"), `/proof` checklist `verify()`, milestone PLANNED, batas P38/P13/P45 | FROZEN |
 
 Perbarui tabel ini di akhir setiap task yang menyentuh sebuah flow.

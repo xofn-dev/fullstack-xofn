@@ -67,3 +67,23 @@ anvil
 forge script script/local/DeployLocal.s.sol --rpc-url http://127.0.0.1:8545 \
   --broadcast --slow --unlocked --sender 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 ```
+
+### Aplikasi dalam mode `simulation` (Phase 4)
+
+Setelah Anvil berjalan dan `DeployLocal` selesai, jalankan web terhadap node lokal:
+
+```bash
+NEXT_PUBLIC_XOFN_NETWORK=local NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run dev
+```
+
+- Wallet: tombol **Connect Anvil dev account** menyambungkan akun dev Anvil yang ter-unlock (node yang menandatangani; tidak ada key). AppKit aktif bila `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` diisi.
+- Pesan lintas chain baru sampai setelah relay lokal mengantarnya: pakai panel **SIMULATION · LOCAL RELAY** di halaman token atau bridge.
+- Node Anvil yang diulang dari nol menghapus semua token; jalankan `DeployLocal` lagi (alamat kontrak tetap sama). Index token di server mendeteksi hal ini dan mengosongkan diri.
+
+Tes integrasi siklus penuh (launch → trade → graduate → expand & lock → bridge) terhadap Anvil yang sudah di-deploy:
+
+```bash
+npm run test:anvil
+```
+
+Tes ini tidak ikut `npm run test` dan hanya bisa menjangkau `http://127.0.0.1:8545` (chain ID 31337).

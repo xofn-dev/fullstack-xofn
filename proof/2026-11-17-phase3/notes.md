@@ -142,6 +142,10 @@ Reviewer tidak menemukan cara satu token memakai ETH token lain di Graduator, ca
 
 P1 (operator DVN wajib), P41 (penerima LP), P42 (ETH pasangan lewat executor), P43 (harga curve vs pool), P44 (library terhubung di manifest), P45 (ekspansi semua-atau-tidak), P46 (integrasi lokal Phase 4), serta konfirmasi PM atas P37, P38, dan P39 yang diimplementasikan mengikuti rekomendasi tertulis. Rinciannya di `PRD.md` §11.
 
+## Keputusan owner setelah gate review (17 Nov 2026)
+
+Owner menyatakan **Phase 4 boleh mulai walau P55 terbuka**. Gerbang Phase 3 tetap terbuka dan kontrak tidak diubah di Phase 4. Perbaikan P55 hanya menyentuh isi `PoolSeeder.seed` (ABI tidak berubah), jadi setelah diperbaiki cukup deploy ulang ke Anvil. Batas akhir: P55 tertutup sebelum Phase 5 (audit) dan mutlak sebelum deploy ke jaringan publik mana pun (PRD P55).
+
 ## Catatan lingkungan
 
 - Foundry v1.8.3 dari `~/.foundry/bin` (tidak ada di PATH shell).

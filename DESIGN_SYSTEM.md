@@ -528,7 +528,7 @@ Item `[Belum]` diputuskan owner atau desainer. Sampai diputuskan, pakai rekomend
 | Chrome (NoticeBar, Nav, Footer, overlay) | **Selesai (Phase 1, 17 Nov 2026).** Nav D12, menu mobile, modal dengan fokus terjebak, toast, scroll progress, side index, cursor aura |
 | Section landing 1–16 | **Selesai (Phase 1, 17 Nov 2026)**, mode preview. Copy home chain D15, status D16, copy operator D17 |
 | 3D hero / arch / galaxy | **Selesai (Phase 1, 17 Nov 2026).** three 0.187, lifecycle + dispose, fallback statis, galaxy mati di ≤860px (D5), mekanisme *split* (D2) |
-| Halaman aplikasi (§6.2) | **`/check` dan `/check/[chain]/[address]` selesai (Phase 2, 17 Nov 2026)**, termasuk kartu OG. Halaman lain di Phase 4 |
+| Halaman aplikasi (§6.2) | **`/check` dan `/check/[chain]/[address]` selesai (Phase 2, 17 Nov 2026)**, termasuk kartu OG. **`/launch`, `/t/[address]`, `/bridge`, `/contracts`, `/proof` selesai (Phase 4, 17 Nov 2026)** untuk mode simulation; di preview halaman itu memakai section landing berlabel |
 
 Catatan implementasi Phase 1:
 - **Preflight Tailwind tidak dimuat.** Baseline ditulis di atas default browser, jadi hanya layer `theme` dan `utilities` yang dipakai. Utilitas border Tailwind perlu `border-solid` eksplisit.
@@ -542,5 +542,12 @@ Catatan implementasi Phase 2:
 - Label Check: `1-OF-1` (danger), `2+` (caution, D13), `2+ · LOCKED` (mint), `BLOCKED` dan `NOT READ` (muted). Setiap label punya ikon dan teks, tidak hanya warna.
 - **Pengecualian hex kedua:** `src/lib/design-tokens.ts` mencerminkan token untuk `ImageResponse` (kartu OG), yang tidak bisa membaca variabel CSS. Nilainya wajib sama dengan `@theme`.
 - D18 diterapkan: NoticeBar preview berbunyi `NO TOKEN SALE · CHECK READS PUBLIC CHAIN DATA`.
+
+Catatan implementasi Phase 4:
+- Komponen baru: `ui/{status-pill,progress-bar,empty-state,tx-status}`, `badge/{tier-badge,dvn-list}`, `token/{token-card,token-view,trade-panel,explore-live}`, `launch/{launch-fields,launch-form}`, `graduation/`, `expansion/`, `bridge/`, `proof/contract-table`, `wallet/*`. `LaunchFields` dan `TokenCard` dipakai bersama oleh section landing (pratinjau) dan halaman aplikasi.
+- Kelas baru di `globals.css` (blok "Halaman aplikasi Phase 4") memakai token `@theme` saja, tanpa hex baru.
+- TierBadge berupa tombol (`aria-expanded`) yang membuka DvnList di bawahnya, bukan popover. Status transaksi berupa teks (`Confirm in wallet…`, `Pending…`) di wilayah `aria-live`.
+- Tabel lebar (`.data-table`) bergulir di dalam panelnya; tidak ada overflow horizontal di 390/768/1280/1680px (diukur lewat emulasi viewport CDP).
+- Kontrol relay lokal memakai warna `caution` dan label SIMULATION supaya tidak tertukar dengan langkah protokol.
 
 Perbarui tabel ini di akhir setiap task UI, lengkap dengan tanggal.

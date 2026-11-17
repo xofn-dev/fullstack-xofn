@@ -1,22 +1,20 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { ChainInfo } from '@/lib/chains';
 import { formatInt, isValidTicker } from '@/lib/format';
-import type { ChainKey, Tier } from '@/types/enums';
-import { TIERS } from '@/types/enums';
+import type { ChainKey } from '@/types/enums';
 import { useOverlay } from '@/components/ui/overlay-provider';
+import { FIXED_SUPPLY, LaunchFields } from '@/components/launch/launch-fields';
 import { SplitHeading } from '@/components/landing/split-heading';
 import { TIER_COPY, useTier } from '@/components/landing/tier-context';
-
-const FIXED_SUPPLY = 999_000_000;
-const MAX_LOGO_BYTES = 3_000_000;
 
 // Section 12 — form launch versi pratinjau (D8). Tidak ada transaksi, wallet, atau unggahan:
 // gambar hanya dipratinjau lokal lewat object URL.
 export function LaunchDemo({ home, expansions }: { home: ChainInfo; expansions: ChainInfo[] }) {
   const { tier, setTier } = useTier();
-  const { openModal, toast } = useOverlay();
+  const { openModal } = useOverlay();
   const [name, setName] = useState('');
   const [ticker, setTicker] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -30,17 +28,6 @@ export function LaunchDemo({ home, expansions }: { home: ChainInfo; expansions: 
     },
     [logoUrl],
   );
-
-  const onLogo = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/') || file.size > MAX_LOGO_BYTES) {
-      toast('Please use an image smaller than 3 MB.');
-      event.target.value = '';
-      return;
-    }
-    setLogoUrl(URL.createObjectURL(file));
-  };
 
   const toggleChain = (key: ChainKey) =>
     setSelected((current) =>
@@ -120,7 +107,7 @@ export function LaunchDemo({ home, expansions }: { home: ChainInfo; expansions: 
           </div>
           <p className="preview-note">
             This builder is an interactive preview form. It does not deploy a contract, connect a
-            wallet or collect funds.
+            wallet or collect funds. <Link href="/launch">Open the launch page ↗</Link>
           </p>
         </div>
         <form className="launch-form" id="launchForm" noValidate onSubmit={onSubmit}>
@@ -130,97 +117,23 @@ export function LaunchDemo({ home, expansions }: { home: ChainInfo; expansions: 
               <i /> PREVIEW
             </span>
           </div>
-          <div className="form-row">
-            <div>
-              <label className="field-label" htmlFor="tokenName">
-                TOKEN NAME
-              </label>
-              <input
-                className="form-control"
-                id="tokenName"
-                maxLength={32}
-                placeholder="e.g. Your Protocol"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="tokenTicker">
-                TICKER
-              </label>
-              <input
-                className="form-control"
-                id="tokenTicker"
-                maxLength={12}
-                placeholder="e.g. YOUR"
-                value={ticker}
-                onChange={(event) => setTicker(event.target.value.toUpperCase())}
-              />
-            </div>
-          </div>
-          <div className="form-row is-centered">
-            <div>
-              <span className="field-label">TOKEN LOGO</span>
-              <div className="upload-wrap">
-                <div className="upload-preview" id="uploadPreview">
-                  {/* Pratinjau lokal dari object URL; next/image tidak berlaku untuk blob. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  {logoUrl ? <img src={logoUrl} alt="Selected token logo preview" /> : '✳'}
-                </div>
-                <label className="upload-label" htmlFor="tokenLogo">
-                  Choose image
-                  <br />
-                  <small>Local preview only</small>
-                </label>
-                <input type="file" id="tokenLogo" accept="image/*" hidden onChange={onLogo} />
-              </div>
-            </div>
-            <div>
-              <span className="field-label">SUPPLY / HOME CHAIN</span>
-              <div className="supply-readout">
-                {formatInt(FIXED_SUPPLY)} FIXED
-                <br />
-                <span>{home.shortName} · EVM</span>
-              </div>
-            </div>
-          </div>
-          <div className="form-group">
-            <div className="field-label" id="launchTierLabel">
-              SECURITY TIER
-            </div>
-            <div className="choose-tier" role="radiogroup" aria-labelledby="launchTierLabel">
-              {TIERS.map((item: Tier) => (
-                <label key={item}>
-                  <input
-                    type="radio"
-                    name="launchTier"
-                    value={item}
-                    checked={tier === item}
-                    onChange={() => setTier(item)}
-                  />
-                  <strong>{TIER_COPY[item].label}</strong>
-                  <small>{TIER_COPY[item].badge}</small>
-                </label>
-              ))}
-            </div>
-          </div>
-          <div className="form-group">
-            <div className="field-label">EXPANSION NETWORKS · APPLIED AT EXPANSION · PLANNED</div>
-            <div className="check-group">
-              {expansions.map((chain) => (
-                <label key={chain.key}>
-                  <input
-                    type="checkbox"
-                    name="expand"
-                    value={chain.key}
-                    checked={selected.includes(chain.key)}
-                    onChange={() => toggleChain(chain.key)}
-                  />{' '}
-                  {chain.name}
-                </label>
-              ))}
-            </div>
-          </div>
+          <LaunchFields
+            idPrefix="demoLaunch"
+            home={home}
+            expansions={expansions}
+            name={name}
+            onName={setName}
+            ticker={ticker}
+            onTicker={setTicker}
+            logoUrl={logoUrl}
+            onLogo={(file) => setLogoUrl(URL.createObjectURL(file))}
+            logoNote="Local preview only"
+            tier={tier}
+            onTier={setTier}
+            selected={selected}
+            onToggleChain={toggleChain}
+            networksLabel="EXPANSION NETWORKS · APPLIED AT EXPANSION · PLANNED"
+          />
           <div className="form-note">
             <span>
               MESSAGE / EXPANSION COST

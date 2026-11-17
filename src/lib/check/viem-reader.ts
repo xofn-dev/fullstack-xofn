@@ -8,15 +8,31 @@ const RPC_TIMEOUT_MS = 12_000;
 
 // Pembaca chain berbasis viem. Hanya eth_call / eth_getCode / eth_getStorageAt:
 // tidak ada wallet client, tidak ada key, tidak ada transaksi.
-export function createViemReader(rpcUrl: string): ChainReader {
+//
+// `multicall: false` dipakai untuk node Anvil lokal, yang tidak punya kontrak Multicall3:
+// setiap panggilan dikirim sendiri-sendiri dan kegagalannya tetap dilaporkan per panggilan.
+export function createViemReader(rpcUrl: string, options: { multicall: boolean } = { multicall: true }): ChainReader {
   const client = createPublicClient({
-    transport: http(rpcUrl, { timeout: RPC_TIMEOUT_MS, retryCount: 1 }),
+    transport: http(rpcUrl, { timeout: RPC_TIMEOUT_MS, retryCount: 1, batch: !options.multicall }),
   });
   return {
     getCode: (address) => client.getCode({ address }),
     getStorageAt: (address, slot) => client.getStorageAt({ address, slot }),
     getBlockNumber: () => client.getBlockNumber(),
     async multicall(calls: ContractCall[]): Promise<CallResult[]> {
+      if (!options.multicall) {
+        const settled = await Promise.allSettled(
+          calls.map((call) => client.readContract(call as unknown as ContractFunctionParameters)),
+        );
+        return settled.map((item) =>
+          item.status === 'fulfilled'
+            ? { status: 'success', result: item.value }
+            : {
+                status: 'failure',
+                error: (item.reason instanceof Error ? item.reason.message : 'call failed').split('\n')[0] ?? 'call failed',
+              },
+        );
+      }
       const results = await client.multicall({
         contracts: calls as unknown as readonly ContractFunctionParameters[],
         allowFailure: true,
