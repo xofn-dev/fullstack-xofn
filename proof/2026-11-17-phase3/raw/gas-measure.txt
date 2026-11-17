@@ -1,0 +1,30 @@
+$ forge test --match-contract GasMeasureTest -vv
+[PASS] test_gas_fortress() (gas: 28226875)
+  fortress: launch: 3413461
+  fortress: graduate: 2047396
+  fortress: expandAndLock (2 chains): 2858080
+  fortress: Remote.lzReceive DEPLOY (token + recipe + ack): 4285117
+  fortress: Graduator.lzReceive ack CONFIGURED (+ send liquidity): 796181
+  fortress: token.lzReceive liquidity credit: 195758
+  fortress: Remote.lzCompose (pool + lock + ack): 2667391
+  fortress: Graduator.lzReceive ack LOCKED: 101645
+  fortress: Graduator.lzReceive final ack LOCKED (locks home): 437830
+  fortress: Registry.verify (2 EIDs): 231719
+  fortress: Registry.verifyEid: 126544
+  fortress: Registry.verify (1 EID, expansion chain): 143459
+  fortress: token.lzReceive plain bridge: 117891
+[PASS] test_gas_standard() (gas: 27863906)
+  standard: launch: 3408538
+  standard: graduate: 2047396
+  standard: expandAndLock (2 chains): 2765134
+  standard: Remote.lzReceive DEPLOY (token + recipe + ack): 4238390
+  standard: Graduator.lzReceive ack CONFIGURED (+ send liquidity): 788377
+  standard: token.lzReceive liquidity credit: 195758
+  standard: Remote.lzCompose (pool + lock + ack): 2660999
+  standard: Graduator.lzReceive ack LOCKED: 101645
+  standard: Graduator.lzReceive final ack LOCKED (locks home): 425041
+  standard: Registry.verify (2 EIDs): 221324
+  standard: Registry.verifyEid: 121348
+  standard: Registry.verify (1 EID, expansion chain): 138264
+  standard: token.lzReceive plain bridge: 117891
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 26.81ms (28.77ms CPU time)

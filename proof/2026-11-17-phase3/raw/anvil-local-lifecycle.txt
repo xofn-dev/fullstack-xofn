@@ -1,0 +1,18 @@
+$ anvil   (chain id 31337, node lokal sementara)
+$ forge script script/local/DeployLocal.s.sol --rpc-url <anvil> --broadcast --slow --unlocked --sender <akun dev Anvil #0>
+ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
+blok setelah deploy: 142
+
+# Siklus hidup satu token lewat cast (akun dev Anvil yang ter-unlock):
+token=0x2EDE06148Df5B37DAd032D30192B2b440ba73fe4 curve=0xF8A8B047683062B5BBbbe9D104C9177d6b6cC086
+totalSupply: 999000000000000000000000000 [9.99e26]
+owner: 0x3347B4d90ebe72BeFb30444C9966B2B990aE9FcB (graduator=0x3347B4d90ebe72BeFb30444C9966B2B990aE9FcB)
+verify (bonding): false 1 [2, 3] 
+status after graduate:  2 (2=Graduated); owner: 0x3347B4d90ebe72BeFb30444C9966B2B990aE9FcB
+verify (graduated): false 1 [2, 3] 
+expand quote (wei): 66000000424840848
+relayed 8 messages; pending: 0
+verify home: true 1 [2, 3] 
+verify base (token 0x3517908Ca2AF1AB44501114ed267700D0e27ec60): true 1 [1] 
+home owner after lock: 0x0000000000000000000000000000000000000000
+supply home / base: 994993984962408000000000000 [9.949e26] / 2003007518796000000000000 [2.003e24]

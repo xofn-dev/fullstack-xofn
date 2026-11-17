@@ -1,7 +1,7 @@
 # fullstack-xofn
 
 XofN — *Never one of one.* Launchpad token omnichain di atas LayerZero V2.
-**Status: preview. Belum ada kontrak yang ter-deploy, tidak ada token sale, tidak ada verifikasi live.**
+**Status: preview. Belum ada kontrak yang ter-deploy di jaringan publik, tidak ada token sale, tidak ada verifikasi live.**
 
 XofN is an independent project built on LayerZero. Not affiliated with or endorsed by LayerZero Labs.
 
@@ -42,4 +42,28 @@ npm run build       # next build
 - `src/components` — `layout/` (chrome), `landing/` (section), `three/` (scene 3D, dimuat lazy), `ui/` (overlay).
 - `src/lib` — `env`, `public-env`, `mode`, `chains` (registry chain + EID), `format`, `client/` (GSAP, Lenis), `three/` (factory scene).
 - `tests` — Vitest.
-- `contracts/`, `test/`, `script/`, `config/`, `deployments/` — dibuat mulai Phase 2–3. Deploy testnet dan mainnet **FROZEN**.
+- `contracts/` — kontrak Solidity (Phase 3): `XofNToken`, `XofNCurve`, `XofNGraduator`, `XofNRemote`, `XofNRegistry`, dan `libraries/`.
+- `test/` — tes Foundry: `unit/`, `fuzz/`, `invariant/`, `lz/` (multi-endpoint), `fork/` (read-only), `mocks/`.
+- `script/local/` — deploy ke Anvil saja. Tidak ada script deploy jaringan publik: deploy testnet dan mainnet **FROZEN**.
+- `config/` — `tiers.json` (definisi tier) dan `dvn-labels.json`. `deployments/local.json` — manifest simulasi lokal.
+
+## Kontrak (Phase 3, lokal saja)
+
+Butuh Foundry (v1.8.x). `forge-std` adalah git submodule: `git submodule update --init`.
+
+```bash
+forge build
+forge test                              # unit, fuzz, invariant, multi-endpoint
+forge test --match-contract Invariant
+forge test --profile ci                 # fuzz 10k, invariant 1000 x 128
+```
+
+Fork test (`test/fork/`) hanya membaca dan dilewati bila `FORK_RPC_ROBINHOOD`, `FORK_RPC_BASE`, atau `FORK_RPC_ARBITRUM` kosong.
+
+Simulasi lokal tiga chain di satu node Anvil (akun dev yang sudah ter-unlock; tanpa private key):
+
+```bash
+anvil
+forge script script/local/DeployLocal.s.sol --rpc-url http://127.0.0.1:8545 \
+  --broadcast --slow --unlocked --sender 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+```

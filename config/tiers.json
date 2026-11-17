@@ -1,0 +1,16 @@
+{
+  "$comment": "Definisi tier XofN dalam format deployguide-xofn.md §2 (id operator; alamat per chain di-resolve dari config/dvn-labels.json lewat aliases). Jumlah DVN (2 atau 3 wajib + 1 dari 2 opsional) adalah aturan protokol dan dicocokkan dengan contracts/libraries/TierLib.sol oleh test/unit/TiersConfig.t.sol.",
+  "$status": "Nama operator WAJIB di bawah menunggu keputusan owner/PM (PRD P1): Google Cloud tidak ada di Robinhood, Polyhedra deprecated di Base/Arbitrum dan tidak ada di Robinhood, jadi daftar ini belum bisa dipasang di pathway mana pun. Tes Phase 3 memakai DVN tiruan. Jangan dipakai sebagai sumber alamat DVN sampai P1 diputuskan.",
+  "standard": {
+    "badge": "XofN 2+1/2",
+    "required": ["layerzero", "googlecloud|polyhedra"],
+    "optional": ["dtmms", "fcat"],
+    "optionalThreshold": 1
+  },
+  "fortress": {
+    "badge": "XofN 3+1/2",
+    "required": ["layerzero", "googlecloud", "polyhedra"],
+    "optional": ["dtmms", "fcat"],
+    "optionalThreshold": 1
+  }
+}

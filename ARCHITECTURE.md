@@ -20,7 +20,7 @@
 >
 > **Dokumen terkait:** `CLAUDE.md`, `PRD.md`, `DESIGN_SYSTEM.md`, `USER_FLOWS.md`, `deployguide-xofn.md`.
 >
-> **Status:** belum ada kode produk (Phase 0 selesai 17 Nov 2026). Struktur di bawah adalah **target**.
+> **Status:** Phase 0–3 selesai (17 Nov 2026). Kontrak ada dan teruji lokal (`proof/2026-11-17-phase3/notes.md`); belum ada yang ter-deploy di jaringan publik. Catatan implementasi Phase 3 ada di §15.
 
 ---
 
@@ -63,7 +63,7 @@ Tidak dipakai:
 | Toolchain | **Foundry** (forge/anvil/cast) **di root repo**, dipin dengan `foundryup --install <versi>` | v1.8.x (v1.8.3 terpasang di mesin dev) | [Pola: Cognita/Assize] + [Guide] |
 | Solidity | `solc` **0.8.24**, `evm_version = cancun`, optimizer 200 runs, `via_ir = false` | 0.8.24 | [Pola: semua]. **[Phase 0]:** paket LayerZero di bawah terkompilasi dan lulus tes dengan konfigurasi ini. Opcode cancun berjalan di Robinhood (4663 dan 46630) **kecuali `BLOBBASEFEE`**, sama seperti Arbitrum One, jadi jangan memakai `block.blobbasefee`. Bukti: `proof/2026-11-17-phase0/05-packages.md`, `06-robinhood-chain.md` |
 | Library | OpenZeppelin Contracts v5, termasuk `Clones` untuk curve | 5.x (smoke build Phase 0 memakai 5.6.1) | [Pola: semua]; dibutuhkan oleh OFT V2. Sebagian file OZ 5.6 ber-pragma `^0.8.26` dan tidak boleh diimpor selama solc dipin 0.8.24 |
-| LayerZero kontrak | `@layerzerolabs/oft-evm`, `@layerzerolabs/oapp-evm`, `@layerzerolabs/lz-evm-protocol-v2`, `@layerzerolabs/lz-evm-messagelib-v2`, `@layerzerolabs/test-devtools-evm-foundry` (TestHelperOz5) | oft-evm **4.0.1**, oapp-evm **0.4.1**, protocol-v2 **3.0.168**, messagelib-v2 **3.0.168**, test-devtools **8.0.1** (npm, 17 Nov 2026) [Phase 0] | Diinstal lewat npm di **`package.json` root**, lalu di-remap dari `node_modules`. Peer `@layerzerolabs/lz-evm-v1-0.7` (3.0.168) dan `solidity-bytes-utils` (0.8.4) **butuh persetujuan owner** sebelum Phase 3 |
+| LayerZero kontrak | `@layerzerolabs/oft-evm`, `@layerzerolabs/oapp-evm`, `@layerzerolabs/lz-evm-protocol-v2`, `@layerzerolabs/lz-evm-messagelib-v2`, `@layerzerolabs/test-devtools-evm-foundry` (TestHelperOz5) | oft-evm **4.0.1**, oapp-evm **0.4.1**, protocol-v2 **3.0.168**, messagelib-v2 **3.0.168**, test-devtools **8.0.1** (npm, 17 Nov 2026) [Phase 0] | Diinstal lewat npm di **`package.json` root**, lalu di-remap dari `node_modules`. Peer `@layerzerolabs/lz-evm-v1-0.7` (3.0.168) dan `solidity-bytes-utils` (0.8.4) **disetujui owner 17 Nov 2026** dan dipasang sebagai devDependency bersama `@openzeppelin/contracts` 5.6.1. `forge-std` v1.9.7 dipasang lewat git di `lib/` |
 | LayerZero devtools | Hardhat + `@layerzerolabs/toolbox-hardhat` dengan `layerzero.config.ts`, **hanya untuk inspeksi** (`lz:oapp:config:get`, `lz:oapp:config:get:default`) | terbaru [Belum] | [Guide §1, §4.2, §7.2]. Butuh persetujuan dependency, dan **belum dipasang**: pembacaan default config memakai `cast call` yang setara (Phase 0). Task yang menulis (`lz:oapp:wire`) **dilarang** selama Phase 6–7 FROZEN |
 | Alamat seragam | **CreateX** (CREATE3) + `DEPLOY_SALT` | `0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed` | [Brief + Guide]. **[Phase 0]:** bytecode identik di Robinhood, Robinhood testnet, Base, dan Arbitrum. EndpointV2 Robinhood berbeda dari Base/Arbitrum, jadi alamat seragam butuh CREATE3, bukan CREATE2 |
 | Test | forge unit + fuzz + invariant + fork **read-only** + multi-endpoint | — | [Pola: Cognita/Assize] + [Brief] |
@@ -87,10 +87,10 @@ fullstack-xofn/
 │  ├─ XofNGraduator.sol    # owner sementara token, graduate() + expandAndLock() + retryRemote()
 │  ├─ XofNRemote.sol       # OApp + composer di chain ekspansi
 │  ├─ XofNRegistry.sol     # tier per token + verify(token) / verifyEid — di setiap chain
-│  ├─ interfaces/  libraries/ (TierLib, UlnConfigLib)
+│  ├─ interfaces/  libraries/ (TierLib, PoolSeeder, Create3, ExpansionMsg, XofNTokenDeployer)
 ├─ test/                               # forge: unit/ fuzz/ invariant/ lz/ (multi-endpoint) fork/ (read-only) mocks/
 ├─ script/
-│  ├─ local/                           # Anvil saja (Phase 3–4)
+│  ├─ local/                           # Anvil saja (Phase 3–4): DeployLocal.s.sol, LocalRelay.sol
 │  └─ (01_DeployCore, 02_TransferToSafe, 10_DeployRemote, 11_WireInfra — Phase 6–7, FROZEN, belum dibuat)
 ├─ config/
 │  ├─ tiers.json                       # [Guide] definisi Standard & Fortress per pathway (isi menunggu P1)
@@ -309,6 +309,31 @@ TAHAP 2 ──expandAndLock(token)──► EXPANDING, per EID (independen, bisa
 
 Sampai PM memberi perintah, **hanya** `script/local/*` (Anvil) yang boleh dibuat atau dijalankan.
 
+#### 5.6.1 Urutan deploy dorman (Opsi A, PRD P47) — referensi, tetap FROZEN
+
+Diselaraskan dengan `ROBINHOOD_PRE_CA_MAINNET_DEPLOYMENT.md` (playbook) dan diuji lokal di `test/lz/GoLive.t.sol`. Tabel di atas tetap acuan fase. Urutan ini menggantikan bagian guide yang bertentangan, yaitu owner awal dan transfer ke Safe. **Tidak ada script publik yang dibuat dari sini sampai PM membuka Phase 6–7.**
+
+Per chain, satu langkah = satu transaksi oleh manusia (keystore `--account` atau `--ledger`, playbook §1.1–1.2). Agent hanya boleh menjalankan dry-run tanpa key.
+
+1. **Library terhubung** (P44): `TierLib`, `PoolSeeder`, `XofNTokenDeployer`. Harus ada sebelum Graduator dan Remote dibuat.
+2. **Registry**: `new XofNRegistry(endpoint, Safe)`. Owner = Safe **sejak constructor**. EOA deployer tidak pernah memegang Registry, jadi tidak ada saat di mana EOA bisa membuka launchpad (syarat c).
+3. **Safe** mengisi daftar putih DVN (`setDvnAllowed`). Ini wajib sebelum langkah 5 dan 6, karena constructor Graduator dan Remote memvalidasi resep terhadap Registry (`TierLib.validate` → `DvnNotAllowed`).
+4. **Curve implementation**: `new XofNCurve()`.
+5. **Graduator** (home): owner awal = EOA deployer polos (`code.length == 0`, tanpa delegasi EIP-7702). Parameter ekonomi, pathway, dan `lpRecipient` beku di sini.
+6. **Remote** (chain ekspansi, Fase 2): owner awal = EOA deployer.
+7. **Wiring infrastruktur** oleh EOA deployer selama launch masih tertutup: `setPeer` (sekali per EID), library, ULN, dan executor pathway Graduator↔Remote dengan resep Fortress di kedua arah.
+8. **Serah terima**: untuk Graduator dan Remote, `setDelegate(Safe)` **lalu** `transferOwnership(Safe)`. Urutan terbalik meninggalkan EOA sebagai delegate endpoint yang masih bisa mengubah pathway infrastruktur (syarat d, tes pembanding `test_wrongOrder_leavesEoaDelegate`).
+9. **Status Deployed (dorman)**: `launch()` revert `OnlyRegistrar` (syarat a). Verifikasi source dan manifest dibuat di tahap ini.
+10. **Go-live (saklar)**: saat PM siap, **Safe** memanggil `Registry.setRegistrar(graduator)` di home, dan `setRegistrar(remote)` di Registry tiap chain ekspansi. Sekali pasang, tidak bisa diganti atau dibatalkan (syarat b), dan tanpa redeploy. Status menjadi Live.
+
+Catatan pelaksanaan:
+
+- **Verifikasi source** lewat UI Blockscout, karena API-nya diblokir (playbook §4). Perintah `--verify --verifier blockscout` di guide akan gagal. Yang diverifikasi: library, lalu Registry, Curve, Graduator/Remote dengan peta `libraries` di standard JSON.
+- **`deployBlock`** di manifest diambil dari receipt transaksi (blok L2). `block.number` di Orbit mengembalikan blok L1.
+- **Manifest** publik memuat field `status`: `deployed-dormant` atau `live` (P52). Aplikasi tidak boleh menyalakan aksi launch untuk status selain `live`.
+- **CA dan launch adalah tugas PM** (P53). Agent tidak memanggil fungsi produk apa pun di jaringan publik, termasuk untuk smoke test.
+- Bila Fase 1 go-live sebelum Remote ada, token hanya bisa lulus lokal. `expandAndLock` menunggu peer dan pathway infrastruktur di Fase 2 (P47, P38).
+
 ---
 
 ## 6. Pola tes Foundry
@@ -433,7 +458,7 @@ Migrasi bernomor `supabase/migrations/0001_*.sql` [Pola: Cognita]. Tipe dihasilk
   ```
 - `addresses.ts` menggabungkan file-file jaringan aktif menjadi peta per `ChainInfo.key`.
 - Saat ini hanya **`local.json`** yang boleh dibuat. File jaringan publik dibuat di Phase 6–7 (**FROZEN**).
-- Format guide memuat satu chain per file, sedangkan simulasi lokal butuh tiga chain (Robinhood, Base, Arbitrum mock). Bentuk `local.json` untuk tiga chain itu [Belum]; diputuskan di awal Phase 3 tanpa menambah file jaringan publik.
+- Format guide memuat satu chain per file, sedangkan simulasi lokal butuh tiga chain. **Bentuk `local.json` [Phase 3]:** `{ network, chainId, localRelay, note, chains: { robinhood, base, arbitrum } }`, dan setiap entri `chains.<key>` berbentuk sama dengan satu file guide (`chainId`, `eid`, `endpointV2`, `contracts`, `owner`, `deployBlock`, `verifiedSource`) ditambah `mocks` (AMM, library, executor, DVN tiruan). File ini ditulis `script/local/DeployLocal.s.sol`.
 - **Jangan pernah** menyalin alamat dari proyek lain. Kasus Assize: `addresses.ts`-nya masih berisi kontrak Cognita.
 
 ### 10.4 Mode aplikasi (`src/lib/mode.ts`)
@@ -564,13 +589,13 @@ Butir 1–5, 7, dan 8 diverifikasi di Phase 0 (17 Nov 2026). Bukti: `proof/2026-
 3. ~~Versi paket `@layerzerolabs/*`; dukungan cancun di Robinhood~~ — **terverifikasi** (§1.2).
 4. ~~Ketersediaan CreateX di Robinhood Chain~~ — **terverifikasi** (§1.2).
 5. ~~Semantik `getConfig` dan nilai 0 di ULN (P5); `CONFIG_TYPE_*`; alamat dead DVN~~ — **terverifikasi** (§7).
-6. Cara integrasi lokal multi-chain untuk Phase 4. Opsinya: beberapa instance Anvil + relayer lokal sederhana, atau mode simulasi yang memutar event hasil `TestHelperOz5`. [Usulan] Mulai dari mode simulasi; putuskan di akhir Phase 3.
+6. Cara integrasi lokal multi-chain untuk Phase 4. **[Phase 3] Rekomendasi:** satu node Anvil dengan tiga endpoint LayerZero tiruan (EID 1/2/3) dan `LocalRelay` yang mengantar pesan saat `deliverNext()` dipanggil. Sudah berjalan: `script/local/DeployLocal.s.sol`, siklus penuh sampai `verify()` = true lewat `cast` (PRD P46). Chain ID ketiga "chain" sama (31337), jadi UI membedakannya lewat EID dan alamat dari manifest.
 7. OFT API LayerZero — endpoint dan auth **terverifikasi** (§7). Rate limit tetap [Belum].
 8. ~~AMM di ketiga chain (P9)~~ — **terverifikasi**: Uniswap v2, v3, v4 ada di Robinhood, Base, dan Arbitrum. Antarmuka compose mengikuti keputusan P2/P9.
 9. Perbedaan API three r170 (HTML) → ≥ r184 (npm), misalnya `OutputPass`, `RoomEnvironment`, dan clipping. Cek saat port.
 10. Pola URL halaman LayerZero Scan untuk `scan.ts` (situs web merespons 429 saat diperiksa). Cek di Phase 2. API Scan bisa dibaca tanpa key: `https://scan.layerzero-api.com/v1/messages/{guid|tx|oapp|pathway}/…` (spesifikasi di `/v1/openapi`) [pelengkap Phase 0].
 11. `block.number` di Arbitrum dan Robinhood adalah perkiraan blok L1. Batas ukuran kode Robinhood 96 KB. Biaya = gas L2 + data L1.
-12. Urutan state machine §5.3 (resep sebelum likuiditas): keputusan P28 harus tercatat sebelum Phase 3 dimulai.
+12. ~~Urutan state machine §5.3 (resep sebelum likuiditas)~~ — **diputuskan owner 17 Nov 2026 (P28)** dan diimplementasikan.
 13. Pelengkap guide §4.2: default config **mainnet** keenam arah sudah dibaca lewat `cast call` di Phase 0 (setara `lz:oapp:config:get:default`; `proof/2026-11-17-phase0/02-dvn-pathways.md`). ~~Default config dan `dstConfig` DVN testnet, serta contoh transaksi di LayerZero Scan~~ — **terverifikasi** (`proof/2026-11-17-phase0-addendum/notes.md`). Catatan: default testnet = 1 DVN LayerZero Labs (bukan Dead DVN), jadi tes testnet tanpa konfigurasi eksplisit tidak gagal seperti di mainnet; `nativeCap` dari Robinhood testnet = 0.
 14. ~~Pelengkap P2: USDG/USDT0/USDe sebagai OFT dan peer-nya ke/dari Robinhood~~ — **terverifikasi**: tidak ada rute OFT langsung Robinhood↔Base/Arbitrum; USDe dan USDG lewat Ethereum, USDT0 tidak ada di Robinhood.
 15. Foundry: v1.8.3 terpasang di mesin dev; v1.8.x tertinggi v1.8.7; rilis terbaru v1.9.0.
@@ -604,5 +629,23 @@ Versi exact ada di `package.json`. Selisih dari baseline §1.1 atau dari rilis t
 
 Paket tipe (`@types/node`, `@types/react`, `@types/react-dom`, `@types/three`) ditambahkan sebagai devDependency pendukung TypeScript. `vitest.config.mts` memakai ekstensi `.mts` karena `package.json` tidak ber-`"type": "module"`. Bila Node di mesin dev dinaikkan ke ≥ 22.12, Tailwind dan Vitest bisa dinaikkan ke rilis terbaru.
 16. Versi Hardhat + `@layerzerolabs/toolbox-hardhat` yang kompatibel dengan layout Foundry-root + Next. Hanya relevan bila PM mensyaratkan keluaran task devtools; pembacaan `cast call` sudah setara.
-17. Bentuk `deployments/local.json` untuk tiga chain simulasi (§10.3).
-18. Desain CREATE3 untuk alamat token seragam yang tidak bisa didahului pihak lain (P39).
+17. ~~Bentuk `deployments/local.json` untuk tiga chain simulasi~~ — **ditetapkan di Phase 3** (§10.3).
+18. ~~Desain CREATE3 untuk alamat token seragam yang tidak bisa didahului pihak lain~~ — **terbukti di Phase 3** (`contracts/libraries/Create3.sol`, `test/unit/Create3.t.sol`; P39).
+
+### Catatan implementasi Phase 3 (kontrak, 17 Nov 2026)
+
+Bukti: `proof/2026-11-17-phase3/notes.md`. Yang berbeda dari, atau lebih rinci daripada, §5:
+
+- **Ukuran kode.** Dengan bytecode `XofNToken` tertanam, `XofNGraduator` 41,8 KB dan `XofNRemote` 32,3 KB, di atas batas EIP-170 (24 576 byte) yang berlaku di Base dan Arbitrum. Tiga **library terhubung** dipakai: `XofNTokenDeployer` (memegang bytecode token), `PoolSeeder`, dan fungsi berat `TierLib`. Semuanya dijalankan lewat delegatecall, jadi `msg.sender` di endpoint dan alamat CREATE3 tetap milik Graduator/Remote. Ukuran sekarang: Graduator 21,9 KB, Remote 11,7 KB, Token 12,3 KB (P44).
+- **Tier = jumlah** (`TierLib`): Standard tepat 2 DVN wajib, Fortress tepat 3, opsional tepat 2 dengan ambang 1. Resep per pathway (library, executor, konfirmasi, gas enforced options, tiga daftar DVN) dikunci di constructor Graduator (sisi home) dan Remote (sisi ekspansi), divalidasi terhadap daftar putih di Registry dan terhadap endpoint. Fortress boleh kosong untuk sebuah pathway; `launch` lalu menolak Fortress untuk chain itu.
+- **`tierHash`** = hash atas library kirim/terima, ULN kirim, ULN terima, executor, **dan enforced options** token (lebih luas dari usulan §5.2). Registry menghitungnya dari pembacaan langsung endpoint dan token.
+- **State machine ekspansi** per EID di Graduator: `None → DeploySent → Configured → LiquiditySent → RemoteLocked`. Pesannya lebih sedikit daripada sketsa §5.3: satu pesan DEPLOY (deploy + resep + peer sisi remote), satu ack CONFIGURED, satu OFT send ber-compose, satu ack LOCKED. Pembuatan pool dan penguncian token remote terjadi dalam satu `lzCompose`.
+- **Fee.** `expandAndLock` wajib menutup pesan DEPLOY; sisa `msg.value` menjadi escrow fee likuiditas per chain. Likuiditas berangkat otomatis saat ack CONFIGURED tiba; bila escrow kurang, langkah itu menunggu `retryRemote(token, eid)`. Ack dibayar dari value yang dibawa executor; bila tidak ada, `XofNRemote.reAck(homeToken)` (siapa pun, di chain ekspansi).
+- **`retryRemote(token, eid)`** mengulang `DeploySent` (kirim ulang DEPLOY; Remote idempoten) atau `Configured` (kirim likuiditas). Setelah `LiquiditySent` pengulangan hanya ada di chain tujuan: `endpoint.lzReceive`, `endpoint.lzCompose` ("retryCompose"), atau `reAck`.
+- **Urutan nonce LayerZero.** Endpoint hanya menjalankan sebuah pesan bila semua nonce sebelumnya sudah terverifikasi. Pesan ulang tidak bisa mendahului pesan asli yang belum terverifikasi; DVN yang mati permanen memblokir pathway itu.
+- **Composer.** Selain "hanya endpoint" dan "hanya token terdaftar", `lzCompose` mensyaratkan pesan compose berasal dari Graduator (`composeFrom` + `srcEid`); tanpa itu pemegang token mana pun bisa memicu logika pool. Alamat AMM dan penerima LP dikunci di constructor Remote, tidak dibawa `composeMsg` (berbeda dari §5.4; permukaan serangnya lebih sempit). `composeMsg` hanya berisi jumlah ETH pasangan.
+- **Pengisian pool (`PoolSeeder`).** Aset dikirim langsung ke pair lalu `mint` (router bisa diblokir dengan donasi + `sync`). Bila pair sudah berisi likuiditas pihak lain, setoran ditukar sebagian dulu sampai rasionya sama dengan rasio pool. Versi pertama ("geser ke harga target, setor sisanya") bocor ke LP yang sudah ada; ditemukan review independen dan diperbaiki sebelum selesai.
+- **Pembagian saat graduation.** Semua pool dibuka pada harga yang sama: tiap chain ekspansi mendapat `expansionPairEth` dan token sebanding (dibulatkan ke kelipatan dust 1e12); sisanya ke pool home.
+- **Curve.** Constant product dengan cadangan virtual yang diturunkan dari `startPrice`, `graduationThreshold`, dan `saleSupply`; tepat `saleSupply` token terjual saat ambang tercapai; tanpa fee (P17).
+- **Hardening tambahan:** `transferOwnership` token ditutup; `setPeer` Graduator/Remote sekali pasang; `expandAndLock` menolak pathway infrastruktur yang masih default; `Launched` tidak memuat nama/ticker (dibaca dari token).
+- **Belum dibuat:** `layerzero.config.ts` dan devtools Hardhat (butuh persetujuan dependency; pembacaan `cast` setara). Script deploy jaringan publik tidak ada (Phase 6–7 FROZEN).

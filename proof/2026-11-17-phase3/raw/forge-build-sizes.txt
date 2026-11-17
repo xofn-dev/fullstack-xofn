@@ -1,0 +1,12 @@
+$ forge --version
+forge Version: 1.8.3
+Commit SHA: cae51ad458f6abb64852b7709eb784352429825d
+
+$ forge build --sizes
+| Contract           | Runtime Size (B) | Initcode Size (B) | Runtime Margin (B) | Initcode Margin (B) |
+| XofNCurve          | 3,764            | 3,848             | 20,812             | 45,304              |
+| XofNGraduator      | 21,873           | 28,142            | 2,703              | 21,010              |
+| XofNRegistry       | 6,703            | 7,114             | 17,873             | 42,038              |
+| XofNRemote         | 11,670           | 16,580            | 12,906             | 32,572              |
+| XofNToken          | 12,340           | 14,410            | 12,236             | 34,742              |
+| XofNTokenDeployer  | 15,909           | 15,962            | 8,667              | 33,190              |
