@@ -3,31 +3,49 @@
 import { useState } from 'react';
 import type { ChainInfo } from '@/lib/chains';
 import { cn } from '@/lib/cn';
-import { looksLikeEvmAddress } from '@/lib/format';
+import { useRouter } from 'next/navigation';
+import { isAddress } from 'viem';
+import type { ChainKey } from '@/types/enums';
 import { useOverlay } from '@/components/ui/overlay-provider';
 import { SplitHeading } from '@/components/landing/split-heading';
 import { CHECK_SAMPLES, type CheckSampleKey } from '@/components/landing/demo-data';
 
 const SAMPLE_KEYS = Object.keys(CHECK_SAMPLES) as CheckSampleKey[];
 
-// Section 8 — XofN Check versi demo. Phase 1 belum punya pembaca chain (itu Phase 2),
-// jadi alamat apa pun TIDAK pernah diberi hasil: hanya sampel berlabel simulasi yang tampil.
+// Section 8 — XofN Check di landing. Alamat yang sah dibawa ke Check nyata (/check/[chain]/[address]);
+// panel di bawahnya hanya menampilkan SAMPEL berlabel simulasi dan tidak pernah dicampur dengan
+// hasil nyata (USER_FLOWS Flow C).
 export function CheckDemo({ home, expansions }: { home: ChainInfo; expansions: ChainInfo[] }) {
   const [address, setAddress] = useState('');
   const [sampleKey, setSampleKey] = useState<CheckSampleKey>('standard');
   const [error, setError] = useState('');
   const [inspected, setInspected] = useState(false);
+  const [chain, setChain] = useState<ChainKey>(home.key);
+  const [pending, setPending] = useState(false);
+  const router = useRouter();
   const { toast } = useOverlay();
   const sample = CHECK_SAMPLES[sampleKey];
+  const chains = [home, ...expansions];
+  // Check nyata hanya ada bila chain punya endpoint dan RPC terdaftar (bukan jaringan lokal).
+  const liveAvailable = chains.some((item) => item.lz !== null && item.publicRpc !== null);
 
   const inspect = () => {
     const value = address.trim();
     if (value) {
-      setError(
-        looksLikeEvmAddress(value)
-          ? 'LIVE CHECK UNAVAILABLE — This preview has no RPC connection. No security result will be fabricated for this address.'
-          : 'ENTER A VALID EVM ADDRESS (0x + 40 hexadecimal characters), or choose a sample demo.',
-      );
+      if (!isAddress(value, { strict: false })) {
+        setError('ENTER A VALID EVM ADDRESS (0x + 40 hexadecimal characters), or choose a sample demo.');
+        return;
+      }
+      if (!liveAvailable) {
+        setError(
+          'LIVE CHECK UNAVAILABLE — No RPC connection is configured for this network. No security result will be fabricated for this address.',
+        );
+        return;
+      }
+      // Alamat nyata tidak pernah dijawab dengan data sampel: ia dibawa ke Check nyata (F2).
+      setError('');
+      setPending(true);
+      router.push(`/check/${chain}/${value.toLowerCase()}`);
       return;
     }
     setError('');
@@ -69,7 +87,7 @@ export function CheckDemo({ home, expansions }: { home: ChainInfo; expansions: C
           </div>
           <div className="stack-gap">
             <span className="tag warn">
-              <i /> DEMONSTRATION DATA ONLY · NO RPC CONNECTION
+              <i /> SAMPLES ARE SIMULATED · ADDRESSES ARE READ FROM CHAIN
             </span>
           </div>
         </div>
@@ -82,7 +100,7 @@ export function CheckDemo({ home, expansions }: { home: ChainInfo; expansions: C
             </div>
             <span className="mono">XOFN_CHECK / CONFIG_INSPECTOR</span>
             <span className="tag">
-              <i /> DEMO
+              <i /> SAMPLE
             </span>
           </div>
           <div className="terminal-body">
@@ -102,11 +120,26 @@ export function CheckDemo({ home, expansions }: { home: ChainInfo; expansions: C
                   if (event.key === 'Enter') inspect();
                 }}
               />
-              <button className="btn primary small" type="button" onClick={inspect}>
-                Inspect <span className="arr">↗</span>
+              <button className="btn primary small" type="button" onClick={inspect} disabled={pending}>
+                {pending ? 'Reading chain…' : 'Inspect'} <span className="arr">↗</span>
               </button>
             </div>
             <div className="sample-row">
+              <label className="field-label" htmlFor="checkChain">
+                CHAIN
+              </label>
+              <select
+                id="checkChain"
+                className="field"
+                value={chain}
+                onChange={(event) => setChain(event.target.value as ChainKey)}
+              >
+                {chains.map((item) => (
+                  <option key={item.key} value={item.key}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
               <label className="field-label" htmlFor="sampleSelect">
                 RUN A SAMPLE
               </label>

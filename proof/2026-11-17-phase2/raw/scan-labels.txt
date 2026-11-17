@@ -1,0 +1,146 @@
+# Pemindaian lewat XofN Check (API lokal), 17 Nov 2026 — fakta konfigurasi, bukan penilaian
+## 84 OApp Robinhood (metadata LayerZero)
+0x0000198c940d8cd70cb9acec5e3af8216ac57d2f IMDSTR overall=none owner0=false delegate0=false paths=
+0x058e7b30200d001130232e8fbfdf900590e0baa9 E280 overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0,arbitrum:two-plus:2+0
+0x0628714db354cb579a88f68bcf46f3889c07a626 - overall=none owner0=false delegate0=false paths=
+0x0830a9dd26a04e959657ab6788d45f5725590c32 DEGEN overall=two-plus owner0=false delegate0=false paths=base:two-plus:3+0,arbitrum:two-plus:3+0
+0x08fc21cb676ac7288f0a0b2397ca1b05d467de80 PEPEWOJAK overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x0a9f70780e52525b4a5e05c6dd462c7bb219f73e - overall=none owner0=true delegate0=true paths=
+0x0aa0b791f870d8c6f7dd310639c61991bb3e5d41 FROTH overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x0d54755f5106bfdb43f7a35f5d49a23f940628d1 - overall=none owner0=false delegate0=false paths=
+0x1200850ebe12fd581f3869ff93c9e790913b1cdc - overall=none owner0=false delegate0=false paths=
+0x15090798a22388aae8f57a8d64560fbffad77f6f - overall=two-plus owner0=false delegate0=false paths=base:two-plus:1+1,arbitrum:two-plus:1+1
+0x178e54df3d091ee4d0b2534742ef9e3692b76526 BNKR overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x1aa89c4ab9884cb65b759a3cc3a1690744d687a6 xTOPAZ overall=none owner0=false delegate0=false paths=
+0x1bb124289035709f1dae9f33842c3ef195688c61 - overall=none owner0=false delegate0=false paths=
+0x211cc4dd073734da055fbf44a2b4667d5e5fe5d2 sUSDe overall=none owner0=false delegate0=false paths=
+0x22237f72edfcf61eac8af05fb045f2a0b7173cd0 - overall=none owner0=false delegate0=false paths=
+0x2bab80c0a0754c478fb7e9ba2a60ffdd21968580 - overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0,arbitrum:two-plus:2+0
+0x2e5469d501633f0f3151e6e185c2828abc810c95 - overall=none owner0=false delegate0=false paths=
+0x2e8e2dbf58b5f141f9a3d04dba0812b416574e83 DOPAMEME overall=none owner0=false delegate0=false paths=
+0x319e3271becc606b2613d402e47d17639fcf52e1 WPRL overall=two-plus owner0=false delegate0=false paths=arbitrum:two-plus:0+2
+0x37f26e3025b3dc50e0ee9f610d386803b42d0685 - overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x3d1a9bb61210e2d996d770038adc9769271f30bf DRV overall=two-plus owner0=false delegate0=false paths=base:two-plus:3+0,arbitrum:two-plus:3+0
+0x41ea4286ce7b56ce26ddab287c66ffb965f9561e ACAT overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x46126b19f402c3455728cfab5c7c5f7f1b386719 - overall=none owner0=false delegate0=false paths=
+0x49aaa987b1a7e9e4ae091dcd8332c39f322d7d28 - overall=two-plus owner0=false delegate0=false paths=arbitrum:two-plus:3+0
+0x4d78106c67bd94c5b4af4c651e7f6d8d9123e983 - overall=none owner0=false delegate0=false paths=
+0x4e01d3ca29e68715b002afd30f834ae6d299fb03 - overall=none owner0=false delegate0=false paths=
+0x4e5195469a0360f5dfe811730c9ccacff0a0feee r33 overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x501ebf66d76a96d4fb26ccead42957653e16b8b8 evaUSDT overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0,arbitrum:two-plus:2+0
+0x50832d74a7160e2f7d361f5e678e107d228b9aa6 ARENA overall=none owner0=false delegate0=false paths=
+0x5173d45a1191ee33cbb7d8c7e65f21b04ed54802 RAM overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x57069d845701b50f41327362c1c23789043f8dec PITBOY overall=two-plus owner0=false delegate0=false paths=base:two-plus:3+0
+0x58538e6a46e07434d7e7375bc268d3cb839c0133 ENA overall=none owner0=false delegate0=false paths=
+0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34 USDe overall=none owner0=false delegate0=false paths=
+0x5e49e1f85813f2b65858860a3fa231b4186f2e0e PENDLE overall=none owner0=false delegate0=false paths=
+0x5f7bb59365ce557c26dbcaa4ee9d39a4b95b7127 IMD overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x65b445518b1ad0d9c597731494f5bd2991b7ec08 ClawBank overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x661e831f5b2292cde0b7258023f571f678ee5168 - overall=none owner0=false delegate0=false paths=
+0x6af2abd793494ed9554abc41a4f287570ea196c0 - overall=none owner0=false delegate0=false paths=
+0x6fc1fa7ef337a3d59ab999ab445677f1682c8f9c PEPPER overall=two-plus owner0=false delegate0=false paths=base:two-plus:0+3
+0x70335756320e1d9a9e8898f1ad0cc6745f82a415 - overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x741bd193b6b40f8703d2e116fd1965421f290f58 evaUSDC overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0,arbitrum:two-plus:2+0
+0x74be72affafbc8de30f0c11247814036314d625f PENGU overall=none owner0=false delegate0=false paths=
+0x7710a8acc606198440a5a1e440432aff992db08a LMRH overall=none owner0=false delegate0=false paths=
+0x79bbf4508b1391af3a0f4b30bb5fc4aa9ab0e07c Anon overall=two-plus owner0=false delegate0=false paths=base:two-plus:3+0,arbitrum:two-plus:3+0
+0x7ac87d8fdb45200fdd51e4aca225244485c984c5 SSR overall=two-plus owner0=false delegate0=false paths=base:two-plus:3+0
+0x7caee5eb5df382adc7810198fc3e9ab57adfd0d4 - overall=none owner0=false delegate0=false paths=
+0x803925daceccc32343cdac0c731db07a1a384bfb MARCO overall=none owner0=false delegate0=false paths=
+0x83f33dc7294b62ab62fd613adbc68a127aeacbe7 - overall=none owner0=false delegate0=false paths=
+0x87946d696c37a22a3002d71f8abe867fa8ee23b0 ANYONE overall=two-plus owner0=false delegate0=false paths=base:two-plus:3+0
+0x88669e5065ca9dc685877f1e4af21d18592c2373 - overall=none owner0=false delegate0=false paths=
+0x88c4c42ed68584ff02f5a00d5d3d985108a3961c EDEL overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0x89bbeadd5e23f498e470409cc140c4a614e11c23 SQUEEZE overall=two-plus owner0=false delegate0=false paths=base:two-plus:3+0
+0x89c05edddc64d3845cd7e690e324ec94a5d3731b - overall=none owner0=false delegate0=false paths=
+0x8ab562b810571869f4ddf895a5ef4e7cc921a6c7 - overall=unread owner0=false delegate0=false paths=base:unread:?+?,arbitrum:unread:?+?
+0x8f86a15ec17cb3369d8b3e666dadbc11daa82b79 APE overall=two-plus owner0=false delegate0=false paths=arbitrum:two-plus:3+0
+0x94bd230068639d6b4b640059383bdea81f77752d - overall=none owner0=false delegate0=false paths=
+0x972a89c9db59978e8b137476a60bfa824c061804 - overall=none owner0=false delegate0=false paths=
+0x9795f78b7c549508506b572f5afacbadc5241e60 - overall=none owner0=false delegate0=false paths=
+0x9c0e3165b44aa9b5d3569a8f31ce754fcb98f2b8 DROP overall=two-plus owner0=false delegate0=false paths=base:two-plus:3+0,arbitrum:two-plus:3+0
+0xa02b34421a3e282d6e8bb858b4c6a606b5e20eea - overall=none owner0=false delegate0=false paths=
+0xa3d68b74bf0528fdd07263c60d6488749044914b weETH overall=two-plus owner0=false delegate0=false paths=base:two-plus:4+0
+0xa8219d665c831ab5caadb14b24de9605383f2119 Surplus overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0xa85abef37c7e812aca761b2bec62fff7f3728f1e UP overall=two-plus owner0=false delegate0=false paths=base:two-plus:4+0
+0xac9ef66dc75e5340304d5cc48e185ff5262ae3ac FUEGO overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0,arbitrum:two-plus:2+0
+0xb0d02d4682c8c5736cf23cc673b1d90ebad05782 - overall=none owner0=false delegate0=false paths=
+0xbaabcb1800c539a58a46035d3982403a37fd6d5d MRDN overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0xc1a81188c9f95359de3c8d4cf93ad680691a3298 - overall=two-plus owner0=false delegate0=false paths=base:two-plus:0+3
+0xc69183690b42d6a51631dcb34f2f26cea7f6a273 - overall=none owner0=false delegate0=false paths=
+0xc713af275c54304847863b653c83a0d0847d8fd1 - overall=none owner0=false delegate0=false paths=
+0xc7d9168e70faf282aa6b0ecbef7af2c9c5c146f9 - overall=none owner0=false delegate0=false paths=
+0xc827828ad46f01f85aa1fa6c6bdcb83dde06e271 - overall=two-plus owner0=false delegate0=false paths=base:two-plus:0+3,arbitrum:two-plus:0+3
+0xcf03f585db0d5f190cf9570f026c980b319e3177 - overall=none owner0=false delegate0=false paths=
+0xd1b0d44e4f6ed940fcc7a9f59bf30daf62ccfe3d GITLAWB overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0xd6adce5eac5f40d29e2101436c38cf1cee8f4856 HYPE overall=two-plus owner0=false delegate0=false paths=arbitrum:two-plus:0+2
+0xd6e5fecaa4e3505c3844074634622ba9f1739fa5 - overall=none owner0=false delegate0=false paths=
+0xd9970074af1b5b5a7ac8fa42b9a5b54a56cbe866 - overall=none owner0=false delegate0=false paths=
+0xdd8bfd53abc8abda92d3a03d1fb846addb77d7a2 - overall=none owner0=false delegate0=false paths=
+0xe03623775f7d418abc59d35d81832dcfdf630f99 - overall=unread owner0=false delegate0=false paths=base:unread:?+?,arbitrum:unread:?+?
+0xe0f3c3186bf321de45e936e684994f5cc6039acb SOLD overall=none owner0=false delegate0=false paths=
+0xe42847ee3fee1b29065f14d39ecf664a04d70475 - overall=none owner0=false delegate0=false paths=
+0xe4cd25213df8419b33387006c9f4c0648b788489 MUSEBOX overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+0xe68c11244e186085cd12c767dc4c8f75f0c852bf CRPTK overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0,arbitrum:two-plus:2+0
+0xec92ca673d8249c35a5e6ba6f8cf16cdab117a10 - overall=none owner0=false delegate0=false paths=
+0xecd3029c5d22c8cdadb0799d05a2bb142e13b549 RAONI overall=two-plus owner0=false delegate0=false paths=base:two-plus:2+0
+
+## 58 OFT V2 di Base yang juga tercatat di Arbitrum (OFT API)
+0x09d4214c03d01f49544c0448dbe3a27f768f2b34 rUSD overall=none owner0=false delegate0=false admin=- paths=
+0x0b3eaead748facdb9d943d3407011f16eb17d0cf PMX overall=two-plus owner0=false delegate0=false admin=0xc8647b161278615348a5f4939f71f8e83dd878fb paths=arbitrum:two-plus:2+0/2+0
+0x0ceac003b0d2479bebec9f4b2ebad0a803759bbf WFRAX overall=none owner0=false delegate0=false admin=0xf59c41a57ab4565af7424f64981523dfd7a453c5 paths=
+0x0fc2a55d5bd13033f1ee0cdd11f60f7efe66f467 LA overall=two-plus owner0=false delegate0=false admin=0x3ae7f48024d50f6d3903fccc73733f386a590c1c paths=arbitrum:two-plus:3+7/3+7
+0x11a72d2a88468c09f1bb63fc729d8649e84275a9 XDC overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0x1bc71130a0e39942a7658878169764bbd8a45993 rsETH overall=none owner0=false delegate0=false admin=- paths=
+0x211cc4dd073734da055fbf44a2b4667d5e5fe5d2 sUSDe overall=none owner0=false delegate0=false admin=- paths=
+0x3124678d62d2aa1f615b54525310fbfda6dcf7ae SNSY overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:4+0/4+0
+0x31dba3c96481fde3cd81c2aaf51f2d8bf618c742 SOPH overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+1/2+1
+0x32af9ed768b48745a8e805fbce5616d0bd9868cf MOFT2 overall=two-plus owner0=false delegate0=false admin=- paths=robinhood:two-plus:1+1/1+1,arbitrum:two-plus:1+1/1+1
+0x333333c465a19c85f85c6cfbed7b16b0b26e3333 ORA overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:1+2/1+2
+0x35e5db674d8e93a03d814fa0ada70731efe8a4b9 USR overall=two-plus owner0=false delegate0=false admin=0x09b991406e2b7678a7d57741462d9bcae6a64614 paths=arbitrum:two-plus:0+2/0+2
+0x3ade6652f203d919697f8577f75eebb989a5c586 WNIBI overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0x3d63825b0d8669307366e6c8202f656b9e91d368 WGC overall=one-of-one owner0=true delegate0=true admin=- paths=arbitrum:one-of-one:1+0/1+0
+0x420fca0121dc28039145009570975747295f2329 COQ overall=two-plus owner0=false delegate0=false admin=- paths=robinhood:two-plus:2+1/2+1,arbitrum:two-plus:2+1/2+1
+0x441fcb23dfe8289cf572126fedcf450974adc891 RBTC overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0x458ad5b487f4442245e4c5ea7249009e607a5583 ZERO overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:1+2/1+2
+0x4e200fe2f3efb977d5fd9c430a41531fb04d97b8 ORDER overall=two-plus owner0=false delegate0=false admin=- paths=robinhood:two-plus:3+0/3+0,arbitrum:two-plus:3+0/3+0
+0x58538e6a46e07434d7e7375bc268d3cb839c0133 ENA overall=none owner0=false delegate0=false admin=- paths=
+0x58ade43a276ddf3e101941571ede398a32492ed7 pxETH overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0x590830dfdf9a3f68afcdde2694773debdf267774 GIZA overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34 USDe overall=none owner0=false delegate0=false admin=- paths=
+0x62344be8ca1c339b46274a4017dd87af436900b1 wsrUSD overall=none owner0=false delegate0=false admin=- paths=
+0x6985884c4392d348587b19cb9eaaf157f13271cd ZRO overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0x6b34d1c35689dba179c2eddf6a01530bbb1d28a8 CVAI overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:4+0/4+0
+0x6f756c0437a8c2193456a5bf09a61185a56dcc76 - overall=two-plus owner0=false delegate0=false admin=- paths=robinhood:two-plus:2+0/2+0,arbitrum:two-plus:4+0/4+0
+0x7431ada8a591c955a994a21710752ef9b882b8e3 MOR overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:4+0/4+0
+0x74897ef1b152e5a733d797cab5cee383fe052c56 - overall=two-plus owner0=false delegate0=false admin=- paths=robinhood:two-plus:4+0/4+0,arbitrum:two-plus:4+0/4+0
+0x75ce54301374e194edaa6ca2e3c118cf01d3a76b stNIBI overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0x77a4b0bfe5c7257f67a1de1b99aa7e157035b1b2 7007 overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:1+2/1+2
+0x79bbf4508b1391af3a0f4b30bb5fc4aa9ab0e07c Anon overall=two-plus owner0=false delegate0=false admin=- paths=robinhood:two-plus:3+0/3+0,arbitrum:two-plus:3+0/3+0
+0x7bbcf1b600565ae023a1806ef637af4739de3255 PRFI overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:4+0/4+0
+0x7ff7fa94b8b66ef313f7970d4eebd2cb3103a2c0 VANA overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:4+0/4+0
+0x85af271d1dfcbf53486d996f61d7ff0bba5582ea ALT overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0x91f9cc2649ac70a071602cade9b0c1a5868af51d WXTZ overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0x968be3f7bfef0f8edc3c1ad90232ebb0da0867aa SWORLD overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:4+0/4+0
+0x9ff7ea0cf94b8665c2f5d17560bd34ab9bbacd21 - overall=none owner0=false delegate0=false admin=- paths=
+0xb4444468e444f89e1c2cac2f1d3ee7e336cbd1f5 RZR overall=two-plus owner0=true delegate0=false admin=- paths=arbitrum:two-plus:1+2/1+2
+0xb5130f4767ab0acc579f25a76e8f9e977cb3f948 GOD overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0xb67675158b412d53fe6b68946483ba920b135ba1 wstUSR overall=two-plus owner0=false delegate0=false admin=0x472a62ba365976d2c7d5b1e66c0795c65ef75151 paths=arbitrum:two-plus:0+2/0+2
+0xb9d852a3f9b3a82e243faab0272604102a111e1a - overall=two-plus owner0=false delegate0=false admin=0x5699c09ca4586cd9ae0eefac676df41514d5eac1 paths=arbitrum:two-plus:2+0/2+0
+0xbe82cbe217bf4e0a87dd88c552e93054f4ef2c7c - overall=two-plus owner0=false delegate0=false admin=0xe4bff824f5b89005424902637a9269dc9ad5ae38 paths=arbitrum:two-plus:2+0/2+0
+0xc099ab708e20e8b25c63ca156d7cc94404c55416 - overall=two-plus owner0=false delegate0=false admin=0xb3deca3246ba9ae81cc1705b31ac7e1fc6c37436 paths=arbitrum:two-plus:2+0/2+0
+0xc227717ef4ae4d982e14789eb33ba942243c3fee MOZ overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:4+0/4+0
+0xc31389794ffac23331e0d9f611b7953f90aa5fdc RLP overall=two-plus owner0=false delegate0=false admin=0xbbf59f256849f7cf56f07bd3d4d9b02b1d22301d paths=arbitrum:two-plus:0+2/0+2
+0xc4d44c155f95fd4e94600d191a4a01bb571df7df GS overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:4+0/4+0
+0xc708b6887db46005da033501f8aebee72d191a5d USDtb overall=none owner0=false delegate0=false admin=- paths=
+0xca2671dcd031a72359f456c212f62a9bda737cd7 YUSD overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:4+0/4+0
+0xdb8e759859058952c34953c8469f464109826e52 - overall=two-plus owner0=false delegate0=false admin=- paths=robinhood:two-plus:3+0/3+0,arbitrum:two-plus:3+0/3+0
+0xe2b1dc2d4a3b4e59fdf0c47b71a7a86391a8b35a RWA overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0xe5e851b01dd3eda24fde709a407db44555b6d1e0 RIF overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0xe81941c13678a6396e438490601a40a34bf90dd2 VITAI overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:4+0/4+0
+0xe9a3b326c5b06fa848b11e07080c3ac926fbe787 TECH overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+1/2+1
+0xed97d39448d1c3891aafcb28c9cf63f893d65743 apxETH overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0xf3dd141109dfe8e4c006f88a2a8747a086e7c1f8 HOT overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+0/2+0
+0xfd72fbb61798f3bcb707f5ba98cb72a87cca02a2 - overall=two-plus owner0=false delegate0=false admin=0x60faa9545115fc71ab5460c9be6c54070f4ddf74 paths=arbitrum:two-plus:2+0/2+0
+0xfdd22ce6d1f66bc0ec89b20bf16ccb6670f55a5a thBILL overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:3+1/3+1
+0xfdfdfd005f127334f7c4eefef2252d2bf4b6e79e UFD overall=two-plus owner0=false delegate0=false admin=- paths=arbitrum:two-plus:2+1/2+1

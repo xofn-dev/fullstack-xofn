@@ -528,7 +528,7 @@ Item `[Belum]` diputuskan owner atau desainer. Sampai diputuskan, pakai rekomend
 | Chrome (NoticeBar, Nav, Footer, overlay) | **Selesai (Phase 1, 17 Nov 2026).** Nav D12, menu mobile, modal dengan fokus terjebak, toast, scroll progress, side index, cursor aura |
 | Section landing 1–16 | **Selesai (Phase 1, 17 Nov 2026)**, mode preview. Copy home chain D15, status D16, copy operator D17 |
 | 3D hero / arch / galaxy | **Selesai (Phase 1, 17 Nov 2026).** three 0.187, lifecycle + dispose, fallback statis, galaxy mati di ≤860px (D5), mekanisme *split* (D2) |
-| Halaman aplikasi (§6.2) | Belum mulai (Phase 2 untuk `/check`, Phase 4 untuk sisanya) |
+| Halaman aplikasi (§6.2) | **`/check` dan `/check/[chain]/[address]` selesai (Phase 2, 17 Nov 2026)**, termasuk kartu OG. Halaman lain di Phase 4 |
 
 Catatan implementasi Phase 1:
 - **Preflight Tailwind tidak dimuat.** Baseline ditulis di atas default browser, jadi hanya layer `theme` dan `utilities` yang dipakai. Utilitas border Tailwind perlu `border-solid` eksplisit.
@@ -536,5 +536,11 @@ Catatan implementasi Phase 1:
 - Style inline ber-hex di markup HTML dipindah ke kelas di `globals.css` dan dinormalkan ke token terdekat.
 - Heading dipecah per baris di JSX (`SplitHeading`), tidak lewat `innerHTML` saat runtime.
 - Perbaikan di luar baseline: fokus terlihat (`:focus-visible` mint), kontras judul langkah graduation, baris baru di rincian modal, tautan Connect Wallet di menu mobile.
+
+Catatan implementasi Phase 2:
+- Halaman aplikasi memakai kelas `.app-page` dan komponen terminal landing; latarnya heat glow CSS + langit bintang 2D tanpa konteks WebGL (D6).
+- Label Check: `1-OF-1` (danger), `2+` (caution, D13), `2+ · LOCKED` (mint), `BLOCKED` dan `NOT READ` (muted). Setiap label punya ikon dan teks, tidak hanya warna.
+- **Pengecualian hex kedua:** `src/lib/design-tokens.ts` mencerminkan token untuk `ImageResponse` (kartu OG), yang tidak bisa membaca variabel CSS. Nilainya wajib sama dengan `@theme`.
+- D18 diterapkan: NoticeBar preview berbunyi `NO TOKEN SALE · CHECK READS PUBLIC CHAIN DATA`.
 
 Perbarui tabel ini di akhir setiap task UI, lengkap dengan tanggal.

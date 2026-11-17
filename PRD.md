@@ -316,7 +316,7 @@ Phase **6 dan 7 (deploy) FROZEN total**: tidak dikerjakan sampai PM memberi peri
 |---|---|---|---|
 | **0** | Verifikasi riset (brief P0, guide §4): EID, DVN per pathway, semantik ULN, AMM, aset pasangan, paket, CreateX, lzRead. Hanya membaca docs/chain, **tanpa transaksi** | Tabel DVN per pathway dan rekomendasi P1–P9 terisi | Selesai 17 Nov 2026 + addendum home Robinhood (`proof/2026-11-17-phase0/09-addendum-robinhood-home.md`); **menunggu persetujuan gerbang** |
 | **1** | Fondasi repo (Next 16 di root dengan `src/`, Tailwind v4, env module, lint/test; ESLint/tsconfig mengabaikan `contracts/`, `test/`, `script/`, yang baru dibuat di Phase 3) + port landing HTML (mode preview, label NOT LIVE) | lint/typecheck/test/build lulus; landing setara HTML di 390/768/1280/1680; reduced motion OK | Selesai 17 Nov 2026; **menunggu persetujuan gerbang** (`proof/2026-11-17-phase1/notes.md`) |
-| **2** | XofN Check (brief P1): reader `getConfig` + `peers(eid)` + cache Supabase + kartu share. **Hanya membaca** OFT yang sudah ada di Robinhood, Base, Arbitrum | Hasil Check untuk 20 OFT populer cocok dengan pembacaan manual `getConfig` | Belum mulai |
+| **2** | XofN Check (brief P1): reader `getConfig` + `peers(eid)` + cache Supabase + kartu share. **Hanya membaca** OFT yang sudah ada di Robinhood, Base, Arbitrum | Hasil Check untuk 20 OFT populer cocok dengan pembacaan manual `getConfig` | Selesai 17 Nov 2026; **menunggu persetujuan gerbang** (`proof/2026-11-17-phase2/notes.md`) |
 | **3** | Kontrak, **lokal saja**. **3a (tahap 1):** Token OFT, Curve impl + clone, Graduator `graduate()`, Registry. **3b (tahap 2):** Remote, `expandAndLock`, composer, `retryRemote`, multi-endpoint TestHelperOz5 | Semua tes wajib §9.2 lulus lokal | Belum mulai |
 | **4** | Integrasi frontend: `/launch`, `/t/[address]` (graduate + expand), `/bridge`, `/contracts`, `/proof` terhadap Anvil lokal / mode simulasi. Flow tahap 1 lebih dulu | Semua flow di `USER_FLOWS.md` jalan end-to-end di lokal | Belum mulai |
 | **5** | Hardening & paket audit: review internal, `forge test --profile ci`, NatSpec, threat model. Fokus audit: Graduator, curve, registry, composer, `expandAndLock` [Guide] | Tidak ada temuan critical/high internal yang terbuka; paket audit siap | Belum mulai |
@@ -361,15 +361,15 @@ Angka minggu di brief adalah perkiraan awal dan harus direvisi setelah Phase 0 [
 - [x] Semua data demo berlabel. Disclaimer LayerZero ada di footer. Klaim "omnichain" tampil sebagai rencana.
 - [x] `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build` lulus.
 - [x] Tidak ada overflow di 360px. Reduced motion mematikan Lenis dan koreografi scroll.
-- [ ] Tidak ada kebocoran WebGL saat navigasi bolak-balik: belum bisa diuji di browser karena baru ada satu route; diuji di Phase 2 saat `/check` ada.
+- [x] Tidak ada kebocoran WebGL saat navigasi bolak-balik: teruji di Phase 2 (empat putaran landing ↔ `/check`; konteks hidup tidak pernah lebih dari tiga). — `proof/2026-11-17-phase2/notes.md`
 
 **Phase 2**
-- [ ] `/check/[chain]/[address]` membaca OFT nyata di Robinhood, Base, dan Arbitrum.
-- [ ] Hasil untuk 20 OFT populer cocok dengan pembacaan manual. Bukti disimpan di `proof/`.
-- [ ] Contoh 1-of-1, 2+, dan 2+ terkunci tampil dengan label benar; pathway Dead DVN berlabel "blocked".
-- [ ] Hasil Check untuk token 1-of-1, 2-of-2, dan 3+ cocok dengan pembacaan manual `getConfig` [Brief, tes wajib].
-- [ ] Ada "checked at" dan cache. Error RPC tidak memalsukan hasil.
-- [ ] Kartu share (OG image) bekerja.
+- [x] `/check/[chain]/[address]` membaca OFT nyata di Robinhood, Base, dan Arbitrum. — `proof/2026-11-17-phase2/notes.md`
+- [x] Hasil untuk 20 OFT populer cocok dengan pembacaan manual: 24 OFT, 33 pathway, semuanya cocok. — `proof/2026-11-17-phase2/raw/gate-20-oft.md`
+- [ ] Contoh 1-of-1, 2+, dan 2+ terkunci tampil dengan label benar; pathway Dead DVN berlabel "blocked". **Sebagian:** 1-of-1 dan 2+ terbukti dengan contoh nyata. Contoh nyata "2+ terkunci" dan "blocked" tidak ditemukan di set tiga chain; keduanya hanya terbukti lewat tes unit.
+- [x] Hasil Check untuk token 1-of-1, 2-of-2, dan 3+ cocok dengan pembacaan manual `getConfig` [Brief, tes wajib].
+- [x] Ada "checked at" dan cache. Error RPC tidak memalsukan hasil. Catatan: yang teruji adalah cache memori; cache Supabase belum pernah dijalankan terhadap Postgres nyata (tidak ada Docker di mesin dev).
+- [x] Kartu share (OG image) bekerja.
 
 **Phase 3**
 - [ ] 3a dan 3b: semua tes wajib §9.2 lulus dengan `forge test`, termasuk `--match-contract Invariant`.

@@ -5,11 +5,11 @@ import { useState } from 'react';
 import { cn } from '@/lib/cn';
 import { useOverlay } from '@/components/ui/overlay-provider';
 
-// D12: urutan nav aplikasi. Selama Phase 1 hanya landing yang ada, jadi tautan menunjuk ke anchor di "/".
-// Saat route aplikasi dibuat (Phase 2–4), href diganti ke route tanpa mengubah label.
+// D12: urutan nav aplikasi. Route yang sudah ada dituju langsung (/check, Phase 2); sisanya masih
+// menunjuk ke anchor di "/" sampai halamannya dibuat di Phase 4, tanpa mengubah label.
 const LINKS = [
   { href: '/#explore', label: 'Explore' },
-  { href: '/#check', label: 'XofN Check' },
+  { href: '/check', label: 'XofN Check' },
   { href: '/#launch', label: 'Launch' },
   { href: '/#bridge', label: 'Bridge' },
   { href: '/#proof', label: 'Proof' },
