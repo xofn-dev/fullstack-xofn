@@ -1,0 +1,35 @@
+# sumber: https://metadata.layerzero-api.com/v1/metadata (diakses 2026-11-17T10:13Z) — DVN V2 non-lzRead per testnet
+## robinhood-testnet
+0x52f615ecbcbf40e47a315c2d84d14fa2851e55b7 | id=horizen-labs | name=Horizen | deprecated=false
+0xa78a78a13074ed93ad447a26ec57121f29e8fec2 | id=layerzero-labs | name=LayerZero Labs | deprecated=false
+0x88b27057a9e00c5f05dda29241027aff63f9e6e0 | id=lz-dead-dvn | name=LZDeadDVN | deprecated=true
+0xcde82f74624525e24853b1f59c8b20a162a3d297 | id=nethermind | name=Twinstake | deprecated=false
+0x771d83e953ca8f113f02f18206ecf8bb93da3f0a | id=paxos | name=Paxos | deprecated=false
+## base-sepolia
+0x13a3d98d966a1e9b51efad2795039f481fbb9fb5 | id=FurtherFP | name=FurtherFP | deprecated=false
+0xdf04abb599c7b37dd5ffc0f8e94f6898120874ef | id=bitgo | name=BitGo | deprecated=true
+0xfa1a1804effec9000f75cd15d16d18b05738d467 | id=bitgo | name=BitGo | deprecated=true
+0xb1b2319767b86800c4cfe8623a72c00d9d90cfb6 | id=horizen-labs | name=Horizen | deprecated=false
+0xe1a12515f9ab2764b887bf60b923ca494ebbb2d6 | id=layerzero-labs | name=LayerZero Labs | deprecated=false
+0x78551adc2553ef1858a558f5300f7018aad2fa7e | id=lz-dead-dvn | name=LZDeadDVN | deprecated=true
+0xd9222cc3ccd1df7c070d700ea377d4ada2b86eb5 | id=nethermind | name=Twinstake | deprecated=false
+0x63ef73671245d1a290f2a675be9d906090f72a8d | id=p2p | name=P2P | deprecated=false
+0xd888b45e1ab362fd692c81cc8c39f003063e05e8 | id=paxos | name=Paxos | deprecated=false
+## arbitrum-sepolia
+0xc0354c93c78816d3b0cbf7c9f5a9c16e78cc9bee | id=FurtherFP | name=FurtherFP | deprecated=false
+0x47cee39389206557f88118a54efdbce13b28b6a4 | id=altlayer | name=AltLayer | deprecated=false
+0x73805fd2342dcd7b53349e6bba7462fefc040910 | id=anchorage | name=Anchorage | deprecated=false
+0x0fbb88ff8d38cd1e917149cd14076852f13e088e | id=bitgo | name=BitGo | deprecated=true
+0x500e6064cb1fe164974cc0a4fe9151928c870bbe | id=bitgo | name=BitGo | deprecated=true
+0x9f529527a6810f1b661fb2aeea19378ce5a2c23e | id=bware-labs | name=BWare | deprecated=true
+0x5e352bbde7376f817566927fb00b58d92d97e145 | id=citrea | name=Citrea | deprecated=false
+0xbc0c3eaee5d759f0ce13a59ad3113080ed7bd941 | id=frax | name=Frax | deprecated=false
+0xc7e652a4ac4f3a872024ba10b13ea0c53731af83 | id=frax | name=Frax | deprecated=true
+0xcdb4933d7f37560186aca8fdadfd5a3b3e27b088 | id=frax | name=Frax | deprecated=true
+0xc6cec4e6b8f3dc87e676d06a24864081311eda15 | id=horizen-labs | name=Horizen | deprecated=false
+0x7c84feb58183d3865e4e01d1b6c22ba2d227dc23 | id=joc | name=Japan Blockchain Foundation | deprecated=false
+0x53f488e93b4f1b60e8e83aa374dbe1780a1ee8a8 | id=layerzero-labs | name=LayerZero Labs | deprecated=false
+0xa85be08a6ce2771c730661766aacf2c8bb24c611 | id=lz-dead-dvn | name=LZDeadDVN | deprecated=true
+0x3a74f7174709842d3b8a14ce60b4aa2499f2a2f2 | id=nethermind | name=Twinstake | deprecated=false
+0x9051233c67a93020865cfe156429e0afab3e6b60 | id=paxos | name=Paxos | deprecated=false
+0x2e25112230bec11c632361861eeb29b080023c47 | id=wyoming | name=Wyoming | deprecated=false

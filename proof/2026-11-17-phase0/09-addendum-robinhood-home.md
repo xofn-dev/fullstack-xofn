@@ -89,7 +89,9 @@ Arah yang relevan sekarang berasal dari Robinhood (`raw/executor.txt`):
 5. **P36–P40** (ditambahkan saat review dokumen 17 Nov 2026, `PRD.md` §11): waktu keputusan vs Graduator immutable, letak daftar putih DVN, pathway infrastruktur (kunci vs Safe), alamat token seragam, dan ekonomi `expandAndLock`.
 6. **P35 — konfirmasi arah chain:** chat PM 15 Nov merujuk post X LayerZero ("tunggu chain mereka"), yang isinya tidak bisa dibaca (HTTP 402). Guide 17 Nov menetapkan Robinhood. Mohon konfirmasi bahwa guide v1.0 final.
 
-## 4. Tugas pelengkap Phase 0 (belum dikerjakan, read-only)
+## 4. Tugas pelengkap Phase 0 (read-only)
+
+> **Pembaruan 17 Nov 2026:** tugas di bawah sudah dikerjakan. Hasilnya ada di [`../2026-11-17-phase0-addendum/notes.md`](../2026-11-17-phase0-addendum/notes.md). Daftar di bawah dibiarkan sebagai catatan asal.
 
 - [x] Guide §4.2 metode 2, **mainnet**: default library, default ULN, dan default executor config keenam arah sudah dibaca lewat `cast call` di Phase 0 (`02-dvn-pathways.md` bagian "Konfigurasi default pathway", `raw/chains-defaults.txt`, `raw/executor.txt`). Ini data yang sama dengan keluaran `lz:oapp:config:get:default`.
 - [ ] Guide §4.2 metode 2, **testnet**: default config Robinhood testnet ↔ Base Sepolia / Arbitrum Sepolia, plus `dstConfig` DVN testnet. Dikerjakan dengan `cast call`; Hardhat + `@layerzerolabs/toolbox-hardhat` hanya bila PM mensyaratkan keluaran task devtools (butuh persetujuan dependency).
