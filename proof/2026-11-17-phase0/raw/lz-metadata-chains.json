@@ -1,0 +1,120 @@
+{
+  "source": "https://metadata.layerzero-api.com/v1/metadata",
+  "accessed": "2026-11-17T08:36Z",
+  "chains": {
+    "base": {
+      "nativeChainId": 8453,
+      "chainStack": "OP_STACK",
+      "nativeCurrency": "ETH",
+      "explorers": [
+        "https://basescan.org"
+      ],
+      "v2": {
+        "eid": "30184",
+        "stage": "mainnet",
+        "endpointV2": "0x1a44076050125825900e736c501f859c50fe728c",
+        "sendUln302": "0xb5320b0b3a13cc860893e2bd79fcd7e13484dda2",
+        "receiveUln302": "0xc70ab6f32772f59fbfc23889caf4ba3376c84baf",
+        "executor": "0x2cca08ae69e0c44b18a57ab2a87644234daebae4",
+        "deadDVN": "0x6498b0632f3834d7647367334838111c8c889703",
+        "blockedMessageLib": "0x1ccbf0db9c192d969de57e25b3ff09a25bb1d862",
+        "readLib1002": "0x1273141a3f7923aa2d9eddfa402440ce075ed8ff"
+      }
+    },
+    "arbitrum": {
+      "nativeChainId": 42161,
+      "chainStack": "ARB_STACK",
+      "nativeCurrency": "ETH",
+      "explorers": [
+        "https://arbiscan.io"
+      ],
+      "v2": {
+        "eid": "30110",
+        "stage": "mainnet",
+        "endpointV2": "0x1a44076050125825900e736c501f859c50fe728c",
+        "sendUln302": "0x975bcd720be66659e3eb3c0e4f1866a3020e493a",
+        "receiveUln302": "0x7b9e184e07a6ee1ac23eae0fe8d6be2f663f05e6",
+        "executor": "0x31cae3b7fb82d847621859fb1585353c5720660d",
+        "deadDVN": "0x758c419533ad64ce9d3413bc8d3a97b026098ec1",
+        "blockedMessageLib": "0x1ccbf0db9c192d969de57e25b3ff09a25bb1d862",
+        "readLib1002": "0xbcd4cadcac3f767c57c4f402932c4705df62beff"
+      }
+    },
+    "robinhood": {
+      "nativeChainId": 4663,
+      "chainStack": "ARB_STACK",
+      "nativeCurrency": "ETH",
+      "explorers": [
+        "https://robin.etherscan.io"
+      ],
+      "v2": {
+        "eid": "30416",
+        "stage": "mainnet",
+        "endpointV2": "0x6f475642a6e85809b1c36fa62763669b1b48dd5b",
+        "sendUln302": "0xc39161c743d0307eb9bcc9fef03eeb9dc4802de7",
+        "receiveUln302": "0xe1844c5d63a9543023008d332bd3d2e6f1fe1043",
+        "executor": "0x4208d6e27538189bb48e603d6123a94b8abe0a0b",
+        "deadDVN": "0x6788f52439aca6bff597d3eec2dc9a44b8fee842",
+        "blockedMessageLib": "0xc1ce56b2099ca68720592583c7984cab4b6d7e7a",
+        "readLib1002": null
+      }
+    },
+    "base-sepolia": {
+      "nativeChainId": 84532,
+      "chainStack": null,
+      "nativeCurrency": "ETH",
+      "explorers": [
+        "https://sepolia.basescan.org"
+      ],
+      "v2": {
+        "eid": "40245",
+        "stage": "testnet",
+        "endpointV2": "0x6edce65403992e310a62460808c4b910d972f10f",
+        "sendUln302": "0xc1868e054425d378095a003ecba3823a5d0135c9",
+        "receiveUln302": "0x12523de19dc41c91f7d2093e0cfbb76b17012c8d",
+        "executor": "0x8a3d588d9f6ac041476b094f97ff94ec30169d3d",
+        "deadDVN": "0x78551adc2553ef1858a558f5300f7018aad2fa7e",
+        "blockedMessageLib": "0x0c77d8d771ab35e2e184e7ce127f19ced31ff8c0",
+        "readLib1002": "0x29270f0cfc54432181c853cd25e2fb60a68e03f2"
+      }
+    },
+    "arbitrum-sepolia": {
+      "nativeChainId": 421614,
+      "chainStack": "ARB_STACK",
+      "nativeCurrency": "ETH",
+      "explorers": [
+        "https://sepolia.arbiscan.io"
+      ],
+      "v2": {
+        "eid": "40231",
+        "stage": "testnet",
+        "endpointV2": "0x6edce65403992e310a62460808c4b910d972f10f",
+        "sendUln302": "0x4f7cd4da19abb31b0ec98b9066b9e857b1bf9c0e",
+        "receiveUln302": "0x75db67cdab2824970131d5aa9cecfc9f69c69636",
+        "executor": "0x5df3a1cebbd9c8ba7f8df51fd632a9aef8308897",
+        "deadDVN": "0xa85be08a6ce2771c730661766aacf2c8bb24c611",
+        "blockedMessageLib": "0x0c77d8d771ab35e2e184e7ce127f19ced31ff8c0",
+        "readLib1002": "0x54320b901fde49ba98de821ccf374ba4358a8bf6"
+      }
+    },
+    "robinhood-testnet": {
+      "nativeChainId": 46630,
+      "chainStack": "ARB_STACK",
+      "nativeCurrency": "ETH",
+      "explorers": [
+        "https://explorer.testnet.chain.robinhood.com"
+      ],
+      "v2": {
+        "eid": "40451",
+        "stage": "testnet",
+        "endpointV2": "0x3acaaf60502791d199a5a5f0b173d78229ebfe32",
+        "sendUln302": "0x45841dd1ca50265da7614fc43a361e526c0e6160",
+        "receiveUln302": "0xd682ecf100f6f4284138aa925348633b0611ae21",
+        "executor": "0x701f3927871efcea1235db722f9e608ae120d243",
+        "deadDVN": "0x88b27057a9e00c5f05dda29241027aff63f9e6e0",
+        "blockedMessageLib": "0xa229b65cc2191bf60bc24efcda3487d7b5c0c9f0",
+        "readLib1002": null
+      }
+    }
+  }
+}

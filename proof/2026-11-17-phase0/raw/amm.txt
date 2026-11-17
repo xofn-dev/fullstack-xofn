@@ -1,0 +1,30 @@
+# 2026-11-17T08:48Z
+robinhood | UniswapV2Factory | 0x8bceaa40b9acdfaedf85adf4ff01f5ad6517937f | codeBytes=13859
+robinhood | UniswapV2Router02 | 0x89e5db8b5aa49aa85ac63f691524311aeb649eba | codeBytes=21902
+robinhood | UniswapV3Factory | 0x1f7d7550b1b028f7571e69a784071f0205fd2efa | codeBytes=24535
+robinhood | NonfungiblePositionManager | 0x73991a25c818bf1f1128deaab1492d45638de0d3 | codeBytes=24384
+robinhood | v4PoolManager | 0x8366a39cc670b4001a1121b8f6a443a643e40951 | codeBytes=24009
+robinhood | v4PositionManager | 0x58daec3116aae6d93017baaea7749052e8a04fa7 | codeBytes=23877
+robinhood | Permit2 | 0x000000000022d473030f116ddee9f6b43ac78ba3 | codeBytes=9152
+robinhood | WETH9 | 0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73 | codeBytes=2202
+robinhood | USDG | 0x5fc5360d0400a0fd4f2af552add042d716f1d168 | codeBytes=170
+base | UniswapV2Factory | 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6 | codeBytes=13859
+base | UniswapV2Router02 | 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24 | codeBytes=17891
+base | UniswapV3Factory | 0x33128a8fC17869897dcE68Ed026d694621f6FDfD | codeBytes=24535
+base | NonfungiblePositionManager | 0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1 | codeBytes=24384
+base | v4PoolManager | 0x498581ff718922c3f8e6a244956af099b2652b2b | codeBytes=24009
+base | v4PositionManager | 0x7c5f5a4bbd8fd63184577525326123b519429bdc | codeBytes=23877
+arbitrum | UniswapV2Factory | 0xf1D7CC64Fb4452F05c498126312eBE29f30Fbcf9 | codeBytes=13859
+arbitrum | UniswapV2Router02 | 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24 | codeBytes=17891
+arbitrum | UniswapV3Factory | 0x1F98431c8aD98523631AE4a59f267346ea31F984 | codeBytes=24535
+arbitrum | NonfungiblePositionManager | 0xC36442b4a4522E871399CD717aBDD847Ab11FE88 | codeBytes=24384
+arbitrum | v4PoolManager | 0x360e68faccca8ca495c1b759fd9eee466db9fb32 | codeBytes=24009
+arbitrum | v4PositionManager | 0xd88f38f930b7952f2db2432cb002e7abbf3dd869 | codeBytes=23877
+--- functional reads
+robinhood V2Router02.factory()=0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f WETH()=0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73
+robinhood V2Factory.allPairsLength()=150061 [1.5e5]
+robinhood V3Factory.feeAmountTickSpacing(3000)=60
+robinhood V3 pool WETH/USDG 0.05%=0x69BfaF19C9f377BB306a89aEd9F6B07e2c1a8d9a
+robinhood V2 pair WETH/USDG=0x8803c117ccae7B5146297876c2A25DF135141C4d
+robinhood WETH9 symbol="WETH" USDG symbol="USDG" decimals=6
+base V2Factory.allPairsLength()=3078579 [3.078e6]  arbitrum=8892
