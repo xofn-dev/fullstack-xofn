@@ -65,7 +65,7 @@ Mobile (≤900px): tombol ☰ → panel link (wajib ada)
 ## 3. Flow A — Jelajah landing & token
 
 **Langkah**
-1. Pengguna membuka `/`. Hero muncul dengan intro motion, dan scene 3D Coinfall dimuat lazy (fallback statis tampil lebih dulu).
+1. Pengguna membuka `/`. **Intro loader** (D19) menutupi layar sejak first paint: koin CSS 3D berputar dengan progres nyata (font, chunk 3D, frame pertama scene Coinfall). Begitu siap, koin terbelah memperlihatkan pelat DVN (pelat 1/1 ditolak), kamera menyelam, dan iris membuka landing. Setelah itu hero di-zoom out dan intro motion hero berjalan. Kunjungan ulang dalam sesi yang sama dan URL ber-hash memakai varian singkat (iris saja, lalu langsung di anchor). Tombol *Skip intro* / Escape tersedia. Selama scene belum siap, kolom visual hero kosong; fallback statis **hanya** tampil bila WebGL gagal.
 2. Scroll melewati Vision, Thesis, Architecture (pilih stasiun, ganti mode kamera, tur), Manifesto, dan seterusnya.
 3. Di **Explore**, filter All / Bonding / Graduated / Locked (toggle `aria-pressed`) memperbarui grid.
 4. Klik atau Enter pada TokenCard:
@@ -76,8 +76,9 @@ Mobile (≤900px): tombol ☰ → panel link (wajib ada)
 **Error & edge case**
 | Kasus | Perilaku |
 |---|---|
-| WebGL tidak tersedia / import gagal | Fallback statis (CSS koin + gate, blueprint 6 modul, bintang 2D); konten tetap lengkap |
-| `prefers-reduced-motion` | Tanpa animasi, Lenis, maupun parallax; 3D satu frame statis; reveal langsung terlihat |
+| WebGL tidak tersedia / import gagal | Fallback statis (CSS koin + gate, blueprint 6 modul, bintang 2D); konten tetap lengkap. Hero memasang `webgl-off`; bila chunk 3D tidak pernah datang, failsafe CSS menampilkan fallback setelah 8 dtk. Loader tetap membuka (maks tunggu 7 dtk) |
+| JS mati | Loader disembunyikan lewat `<noscript>` (failsafe CSS 9 dtk juga ada); fallback hero langsung tampil |
+| `prefers-reduced-motion` | Tanpa animasi, Lenis, maupun parallax; 3D satu frame statis; reveal langsung terlihat. Loader: koin diam, keluar dengan fade 300 ms |
 | Belum ada token nyata | Grid berisi contoh berlabel FICTIONAL + catatan "INTERFACE DEMO" [Desain] |
 | Filter kosong | EmptyState: "No tokens in this state yet." |
 | Mobile ≤860 | Galaxy WebGL mati (D5); hero canvas bertumpuk di bawah copy |
@@ -315,7 +316,7 @@ Edge case:
 
 | Flow | `preview` | `simulation` | `live` |
 |---|---|---|---|
-| A Jelajah landing | **Selesai** (Phase 1, 17 Nov 2026). Langkah 5 (TierBadge → DvnList) dibuat bersama halaman aplikasi; di landing penjelasan tier ada di drawer | **Selesai** (Phase 4, 17 Nov 2026): Explore membaca `/api/tokens`, filter D16, kartu menuju `/t/[address]`, keadaan kosong/gagal baca | FROZEN |
+| A Jelajah landing | **Selesai** (Phase 1, 17 Nov 2026). Langkah 5 (TierBadge → DvnList) dibuat bersama halaman aplikasi; di landing penjelasan tier ada di drawer. Intro loader + perbaikan kilasan fallback hero: **Selesai** (18 Nov 2026, D19) | **Selesai** (Phase 4, 17 Nov 2026): Explore membaca `/api/tokens`, filter D16, kartu menuju `/t/[address]`, keadaan kosong/gagal baca | FROZEN |
 | B Wallet & network | **Selesai** (Phase 1–4): tombol Connect membuka modal "preview only" | **Selesai** (Phase 4): AppKit bila `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` diisi (kode ada, **belum teruji** tanpa project ID) + konektor "Anvil dev account" khusus jaringan lokal (P56); NetworkGuard per aksi. Di Anvil ketiga chain ber-ID 31337, jadi "Switch to <chain>" tidak pernah muncul | FROZEN |
 | C XofN Check | **Selesai** (Phase 2, 17 Nov 2026): `/check` dan `/check/[chain]/[address]` membaca chain, cache 15 menit, Re-check, Share + kartu OG; sampel di landing tetap berlabel simulasi | **Selesai** (Phase 4): Check membaca Anvil (endpoint tiruan dari manifest, tanpa Multicall3) dan menampilkan `verify()` Registry + tautan ke halaman token | FROZEN (rilis publik di Fase 1b) |
 | D Launch | **Pratinjau** (Phase 1); `/launch` memakai form pratinjau yang sama | **Selesai** (Phase 4): validasi = aturan kontrak, tier per chain dari `tierAvailable`, gerbang registrar (P52), modal review → tanda tangan → redirect `/t/[address]`. Logo hanya hash (P26) | FROZEN |

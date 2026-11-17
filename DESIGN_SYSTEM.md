@@ -305,7 +305,9 @@ Teknologi: **GSAP + ScrollTrigger**, **Lenis**, dan CSS. Tidak memakai library a
 ### 7.2 Katalog [Desain]
 | Nama | Target | Parameter |
 |---|---|---|
-| Hero intro | Baris hero | `yPercent 35 → 0`, blur 14→0, 1,15 dtk `power3.out`, stagger .085 |
+| Intro loader (D19) | Overlay landing `/` | Boot: koin CSS 3D `rotateY` 2,8 dtk loop + cincin progres nyata (min 1,4 dtk, maks tunggu 7 dtk). Split: rig `rotateX 62°`, muka koin `z ±2,7 gap` `expo.out`, 4 pelat DVN menyala berurutan (2 mint, 1 biru, 1 redup), pelat 1/1 bergetar lalu jatuh, tagline stagger .09. Dive: kamera `z → 860` `power2.in` 1,05 dtk + iris radial (`--il-r`) .95 dtk `power2.inOut`. Varian singkat (sesi berulang / URL hash / skip): iris .75 dtk. Reduced motion: fade 300 ms |
+| Hero zoom-out | `.hero` setelah iris | `scale 1.07 → 1`, 1,5 dtk `power3.out` (hanya bila loader tampil) |
+| Hero intro | Baris hero | `yPercent 35 → 0`, blur 14→0, 1,15 dtk `power3.out`, stagger .085. Ditahan sampai loader selesai (`whenIntroDone`) |
 | Hero defocus | `.hero-copy` saat scroll keluar | opacity →.12, blur 9, scrub |
 | Count-up supply | "999,000,000" | 1,9 dtk `power2.out`, delay .9 |
 | Line-mask reveal | Heading section | `yPercent 112 → 0`, 1,05 dtk `power4.out`, stagger .11 |
@@ -353,6 +355,7 @@ Semua geometri dibuat prosedural dalam kode (tanpa file model, tekstur, atau vid
   - f4 `SECURITY POLICY` → 1-of-1 BLOCKED (tetap).
 - **Interaksi:** parallax pointer, kamera turun mengikuti scroll, klik menjatuhkan koin.
 - **Layout:** desktop memakai canvas 66% kanan dengan mask kiri; layout bertumpuk memakai canvas penuh lebar di bawah copy dengan mask atas.
+- **Status muat** (perbaikan 18 Nov 2026): *pending* (default) → kolom visual kosong, fallback dan chip `opacity 0`; `.webgl-on` → chip fade-in di anchor 3D; `.webgl-off` (WebGL gagal) → fallback statis + chip posisi statis. Failsafe CSS 8 dtk menampilkan fallback bila chunk 3D tidak pernah datang. Sebelumnya fallback CSS selalu tampil lebih dulu lalu berganti ke canvas, sehingga terlihat seperti tampilan yang rusak.
 
 ### 8.3 Architecture — Coin run (6 stasiun)
 - **Stasiun** (key HTML → peran baru sesuai guide, D15):
@@ -517,6 +520,7 @@ Item `[Belum]` diputuskan owner atau desainer. Sampai diputuskan, pakai rekomend
 | D16 | Status "Graduated · awaiting expansion" [Guide] dan "Expanding" [Usulan] tidak ada di HTML | HTML hanya Bonding/Locked. Guide hanya punya "Lulus, menunggu ekspansi"; "Expanding" adalah tambahan dokumen (`PRD.md` P25) | Pakai warna `blue` (`.status.blue` HTML); format badge `XofN 2+1/2 · <status>`; filter Explore menambah "Graduated" (token Expanding ikut di filter ini) |
 | D17 | Copy operator tier selama P1 belum diputuskan | HTML menyebut Google Cloud dan Polyhedra sebagai operator wajib. Phase 0: Google tidak ada di Robinhood, Polyhedra deprecated atau tidak ada, jadi teks itu tidak boleh di-port | [Usulan] Tier card dan sampel Check menampilkan **jumlah** ("2 required DVNs · 1 of 2 optional", "3 required DVNs · 1 of 2 optional"). Nama yang sudah pasti boleh disebut: LayerZero Labs (wajib), Deutsche Telekom dan FCAT (opsional). Slot wajib lain ditulis "operator to be confirmed". Setelah P1 diputuskan, nama dibaca dari `config/tiers.json` |
 | D18 | NoticeBar preview berbunyi "NO … LIVE VERIFICATION", sedangkan XofN Check tetap membaca chain di mode preview | Teks HTML ditulis saat semua masih konsep | [Usulan] Phase 1 memakai teks §10.2 apa adanya (Check masih demo). Saat Check nyata masuk di Phase 2, teks diganti menjadi `PREVIEW / NOT LIVE · NO TOKEN SALE · CHECK READS PUBLIC CHAIN DATA` |
+| D19 | Intro loader landing | Tidak ada di HTML. Diminta owner 18 Nov 2026 ("loading screen yang wow": koin → pecah jadi lapisan → zoom masuk ke landing) | **Diputuskan owner.** CSS 3D + GSAP tanpa WebGL (tampil sebelum chunk three.js; batas 3 konteks WebGL tetap). Hanya di `/`, penuh sekali per sesi, varian singkat untuk sesi berulang/hash, Skip + Escape, reduced motion = fade. Copy hanya `PROTOCOL PREVIEW · NOT LIVE`, label DVN, `1-OF-1 · BLOCKED`, dan tagline |
 
 ---
 
@@ -528,6 +532,7 @@ Item `[Belum]` diputuskan owner atau desainer. Sampai diputuskan, pakai rekomend
 | Chrome (NoticeBar, Nav, Footer, overlay) | **Selesai (Phase 1, 17 Nov 2026).** Nav D12, menu mobile, modal dengan fokus terjebak, toast, scroll progress, side index, cursor aura |
 | Section landing 1–16 | **Selesai (Phase 1, 17 Nov 2026)**, mode preview. Copy home chain D15, status D16, copy operator D17 |
 | 3D hero / arch / galaxy | **Selesai (Phase 1, 17 Nov 2026).** three 0.187, lifecycle + dispose, fallback statis, galaxy mati di ≤860px (D5), mekanisme *split* (D2) |
+| Intro loader + status muat hero (D19) | **Selesai (18 Nov 2026).** `src/components/landing/intro-loader.tsx`, `src/app/styles/intro-loader.css`, sinyal `src/lib/client/intro.ts`; kilasan fallback hero saat first load diperbaiki (§8.2) |
 | Halaman aplikasi (§6.2) | **`/check` dan `/check/[chain]/[address]` selesai (Phase 2, 17 Nov 2026)**, termasuk kartu OG. **`/launch`, `/t/[address]`, `/bridge`, `/contracts`, `/proof` selesai (Phase 4, 17 Nov 2026)** untuk mode simulation; di preview halaman itu memakai section landing berlabel |
 
 Catatan implementasi Phase 1:

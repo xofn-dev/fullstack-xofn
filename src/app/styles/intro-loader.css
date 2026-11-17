@@ -1,0 +1,500 @@
+/* ==================== INTRO LOADER (DESIGN_SYSTEM D19) ====================
+ * Koin CSS 3D (bukan WebGL: tampil di first paint sebelum chunk three.js datang, dan tidak
+ * menambah konteks WebGL ke-4). Fase boot memakai keyframe CSS murni; split + dive diatur
+ * GSAP dari src/components/landing/intro-loader.tsx. Warna hanya dari token @theme.
+ */
+@property --il-r {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+@property --il-p {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+.intro-loader {
+  --il-coin: clamp(128px, 23vmin, 208px);
+  --il-glow: color-mix(in srgb, var(--color-mint-2) 55%, transparent);
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--color-text);
+  font-family: var(--mono);
+  cursor: progress;
+  /* Failsafe tanpa JS: overlay hilang sendiri. Komponen mematikannya saat hydration (.is-js). */
+  animation: il-failsafe 0.5s ease 9s forwards;
+}
+.intro-loader.is-js {
+  animation: none;
+}
+.intro-loader.is-revealing {
+  pointer-events: none;
+}
+@keyframes il-failsafe {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* ---- latar + iris: lubang radial sebesar --il-r membuka landing di bawahnya ---- */
+.il-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 46% 42% at 50% 50%, color-mix(in srgb, var(--color-blue) 13%, transparent), transparent 72%),
+    radial-gradient(ellipse 22% 26% at 50% 52%, color-mix(in srgb, var(--color-mint-2) 9%, transparent), transparent 70%),
+    var(--color-bg);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent calc(var(--il-r) - 1px), black var(--il-r));
+  mask-image: radial-gradient(circle at 50% 50%, transparent calc(var(--il-r) - 1px), black var(--il-r));
+}
+.il-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-ice) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-ice) 5%, transparent) 1px, transparent 1px);
+  background-size: 64px 64px;
+  background-position: center;
+  -webkit-mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, black, transparent 78%);
+  mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, black, transparent 78%);
+}
+.il-stars {
+  position: absolute;
+  inset: -12%;
+  opacity: 0.55;
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, var(--color-text) 75%, transparent) 0 1px, transparent 1.6px),
+    radial-gradient(circle, color-mix(in srgb, var(--color-mint) 60%, transparent) 0 1px, transparent 1.6px),
+    radial-gradient(circle, color-mix(in srgb, var(--color-blue) 60%, transparent) 0 0.8px, transparent 1.4px);
+  background-size: 157px 139px, 113px 211px, 89px 97px;
+  background-position: 13px 41px, 71px 9px, 37px 63px;
+  animation: il-drift 26s linear infinite;
+}
+@keyframes il-drift {
+  to {
+    transform: translate3d(-40px, 30px, 0);
+  }
+}
+.il-rim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    transparent calc(var(--il-r) - 2px),
+    color-mix(in srgb, var(--color-mint) 95%, transparent) var(--il-r),
+    color-mix(in srgb, var(--color-mint-2) 28%, transparent) calc(var(--il-r) + 18px),
+    transparent calc(var(--il-r) + 110px)
+  );
+}
+
+/* ---- teks ---- */
+.il-meta {
+  position: absolute;
+  top: clamp(18px, 4vh, 36px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 14px;
+  white-space: nowrap;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--color-dim);
+}
+.il-meta b {
+  font-weight: 400;
+  color: var(--color-mint);
+}
+.il-status {
+  position: absolute;
+  bottom: clamp(22px, 6vh, 54px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--color-muted);
+}
+.il-status strong {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.il-status small {
+  font-size: 9px;
+  color: var(--color-dim);
+}
+.il-tagline {
+  position: absolute;
+  top: calc(50% + var(--il-coin) * 1.02);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.28em;
+  margin: 0;
+  white-space: nowrap;
+  font: 600 clamp(26px, 4.6vw, 54px) / 1 var(--display);
+  letter-spacing: -0.06em;
+}
+.il-tagline span {
+  display: inline-block;
+  opacity: 0;
+}
+.il-tagline .outline {
+  color: transparent;
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--color-text) 60%, transparent);
+}
+.il-tagline .mint {
+  color: var(--color-mint);
+  text-shadow: 0 0 40px var(--il-glow);
+}
+.il-skip {
+  position: absolute;
+  right: clamp(16px, 3vw, 32px);
+  bottom: clamp(16px, 3vw, 32px);
+  padding: 9px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-panel) 80%, transparent);
+  color: var(--color-muted);
+  font: 10px var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+.il-skip:hover {
+  color: var(--color-mint);
+  border-color: var(--color-ok-line);
+}
+.il-skip:focus-visible {
+  outline: 2px solid var(--color-mint);
+  outline-offset: 3px;
+}
+
+/* ---- panggung 3D ---- */
+.il-stage {
+  position: relative;
+  width: var(--il-coin);
+  height: var(--il-coin);
+  perspective: 1000px;
+}
+.il-ring {
+  position: absolute;
+  inset: -34%;
+  width: 168%;
+  height: 168%;
+  overflow: visible;
+  pointer-events: none;
+}
+.il-ring circle {
+  fill: none;
+  stroke-width: 0.6;
+}
+.il-ring .track {
+  stroke: color-mix(in srgb, var(--color-line) 80%, transparent);
+}
+.il-ring .spin {
+  stroke: color-mix(in srgb, var(--color-mint) 35%, transparent);
+  stroke-dasharray: 9 91;
+  transform-origin: 50% 50%;
+  animation: il-ring-spin 1.6s linear infinite;
+}
+.il-ring .fill {
+  stroke: var(--color-mint);
+  stroke-linecap: round;
+  stroke-width: 0.9;
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: calc(100 - var(--il-p) * 100);
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 0 2px var(--il-glow));
+}
+@keyframes il-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.il-cam,
+.il-rig,
+.il-spin {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+.il-rig {
+  animation: il-bob 3.4s ease-in-out infinite;
+}
+@keyframes il-bob {
+  50% {
+    transform: translateY(-7px) rotateX(9deg);
+  }
+}
+.il-spin {
+  animation: il-spin 2.8s cubic-bezier(0.5, 0.05, 0.4, 0.95) infinite;
+}
+@keyframes il-spin {
+  to {
+    transform: rotateY(360deg);
+  }
+}
+.il-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+/* muka koin: logam gelap, cincin mint, glyph X (selaras koin hero) */
+.il-face {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 34% 28%, var(--color-panel-2), var(--color-panel) 46%, var(--color-bg) 80%);
+  border: 1px solid var(--color-line);
+  box-shadow:
+    inset 0 0 0 calc(var(--il-coin) * 0.055) var(--color-bg-2),
+    inset 0 0 0 calc(var(--il-coin) * 0.06) var(--color-line),
+    0 0 50px color-mix(in srgb, var(--color-mint-2) 14%, transparent);
+  backface-visibility: hidden;
+}
+.il-face::before {
+  content: '';
+  position: absolute;
+  inset: 21%;
+  border-radius: 50%;
+  border: calc(var(--il-coin) * 0.022) solid var(--color-mint);
+  box-shadow:
+    0 0 18px var(--il-glow),
+    inset 0 0 14px var(--il-glow);
+  opacity: 0.9;
+}
+.il-face b {
+  position: relative;
+  font: 700 calc(var(--il-coin) * 0.3) / 1 var(--display);
+  color: var(--color-text);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--color-ice) 45%, transparent);
+}
+.il-face.front {
+  transform: translateZ(calc(var(--il-coin) * 0.055));
+}
+.il-face.back {
+  transform: translateZ(calc(var(--il-coin) * -0.055)) rotateY(180deg);
+}
+/* tepi bergerigi: cakram tipis bertumpuk memberi ketebalan saat koin berputar */
+.il-edge {
+  background: linear-gradient(100deg, var(--color-line), var(--color-panel-2) 45%, var(--color-line-2));
+  border: 1px solid color-mix(in srgb, var(--color-ice) 22%, transparent);
+  transform: translateZ(calc((var(--i) / 9 - 0.5) * var(--il-coin) * 0.1));
+}
+.il-edge:nth-child(odd) {
+  border-color: color-mix(in srgb, var(--color-mint) 26%, transparent);
+}
+
+/* pelat DVN di dalam koin (tersembunyi sampai split) */
+.il-plate {
+  transform-style: preserve-3d;
+}
+.il-disc {
+  position: absolute;
+  inset: -7%;
+  border-radius: 50%;
+  opacity: 0;
+  border: 1.5px solid color-mix(in srgb, var(--color-ice) 26%, transparent);
+  background: radial-gradient(
+    circle,
+    transparent 37%,
+    color-mix(in srgb, var(--color-ice) 6%, transparent) 38%,
+    color-mix(in srgb, var(--color-ice) 13%, transparent) 69%,
+    transparent 70%
+  );
+  transition:
+    border-color 0.45s,
+    box-shadow 0.45s,
+    background 0.45s;
+}
+.il-disc::after {
+  content: '';
+  position: absolute;
+  inset: 30%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--color-ice) 18%, transparent);
+  transition:
+    border-color 0.45s,
+    box-shadow 0.45s;
+}
+.il-plate.is-on .il-disc {
+  border-color: var(--color-mint);
+  background: radial-gradient(
+    circle,
+    transparent 37%,
+    color-mix(in srgb, var(--color-mint-2) 12%, transparent) 38%,
+    color-mix(in srgb, var(--color-mint-2) 26%, transparent) 69%,
+    transparent 70%
+  );
+  box-shadow:
+    0 0 26px var(--il-glow),
+    inset 0 0 22px color-mix(in srgb, var(--color-mint-2) 35%, transparent);
+}
+.il-plate.is-on .il-disc::after {
+  border-color: var(--color-mint);
+  box-shadow: 0 0 12px var(--il-glow);
+}
+.il-plate.opt.is-on .il-disc {
+  border-color: var(--color-blue);
+  background: radial-gradient(
+    circle,
+    transparent 37%,
+    color-mix(in srgb, var(--color-blue) 12%, transparent) 38%,
+    color-mix(in srgb, var(--color-blue) 24%, transparent) 69%,
+    transparent 70%
+  );
+  box-shadow:
+    0 0 26px color-mix(in srgb, var(--color-blue) 55%, transparent),
+    inset 0 0 22px color-mix(in srgb, var(--color-blue) 35%, transparent);
+}
+.il-plate.opt.is-on .il-disc::after {
+  border-color: var(--color-blue);
+}
+/* label menghadap kamera: rotasi balik sebesar kemiringan rig */
+.il-label {
+  position: absolute;
+  left: calc(100% + 18px);
+  top: 50%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--color-dim);
+  opacity: 0;
+  transform: translateY(-50%) rotateX(-62deg);
+  transform-origin: left center;
+  transition:
+    opacity 0.4s,
+    color 0.4s;
+}
+.il-label::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-line);
+  transition:
+    background 0.4s,
+    box-shadow 0.4s;
+}
+.intro-loader.is-split .il-label {
+  opacity: 1;
+}
+.il-plate.is-on .il-label {
+  color: var(--color-mint);
+}
+.il-plate.is-on .il-label::before {
+  background: var(--color-mint);
+  box-shadow: 0 0 9px var(--color-mint-2);
+}
+.il-plate.opt.is-on .il-label {
+  color: var(--color-blue);
+}
+.il-plate.opt.is-on .il-label::before {
+  background: var(--color-blue);
+  box-shadow: 0 0 9px var(--color-blue);
+}
+
+/* pelat 1/1 yang ditolak */
+.il-reject {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: calc(var(--il-coin) * 0.47);
+  margin-top: calc(var(--il-coin) * -0.235);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--color-ice) 30%, transparent);
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--color-ice) 8%, transparent) 40%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    border-color 0.25s,
+    box-shadow 0.25s,
+    background 0.25s;
+}
+.il-reject b {
+  font: 700 calc(var(--il-coin) * 0.13) / 1 var(--display);
+  color: var(--color-muted);
+  transition: color 0.25s;
+}
+.il-reject small {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--color-danger);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.il-reject.is-blocked {
+  border-color: var(--color-danger);
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--color-danger) 22%, transparent) 40%, transparent 70%);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--color-danger) 45%, transparent);
+}
+.il-reject.is-blocked b {
+  color: var(--color-danger);
+}
+.il-reject.is-blocked small {
+  opacity: 1;
+}
+
+/* ---- layar sempit: label pelat dipendekkan agar tidak keluar layar ---- */
+@media (max-width: 430px) {
+  .intro-loader {
+    --il-coin: clamp(112px, 30vw, 132px);
+  }
+  .il-label {
+    left: calc(100% + 10px);
+    font-size: 8px;
+  }
+  .il-label em {
+    display: none;
+  }
+  .il-meta {
+    font-size: 8px;
+    gap: 8px;
+  }
+}
+.il-label em {
+  font-style: normal;
+}
+
+/* ---- reduced motion: koin diam, keluar dengan fade singkat ---- */
+.intro-loader.is-fading {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-rig,
+  .il-spin,
+  .il-stars,
+  .il-ring .spin {
+    animation: none !important;
+  }
+}

@@ -211,8 +211,16 @@ body.v2{background:#040711;min-height:100%;isolation:isolate}
 .v5 .hero-visual{transform:none!important;perspective:none;transform-style:flat;filter:none;transition:none}
 .hero.webgl-on .hero-visual{cursor:pointer}
 .hero.webgl-on .coin-fallback{display:none}
+/* Status scene hero: pending (default) / webgl-on / webgl-off. Selama pending kolom visual sengaja
+   kosong: fallback statis dan chip tidak boleh berkedip dulu sebelum coinfall muncul. Failsafe 8 dtk
+   menampilkan fallback bila chunk 3D tidak pernah datang (atau JS mati). */
+@property --hero-reveal{syntax:"<number>";inherits:true;initial-value:0}
+.hero-visual{--hero-reveal:0;animation:hero-reveal-failsafe .6s ease 8s forwards}
+@keyframes hero-reveal-failsafe{to{--hero-reveal:1}}
+.hero.webgl-on .hero-visual,.hero.webgl-off .hero-visual{animation:none;--hero-reveal:1}
+.coin-fallback,.hero-float{opacity:var(--hero-reveal);transition:opacity .6s ease}
 /* Chips are pinned to 3D anchors: the scene writes --cx/--cy every frame. */
-.hero.webgl-on .hero-float{left:var(--cx,-999px)!important;top:var(--cy,-999px)!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%);transition:border-color .3s,box-shadow .3s;pointer-events:none}
+.hero.webgl-on .hero-float{left:var(--cx,-999px)!important;top:var(--cy,-999px)!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%);transition:border-color .3s,box-shadow .3s,opacity .7s ease .15s;pointer-events:none}
 .hero.webgl-on .hero-float:before{content:"";position:absolute;left:50%;top:100%;width:1px;height:26px;background:linear-gradient(#b5ffe5aa,transparent)}
 .hero.gate-reject .hero-float.f4{border-color:#ff7b8b;box-shadow:0 0 0 1px #ff7b8b55,0 0 38px #ff7b8b40}
 .hero.gate-reject .hero-float.f4 .symbol{background:#ff7b8b!important;box-shadow:0 0 12px #ff7b8b!important}
