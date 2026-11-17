@@ -590,6 +590,18 @@ Versi exact ada di `package.json`. Selisih dari baseline §1.1 atau dari rilis t
 | `three`, `@types/three` | 0.187.0 | Baseline `^0.184` |
 | `gsap` / `lenis` | 3.15.1 / 1.3.27 | Baseline `^3.13` / `^1.1` |
 
+### Catatan implementasi Phase 2 (XofN Check, 17 Nov 2026)
+
+- Dependency yang ditambahkan: `viem` 2.58.0 dan `@supabase/supabase-js` 2.119.0. **Tidak dipasang:** `@supabase/ssr` dan CLI `supabase` (belum ada pemakainya; Docker tidak ada di mesin dev, jadi Supabase lokal tidak bisa dijalankan).
+- **Cache Check punya dua backend.** Bila `NEXT_PUBLIC_SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` keduanya diisi → Supabase. Bila keduanya kosong → cache memori per proses, dan hasil melaporkannya (`cache.backend`). Hanya satu yang diisi → error. Backend Supabase **belum pernah dijalankan terhadap Postgres nyata**; ia baru diuji dengan store tiruan.
+- `src/types/db.ts` belum ada (butuh `supabase gen types`). Bentuk baris diketik di `src/lib/check/cache.ts`.
+- Tabel §9 di migrasi `0001_xofn_check.sql` menambah kolom `network` dan `chain_key`; label di `oft_pathways` adalah label **per arah**, sedangkan label pathway (termasuk "locked") ada di `oft_checks.raw`.
+- `CHECK_RPC_*` bersifat opsional: bila kosong, Check memakai `publicRpc` dari registry chain (data, bukan fallback env). `CHECK_DATABASE_URL` tidak dipakai.
+- Pembacaan memakai Multicall3 (`0xcA11bde05977b3631167028862bE2a173976CA11`), yang bytecode-nya terverifikasi ada di keenam chain.
+- `receiveLibraryTimeout` yang masih terpasang selalu dianggap "belum terkunci", karena `expiry` memakai `block.number` endpoint (perkiraan blok L1 di chain ber-stack Arbitrum) dan tidak bisa dibandingkan andal dengan blok RPC.
+- Pembatas laju Re-check hidup di memori proses; untuk produksi multi-instance perlu penyimpanan bersama.
+- Belum ditulis: sinkronisasi `config/dvn-labels.json` → tabel `dvn_labels`; builder URL halaman LayerZero Scan; `verify()` untuk token XofN.
+
 Paket tipe (`@types/node`, `@types/react`, `@types/react-dom`, `@types/three`) ditambahkan sebagai devDependency pendukung TypeScript. `vitest.config.mts` memakai ekstensi `.mts` karena `package.json` tidak ber-`"type": "module"`. Bila Node di mesin dev dinaikkan ke ≥ 22.12, Tailwind dan Vitest bisa dinaikkan ke rilis terbaru.
 16. Versi Hardhat + `@layerzerolabs/toolbox-hardhat` yang kompatibel dengan layout Foundry-root + Next. Hanya relevan bila PM mensyaratkan keluaran task devtools; pembacaan `cast call` sudah setara.
 17. Bentuk `deployments/local.json` untuk tiga chain simulasi (§10.3).

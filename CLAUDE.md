@@ -67,7 +67,7 @@ Konflik yang belum diputuskan tercantum di `PRD.md` §11 (P#), `DESIGN_SYSTEM.md
 |---|---|---|
 | **0** | Verifikasi riset: EID, DVN per pathway, semantik ULN, AMM, aset pasangan, paket, CreateX. Read-only, **tanpa transaksi** | Selesai 17 Nov 2026 + addendum home Robinhood; menunggu persetujuan gerbang (`proof/2026-11-17-phase0/notes.md`) |
 | **1** | Fondasi repo + port landing HTML (mode `preview`) | Selesai 17 Nov 2026; menunggu persetujuan gerbang (`proof/2026-11-17-phase1/notes.md`) |
-| **2** | XofN Check: baca OFT yang sudah ada di Robinhood/Base/Arbitrum + cache + kartu share | Belum mulai |
+| **2** | XofN Check: baca OFT yang sudah ada di Robinhood/Base/Arbitrum + cache + kartu share | Selesai 17 Nov 2026; menunggu persetujuan gerbang (`proof/2026-11-17-phase2/notes.md`) |
 | **3** | Kontrak **lokal saja**. **3a** tahap 1: Token (OFT), Curve (implementation + clone), Graduator `graduate()`, Registry. **3b** tahap 2: Remote, `expandAndLock`, composer, `retryRemote`, multi-endpoint | Belum mulai |
 | **4** | Integrasi frontend aplikasi terhadap Anvil lokal / mode `simulation` (flow tahap 1 lebih dulu) | Belum mulai |
 | **5** | Hardening & paket audit (audit eksternal wajib sebelum deploy mainnet 1b) | Belum mulai |

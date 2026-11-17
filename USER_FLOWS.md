@@ -317,7 +317,7 @@ Edge case:
 |---|---|---|---|
 | A Jelajah landing | **Selesai** (Phase 1, 17 Nov 2026). Langkah 5 (TierBadge → DvnList) dibuat bersama halaman aplikasi; di landing penjelasan tier ada di drawer | Belum mulai | FROZEN |
 | B Wallet & network | **Sebagian** (Phase 1): tombol Connect membuka modal "preview only". AppKit dan NetworkGuard di Phase 4 | Belum mulai | FROZEN |
-| C XofN Check | **Demo saja** (Phase 1): sampel berlabel simulasi; alamat apa pun tidak diberi hasil. Check nyata di Phase 2 | — | FROZEN (rilis publik di Fase 1b) |
+| C XofN Check | **Selesai** (Phase 2, 17 Nov 2026): `/check` dan `/check/[chain]/[address]` membaca chain, cache 15 menit, Re-check, Share + kartu OG; sampel di landing tetap berlabel simulasi. Belum: hasil `verify()` untuk token XofN (butuh manifest) | — | FROZEN (rilis publik di Fase 1b) |
 | D Launch | **Pratinjau di landing** (Phase 1): validasi form + modal ringkasan tanpa transaksi. Halaman `/launch` di Phase 4 | Belum mulai | FROZEN |
 | E Trading | Belum mulai | Belum mulai | FROZEN |
 | F.1 Graduate | Belum mulai | Belum mulai | FROZEN (Fase 1) |
