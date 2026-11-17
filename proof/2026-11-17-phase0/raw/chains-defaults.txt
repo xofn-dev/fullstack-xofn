@@ -1,0 +1,33 @@
+# 2026-11-17T08:55Z
+## chain id + EndpointV2.eid()
+base | rpc=https://mainnet.base.org | block=58576737 | chainId=8453 | endpoint=0x1a44076050125825900e736c501f859c50fe728c | eid()=30184
+arbitrum | rpc=https://arb1.arbitrum.io/rpc | block=524989316 | chainId=42161 | endpoint=0x1a44076050125825900e736c501f859c50fe728c | eid()=30110
+robinhood | rpc=https://rpc.mainnet.chain.robinhood.com | block=116454375 | chainId=4663 | endpoint=0x6f475642a6e85809b1c36fa62763669b1b48dd5b | eid()=30416
+base-sepolia | rpc=https://sepolia.base.org | block=59919317 | chainId=84532 | endpoint=0x6edce65403992e310a62460808c4b910d972f10f | eid()=40245
+arbitrum-sepolia | rpc=https://sepolia-rollup.arbitrum.io/rpc | block=330047883 | chainId=421614 | endpoint=0x6edce65403992e310a62460808c4b910d972f10f | eid()=40231
+robinhood-testnet | rpc=https://rpc.testnet.chain.robinhood.com | block=154440617 | chainId=46630 | endpoint=0x3acaaf60502791d199a5a5f0b173d78229ebfe32 | eid()=40451
+## default library + default ULN per pathway (mainnet)
+base -> arbitrum (eid 30110)
+  defaultSendLibrary=0xB5320B0B3a13cC860893E2Bd79FCd7e13484Dda2 defaultReceiveLibrary=0xc70AB6f32772f59fBfc23889Caf4Ba3376C84bAf
+  send default ULN (confirmations,reqCount,optCount,optThreshold,required[],optional[]) = (10, 4, 0, 0, [0x554833698Ae0FB22ECC90B01222903fD62CA4B47, 0x9e059a54699a285714207b43B055483E78FAac25, 0xa7b5189bcA84Cd304D8553977c7C614329750d99, 0xcd37CA043f8479064e10635020c65FfC005d36f6], []) 
+  recv default ULN = (20, 4, 0, 0, [0x554833698Ae0FB22ECC90B01222903fD62CA4B47, 0x9e059a54699a285714207b43B055483E78FAac25, 0xa7b5189bcA84Cd304D8553977c7C614329750d99, 0xcd37CA043f8479064e10635020c65FfC005d36f6], []) 
+base -> robinhood (eid 30416)
+  defaultSendLibrary=0xB5320B0B3a13cC860893E2Bd79FCd7e13484Dda2 defaultReceiveLibrary=0xc70AB6f32772f59fBfc23889Caf4Ba3376C84bAf
+  send default ULN (confirmations,reqCount,optCount,optThreshold,required[],optional[]) = (10, 1, 0, 0, [0x6498b0632f3834D7647367334838111c8C889703], []) 
+  recv default ULN = (5, 1, 0, 0, [0x6498b0632f3834D7647367334838111c8C889703], []) 
+arbitrum -> base (eid 30184)
+  defaultSendLibrary=0x975bcD720be66659e3EB3C0e4F1866a3020E493A defaultReceiveLibrary=0x7B9E184e07a6EE1aC23eAe0fe8D6Be2f663f05e6
+  send default ULN (confirmations,reqCount,optCount,optThreshold,required[],optional[]) = (20, 4, 0, 0, [0x19670Df5E16bEa2ba9b9e68b48C054C5bAEa06B8, 0x2f55C492897526677C5B68fb199ea31E2c126416, 0xa7b5189bcA84Cd304D8553977c7C614329750d99, 0xf2E380c90e6c09721297526dbC74f870e114dfCb], []) 
+  recv default ULN = (10, 4, 0, 0, [0x19670Df5E16bEa2ba9b9e68b48C054C5bAEa06B8, 0x2f55C492897526677C5B68fb199ea31E2c126416, 0xa7b5189bcA84Cd304D8553977c7C614329750d99, 0xf2E380c90e6c09721297526dbC74f870e114dfCb], []) 
+arbitrum -> robinhood (eid 30416)
+  defaultSendLibrary=0x975bcD720be66659e3EB3C0e4F1866a3020E493A defaultReceiveLibrary=0x7B9E184e07a6EE1aC23eAe0fe8D6Be2f663f05e6
+  send default ULN (confirmations,reqCount,optCount,optThreshold,required[],optional[]) = (20, 1, 0, 0, [0x758C419533ad64Ce9D3413BC8d3A97B026098EC1], []) 
+  recv default ULN = (5, 1, 0, 0, [0x758C419533ad64Ce9D3413BC8d3A97B026098EC1], []) 
+robinhood -> base (eid 30184)
+  defaultSendLibrary=0xC39161c743D0307EB9BCc9FEF03eeb9Dc4802de7 defaultReceiveLibrary=0xe1844c5D63a9543023008D332Bd3d2e6f1FE1043
+  send default ULN (confirmations,reqCount,optCount,optThreshold,required[],optional[]) = (5, 1, 0, 0, [0x6788f52439ACA6BFF597d3eeC2DC9a44B8FEE842], []) 
+  recv default ULN = (10, 1, 0, 0, [0x6788f52439ACA6BFF597d3eeC2DC9a44B8FEE842], []) 
+robinhood -> arbitrum (eid 30110)
+  defaultSendLibrary=0xC39161c743D0307EB9BCc9FEF03eeb9Dc4802de7 defaultReceiveLibrary=0xe1844c5D63a9543023008D332Bd3d2e6f1FE1043
+  send default ULN (confirmations,reqCount,optCount,optThreshold,required[],optional[]) = (5, 1, 0, 0, [0x6788f52439ACA6BFF597d3eeC2DC9a44B8FEE842], []) 
+  recv default ULN = (20, 1, 0, 0, [0x6788f52439ACA6BFF597d3eeC2DC9a44B8FEE842], []) 

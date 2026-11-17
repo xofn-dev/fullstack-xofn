@@ -1,0 +1,152 @@
+# sumber: https://metadata.layerzero-api.com/v1/metadata (diakses 2026-11-17T08:36Z) — DVN v2 per chain
+## base
+0x922827caf098837cfbc2196cf65814e2e1160a38 | id=01node | name=01node | deprecated=false | lzRead=false
+0xd863f288d3bb1947dfa13d7ccce80bc56974fa22 | id=FurtherFP | name=FurtherFP | deprecated=false | lzRead=false
+0x8deec5b3deb8640bf79b334b59227454e0901953 | id=altlayer | name=AltLayer | deprecated=true | lzRead=true
+0x41ef29f974fc9f6772654f005271c64210425391 | id=animoca-blockdaemon | name=Animoca-Blockdaemon | deprecated=false | lzRead=true
+0xb4001056811f032f6224140af2ada6118e33080b | id=apedvn | name=ApeDVN | deprecated=false | lzRead=false
+0xb3ce0a5d132cd9bf965aba435e650c55edce0062 | id=bcw | name=BCW Group | deprecated=false | lzRead=false
+0xd77a62b54ee18bcd667b6cd158d5a000182af5cf | id=bcw | name=BCW Group | deprecated=false | lzRead=true
+0x133e9fb2d339d8428476a714b1113b024343811e | id=bitgo | name=BitGo | deprecated=true | lzRead=false
+0x7a3d18e2324536294cd6f054cdde7c994f40391a | id=bitgo | name=BitGo | deprecated=true | lzRead=false
+0xa0b19a90b6fd5856cf4d08dde416edf6b15614de | id=blockaid | name=Blockaid | deprecated=false | lzRead=false
+0x2d0d29f7c5225e0bbd8b7deeea2ee005f82cc219 | id=brale | name=Brale | deprecated=false | lzRead=false
+0xdd7b5e1db4aafd5c8ec3b764efb8ed265aa5445b | id=bware-labs | name=BWare | deprecated=true | lzRead=false
+0x554833698ae0fb22ecc90b01222903fd62ca4b47 | id=canary | name=Canary | deprecated=false | lzRead=false
+0xd752c8dbb10158d66c91518437349002d6542986 | id=canary-sponsored | name=Canary Sponsored | deprecated=false | lzRead=false
+0xdcacd7e37f392ffad4b2703a21f6a0c8e2451e96 | id=canary-subsidized | name=Canary Subsidized | deprecated=false | lzRead=false
+0x4873d56816f45ef341a8819d7039e4746ed77c21 | id=canary-wbtc | name=WBTC Canary | deprecated=false | lzRead=false
+0x99afc2a3b8f5cb86a4c4e1320ede1e8c34273854 | id=citrea | name=Citrea | deprecated=false | lzRead=false
+0x1a3a8421e48b7536f3f71d8b14a1449c90efa909 | id=curve | name=Curve | deprecated=false | lzRead=true
+0xc2a0c36f5939a14966705c7cec813163faeea1f0 | id=deutsche-telekom | name=Deutsche Telekom | deprecated=false | lzRead=false
+0xeae72c81f3fce1313eeee26717f42af91e178516 | id=fidelity | name=Fidelity Center for Applied Technology | deprecated=false | lzRead=false
+0x187cf227f81c287303ee765ee001e151347faaa2 | id=frax | name=Frax | deprecated=false | lzRead=false
+0xd56e4eab23cb81f43168f9f45211eb027b9ac7cc | id=google-cloud | name=Google | deprecated=false | lzRead=false
+0xa7b5189bca84cd304d8553977c7c614329750d99 | id=horizen-labs | name=Horizen | deprecated=false | lzRead=false
+0x3a4636e9ab975d28d3af808b4e1c9fd936374e30 | id=horizen-labs | name=Horizen | deprecated=false | lzRead=true
+0xc50a49186aa80427aa3b0d3c2cec19ba64222a29 | id=lagrange-labs | name=Lagrange | deprecated=true | lzRead=false
+0x9e059a54699a285714207b43b055483e78faac25 | id=layerzero-labs | name=LayerZero Labs | deprecated=false | lzRead=false
+0xb1473ac9f58fb27597a21710da9d1071841e8163 | id=layerzero-labs | name=LayerZero Labs | deprecated=false | lzRead=true
+0xa0af56164f02bdf9d75287ee77c568889f11d5f2 | id=luganodes | name=Luganodes | deprecated=false | lzRead=false
+0x6498b0632f3834d7647367334838111c8c889703 | id=lz-dead-dvn | name=LZDeadDVN | deprecated=true | lzRead=false
+0x761bc869351293c5572ed5581e23e7d5d9c6d3d1 | id=mantle-bank | name=Mantle Bank | deprecated=false | lzRead=false
+0xa3858e2a9860c935fc9586a617e9b2a674c3e4c8 | id=muon | name=Muon | deprecated=false | lzRead=false
+0x93ac538152e1bc4f093ae5666ee9fd1d84f4f4bf | id=nansen | name=Nansen | deprecated=false | lzRead=false
+0xcd37ca043f8479064e10635020c65ffc005d36f6 | id=nethermind | name=Twinstake | deprecated=false | lzRead=false
+0x658947bc7956aea0067a62cf87ab02ae199ef3f3 | id=nethermind | name=Twinstake | deprecated=false | lzRead=true
+0xf4c489afd83625f510947e63ff8f90dfee0ae46c | id=nocturnal-labs | name=Nocturnal Labs | deprecated=false | lzRead=true
+0xeede111103535e473451311e26c3e6660b0f77e1 | id=omni-x | name=Omni X | deprecated=false | lzRead=false
+0xe6cd8c2e46ef396df88048449e5b1c75172b40c3 | id=omnicat | name=Omnicat | deprecated=true | lzRead=false
+0xa9d11632ec5f9502d39aff28d66415f6cca37544 | id=p-ops-team | name=P-OPS | deprecated=false | lzRead=false
+0x5b6735c66d97479ccd18294fc96b3084ecb2fa3f | id=p2p | name=P2P | deprecated=false | lzRead=false
+0x4fb4d1a9d7197248bce8954dd9d3427b944fb97f | id=paxos | name=Paxos | deprecated=false | lzRead=false
+0x8ddf05f9a5c488b4973897e278b58895bf87cb24 | id=polyhedra-network | name=Polyhedra zkBridge | deprecated=true | lzRead=false
+0x8b4874a130d7f1f702d59115f6d31bcc3e0972c3 | id=stablecoinx | name=StablecoinX | deprecated=false | lzRead=false
+0xcdf31d62140204c08853b547e64707110fbc6680 | id=stargate | name=Stargate | deprecated=true | lzRead=false
+0xeb62f578497bdc351dd650853a751135212faf49 | id=superform | name=Superform | deprecated=false | lzRead=false
+0x505e855810cb243b2f23e95fdbb8f28d22f87a8c | id=ubisoft | name=Ubisoft | deprecated=true | lzRead=false
+0x3acc906ca13fe210c98d8f75edd7db60e129d7fc | id=worldpay | name=Worldpay | deprecated=false | lzRead=false
+0xf80285efb7518d5c79f4e98e3baa59da5ee79621 | id=wyoming | name=Wyoming | deprecated=true | lzRead=false
+0x6b34e842175c701f488e2dd335a98caaec49593f | id=zeeve | name=Zeeve | deprecated=false | lzRead=false
+0x9e930731cb4a6bf7ecc11f695a295c60bdd212eb | id=zenrock | name=Zenrock | deprecated=true | lzRead=false
+## arbitrum
+0x7a205ed4e3d7f9d0777594501705d8cd405c3b05 | id=01node | name=01node | deprecated=false | lzRead=false
+0x1acff1ac63a77b48dc1186985cb36192599c9a6a | id=FurtherFP | name=FurtherFP | deprecated=false | lzRead=false
+0x8ede21203e062d7d1eaec11c4c72ad04cdc15658 | id=altlayer | name=AltLayer | deprecated=false | lzRead=true
+0xddaa92ce2d2fac3f7c5eae19136e438902ab46cc | id=animoca-blockdaemon | name=Animoca-Blockdaemon | deprecated=false | lzRead=false
+0xf0e40968e27f63b3b0a0b3baac4a274149376591 | id=animoca-blockdaemon | name=Animoca-Blockdaemon | deprecated=false | lzRead=true
+0x7ebbe1305304f24c7d343d31a331aaf0ada64da7 | id=apedvn | name=ApeDVN | deprecated=false | lzRead=false
+0x9d3979c7e3dd26653c52256307709c09f47741e0 | id=axelar | name=Axelar | deprecated=true | lzRead=false
+0x78203678d264063815dac114ea810e9837cd80f7 | id=bcw | name=BCW Group | deprecated=false | lzRead=false
+0x05ce650134d943c5e336dc7990e84fb4e69fdf29 | id=bcw | name=BCW Group | deprecated=false | lzRead=true
+0xf2e89ed7e342c708ba8cd79b293ad9244f5fccb3 | id=bera | name=Bera | deprecated=false | lzRead=false
+0x0711dd777ae626ef5e0a4f50e199c7a0e0666857 | id=bitgo | name=BitGo | deprecated=true | lzRead=false
+0x4a6b9962945d866f53fd114bb76b38b8791b8c1d | id=bitgo | name=BitGo | deprecated=true | lzRead=false
+0xebdd2b83220c14ddd6928e0b5cba41db66d84e93 | id=blockaid | name=Blockaid | deprecated=false | lzRead=false
+0xd074b6bbcbec2f2b4c4265de3d95e521f82bf669 | id=blockhunters | name=Blockhunters | deprecated=true | lzRead=false
+0x66228c260b0edf66ae74d127251102a5f146ae5e | id=brale | name=Brale | deprecated=false | lzRead=false
+0x9bcd17a654bffaa6f8fea38d19661a7210e22196 | id=bware-labs | name=BWare | deprecated=true | lzRead=false
+0xf2e380c90e6c09721297526dbc74f870e114dfcb | id=canary | name=Canary | deprecated=false | lzRead=false
+0xbacfe8d53f8728b8980b9f99e897d8b29334c922 | id=canary-sponsored | name=Canary Sponsored | deprecated=false | lzRead=false
+0x4b61abbf0248a564c02fc252a22739d33b76dcf6 | id=canary-subsidized | name=Canary Subsidized | deprecated=false | lzRead=false
+0xecb3ac94976f11a53ae74af1f36fb89e247faeef | id=canary-wbtc | name=WBTC Canary | deprecated=false | lzRead=false
+0x4066b6e7bfd761b579902e7e8d03f4feb9b9536e | id=curve | name=Curve | deprecated=false | lzRead=true
+0xdf30c9f6a70ce65a152c5bd09826525d7e97ba49 | id=delegate | name=Delegate | deprecated=false | lzRead=false
+0xeae839784e5f6c79bbaf34b6023a2f62e134ab39 | id=deutsche-telekom | name=Deutsche Telekom | deprecated=false | lzRead=false
+0x40a341b4d69d7b2981cb5029f14701a5d3886964 | id=fidelity | name=Fidelity Center for Applied Technology | deprecated=false | lzRead=false
+0xc07125d75bfa05a0108de0f64c4d6ebb12b357f6 | id=flowdesk | name=Flowdesk | deprecated=false | lzRead=false
+0xb42726e41dbe96fc4ea6d73cd792167608353698 | id=frax | name=Frax | deprecated=false | lzRead=false
+0x82c1d3209e32beb7a55069b2c8af5b6f62e2dbd1 | id=gitcoin | name=Gitcoin | deprecated=false | lzRead=false
+0x313328609a9c38459cae56625fff7f2ad6dcde3b | id=gitcoin | name=Gitcoin | deprecated=true | lzRead=false
+0xd56e4eab23cb81f43168f9f45211eb027b9ac7cc | id=google-cloud | name=Google | deprecated=false | lzRead=false
+0x19670df5e16bea2ba9b9e68b48c054c5baea06b8 | id=horizen-labs | name=Horizen | deprecated=false | lzRead=false
+0x5cff49d69d79d677dd3e5b38e048a0dcb6d86aaf | id=horizen-labs | name=Horizen | deprecated=false | lzRead=true
+0x021e401c2a1a60618c5e6353a40524971eba1e8d | id=lagrange-labs | name=Lagrange | deprecated=true | lzRead=false
+0x2f55c492897526677c5b68fb199ea31e2c126416 | id=layerzero-labs | name=LayerZero Labs | deprecated=false | lzRead=false
+0x1308151a7ebac14f435d3ad5ff95c34160d539a5 | id=layerzero-labs | name=LayerZero Labs | deprecated=false | lzRead=true
+0x54dd79f5ce72b51fcbbcb170dd01e32034323565 | id=luganodes | name=Luganodes | deprecated=false | lzRead=false
+0x758c419533ad64ce9d3413bc8d3a97b026098ec1 | id=lz-dead-dvn | name=LZDeadDVN | deprecated=true | lzRead=false
+0x50ff206140cadada2d9d510f1a184be9221d86cf | id=mantle-bank | name=Mantle Bank | deprecated=false | lzRead=false
+0x7b8a0fd9d6ae5011d5cbd3e85ed6d5510f98c9bf | id=mercury | name=Shrapnel | deprecated=true | lzRead=false
+0x9e930731cb4a6bf7ecc11f695a295c60bdd212eb | id=mim | name=MIM | deprecated=false | lzRead=false
+0xa3858e2a9860c935fc9586a617e9b2a674c3e4c8 | id=muon | name=Muon | deprecated=false | lzRead=false
+0x01f9aad7c53626bf8807d640d9ddf852254d6f63 | id=nansen | name=Nansen | deprecated=false | lzRead=false
+0xa7b5189bca84cd304d8553977c7c614329750d99 | id=nethermind | name=Twinstake | deprecated=false | lzRead=false
+0x14e570a1684c7ca883b35e1b25d2f7cec98a16cd | id=nethermind | name=Twinstake | deprecated=false | lzRead=true
+0xfdd2e77a6addc1e18862f43297500d2ebfbd94ac | id=nocturnal-labs | name=Nocturnal Labs | deprecated=false | lzRead=true
+0xd954bf7968ef68875c9100c9ec890f969504d120 | id=nodes-guru | name=Nodes.Guru | deprecated=false | lzRead=false
+0x4c41b4edf85dee828c2cfcc80019cb2bbcfb69a5 | id=nodit | name=Nodit | deprecated=false | lzRead=false
+0xabea0b6b9237b589e676dc16f6d74bf7612591f4 | id=omni-x | name=Omni X | deprecated=false | lzRead=false
+0xd1c70192cc0eb9a89e3d9032b9facab259a0a1e9 | id=omnicat | name=Omnicat | deprecated=true | lzRead=false
+0x4708a19824bfe71262a91cdefa36ce21cbffafe1 | id=ondo | name=Ondo | deprecated=false | lzRead=false
+0x2f2f1c6025e8da125e2afd73ba17d3cbdfe3d093 | id=ondo-staging | name=Ondo Staging | deprecated=false | lzRead=false
+0x8fa9eef18c2a1459024f0b44714e5acc1ce7f5e8 | id=p-ops-team | name=P-OPS | deprecated=false | lzRead=false
+0xb3ce0a5d132cd9bf965aba435e650c55edce0062 | id=p2p | name=P2P | deprecated=false | lzRead=false
+0x8e5f5825602bc5db725974bb9e60677d4adc5fbe | id=paxos | name=Paxos | deprecated=false | lzRead=false
+0xabc9b1819cc4d9846550f928b985993cf6240439 | id=pearlnet | name=Pearlnet | deprecated=true | lzRead=false
+0xe6cd8c2e46ef396df88048449e5b1c75172b40c3 | id=planetarium-labs | name=Planetarium Labs | deprecated=false | lzRead=false
+0x8ddf05f9a5c488b4973897e278b58895bf87cb24 | id=polyhedra-network | name=Polyhedra zkBridge | deprecated=true | lzRead=false
+0x539008c98b17803a273edf98aba2d4414ee3f4d7 | id=portal | name=Portal | deprecated=false | lzRead=false
+0x969a0bdd86a230345ad87a6a381de5ed9e6cda85 | id=restake | name=Restake | deprecated=false | lzRead=false
+0x790a1946893df8cf85412e9b088c66c3ee1f5747 | id=stablecoinx | name=StablecoinX | deprecated=false | lzRead=false
+0xcd37ca043f8479064e10635020c65ffc005d36f6 | id=stablelab | name=StableLab | deprecated=false | lzRead=false
+0x6268950b2d11aa0516007b6361f6ee3facb3cb14 | id=stakingcabin | name=StakingCabin | deprecated=true | lzRead=false
+0xb0646fb9028364ac1f04477271375ef32a8a5e62 | id=stakingcabin | name=StakingCabin | deprecated=true | lzRead=false
+0x5756a74e8e18d8392605ba667171962b2b2826b5 | id=stargate | name=Stargate | deprecated=true | lzRead=false
+0x5496d03d9065b08e5677e1c5d1107110bb05d445 | id=superform | name=Superform | deprecated=false | lzRead=false
+0xcced05c3667877b545285b25f19f794436a1c481 | id=switchboard | name=Switchboard | deprecated=false | lzRead=false
+0x77aaf86b4466a67869667babe02c6ebe7e7791d6 | id=ubisoft | name=Ubisoft | deprecated=true | lzRead=false
+0xa8b8575fa41c305953f519c7d288cd7741727c7b | id=usdt0 | name=USDT0 | deprecated=false | lzRead=false
+0x6eb08810138317aa2af560c174c1390de6c413d4 | id=worldpay | name=Worldpay | deprecated=false | lzRead=false
+0xcb1b1d524d013a32e976a5963bd541c388ec0517 | id=wyoming | name=Wyoming | deprecated=true | lzRead=false
+0x7151c89f6ba70d6ab845289e4ec706530ffaf3cb | id=zeeve | name=Zeeve | deprecated=false | lzRead=false
+0x3b65e87e2a4690f14cae0483014259ded8215adc | id=zenrock | name=Zenrock | deprecated=true | lzRead=false
+## robinhood
+0xc7b93c8089c75fc2f4f08cedb5c87193e85cf3fe | id=FurtherFP | name=FurtherFP | deprecated=false | lzRead=false
+0x43b4a08ec8dbbfdfb1c8d7d453a0c57ed75a9ac1 | id=apedvn | name=ApeDVN | deprecated=false | lzRead=false
+0xdde8de68deb0080572e252f855d0485e8bbde14c | id=bitgo | name=BitGo | deprecated=true | lzRead=false
+0xe09a64787431d4c70dddf36cdb6cf5fc1536c04a | id=blockaid | name=Blockaid | deprecated=false | lzRead=false
+0x8d77d35604a9f37f488e41d1d916b2a0088f82dd | id=canary | name=Canary | deprecated=false | lzRead=false
+0xa03bb092b990c24fc0f2c7c8147a742dd70ca4d7 | id=canary-sponsored | name=Canary Sponsored | deprecated=false | lzRead=false
+0x80008db0e86e421c50aab5f5b5eba904e9a54b69 | id=canary-subsidized | name=Canary Subsidized | deprecated=false | lzRead=false
+0x70f5a195f6da203e839bb5f15e53d3a0fc796925 | id=deutsche-telekom | name=Deutsche Telekom | deprecated=false | lzRead=false
+0xd03910e24e65d14de0c7b0a52b068f53ca59a4af | id=fidelity | name=Fidelity Center for Applied Technology | deprecated=false | lzRead=false
+0xc685167bc4546caf2d3f5263d199d17d3f732c4c | id=frax | name=Frax | deprecated=false | lzRead=false
+0x1258a278519c7f4bd997a9c3bfd4aa802a028d89 | id=horizen-labs | name=Horizen | deprecated=false | lzRead=false
+0xd01ae6905d48315f7be10c7330aecf8360ef5b12 | id=layerzero-labs | name=LayerZero Labs | deprecated=false | lzRead=false
+0x72b1d44c7b0bbd597831fc1e70bbcfdb97e90f0b | id=luganodes | name=Luganodes | deprecated=false | lzRead=false
+0x6788f52439aca6bff597d3eec2dc9a44b8fee842 | id=lz-dead-dvn | name=LZDeadDVN | deprecated=true | lzRead=false
+0x965718b834b58a0a47a1723c1a28c2f1a7f1f7a0 | id=nansen | name=Nansen | deprecated=false | lzRead=false
+0x0ffe02df012299a370d5dd69298a5826eacafdf8 | id=nethermind | name=Twinstake | deprecated=false | lzRead=false
+0x5a4b54053baab2e0f7ec5bbae9d415c1a293750a | id=ondo | name=Ondo | deprecated=false | lzRead=false
+0xe6bad47e1b8bf044a85d8777362e9a26b828e580 | id=ondo-staging | name=Ondo Staging | deprecated=false | lzRead=false
+0x8ed0a851964604bb1b6b1a703f4c8234ee684d76 | id=p2p | name=P2P | deprecated=false | lzRead=false
+0x2832b240200c13d02250ec39bd0c20c199757891 | id=paxos | name=Paxos | deprecated=false | lzRead=false
+0x786804435f1a9f583ca0cd7a4584ebbfcae35855 | id=stablecoinx | name=StablecoinX | deprecated=false | lzRead=false
+0xa45caa85283f2d8153f6250686f6d0a16fad92da | id=superform | name=Superform | deprecated=false | lzRead=false
+## robinhood-testnet
+0x52f615ecbcbf40e47a315c2d84d14fa2851e55b7 | id=horizen-labs | name=Horizen | deprecated=false | lzRead=false
+0xa78a78a13074ed93ad447a26ec57121f29e8fec2 | id=layerzero-labs | name=LayerZero Labs | deprecated=false | lzRead=false
+0x88b27057a9e00c5f05dda29241027aff63f9e6e0 | id=lz-dead-dvn | name=LZDeadDVN | deprecated=true | lzRead=false
+0xcde82f74624525e24853b1f59c8b20a162a3d297 | id=nethermind | name=Twinstake | deprecated=false | lzRead=false
+0x771d83e953ca8f113f02f18206ecf8bb93da3f0a | id=paxos | name=Paxos | deprecated=false | lzRead=false

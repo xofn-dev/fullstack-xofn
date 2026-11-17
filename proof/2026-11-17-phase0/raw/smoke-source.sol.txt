@@ -1,0 +1,128 @@
+// Kode buangan smoke build Phase 0 (dijalankan di direktori sementara di luar repo, lalu dihapus). Bukan kode produksi.
+// ===== src/SmokeOFT.sol =====
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.24;
+
+import { OFT } from "@layerzerolabs/oft-evm/contracts/OFT.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+
+// Kontrak buangan untuk smoke build Phase 0. Bukan kode produksi.
+contract SmokeOFT is OFT {
+    constructor(address _endpoint, address _owner, uint256 _supply) OFT("Smoke", "SMK", _endpoint, _owner) Ownable(_owner) {
+        if (_supply > 0) _mint(_owner, _supply);
+    }
+
+    function renounceOwnership() public override onlyOwner {
+        endpoint.setDelegate(address(0));
+        super.renounceOwnership();
+    }
+}
+
+// ===== test/Smoke.t.sol =====
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.24;
+
+import { TestHelperOz5 } from "@layerzerolabs/test-devtools-evm-foundry/contracts/TestHelperOz5.sol";
+import { OptionsBuilder } from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
+import { SendParam, MessagingFee } from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
+import { IOAppCore } from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/IOAppCore.sol";
+import { UlnConfig } from "@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBase.sol";
+import { SetConfigParam } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
+import { ILayerZeroEndpointV2 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import { SmokeOFT } from "../src/SmokeOFT.sol";
+
+interface IDelegates {
+    function delegates(address) external view returns (address);
+}
+
+contract SmokeTest is TestHelperOz5 {
+    using OptionsBuilder for bytes;
+
+    uint32 constant A = 1;
+    uint32 constant B = 2;
+    SmokeOFT a;
+    SmokeOFT b;
+    address user = address(0xBEEF);
+
+    function setUp() public override {
+        super.setUp();
+        vm.deal(user, 100 ether);
+        setUpEndpoints(2, LibraryType.UltraLightNode);
+        a = new SmokeOFT(endpoints[A], address(this), 999_000_000 ether);
+        b = new SmokeOFT(endpoints[B], address(this), 0);
+    }
+
+    function _send(uint256 amt) internal returns (bytes memory err) {
+        a.transfer(user, amt);
+        bytes memory opts = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200000, 0);
+        SendParam memory p = SendParam(B, addressToBytes32(user), amt, 0, opts, "", "");
+        vm.startPrank(user);
+        try a.quoteSend(p, false) returns (MessagingFee memory fee) {
+            a.send{ value: fee.nativeFee }(p, fee, user);
+        } catch (bytes memory e) {
+            err = e;
+        }
+        vm.stopPrank();
+    }
+
+    function test_sendWithoutPeerReverts() public {
+        bytes memory err = _send(1 ether);
+        assertEq(bytes4(err), IOAppCore.NoPeer.selector, "expected NoPeer");
+    }
+
+    function test_sendAndDustWithSharedDecimals6() public {
+        address[] memory oapps = new address[](2);
+        oapps[0] = address(a);
+        oapps[1] = address(b);
+        wireOApps(oapps);
+        assertEq(a.sharedDecimals(), 6);
+        uint256 amt = 1 ether + 999_999_999_999; // sisa di bawah 1e12 wei = dust (< 0,000001 token)
+        assertEq(_send(amt).length, 0);
+        verifyPackets(B, addressToBytes32(address(b)));
+        assertEq(b.balanceOf(user), 1 ether);
+        assertEq(a.balanceOf(user), 999_999_999_999);
+        assertEq(a.totalSupply() + b.totalSupply(), 999_000_000 ether);
+    }
+
+    function test_ulnConfigZeroMeansDefault_andExplicit2plus1of2() public {
+        ILayerZeroEndpointV2 ep = ILayerZeroEndpointV2(endpoints[A]);
+        address lib = ep.getSendLibrary(address(a), B);
+        UlnConfig memory def = abi.decode(ep.getConfig(address(a), lib, B, 2), (UlnConfig));
+        assertGt(def.requiredDVNCount, 0, "default has DVN");
+
+        address[] memory req = new address[](2);
+        req[0] = address(0x1111);
+        req[1] = address(0x2222);
+        address[] memory opt = new address[](2);
+        opt[0] = address(0x3333);
+        opt[1] = address(0x4444);
+        SetConfigParam[] memory params = new SetConfigParam[](1);
+        // confirmations = 0 -> harus jatuh ke default
+        params[0] = SetConfigParam(B, 2, abi.encode(UlnConfig(0, 2, 2, 1, req, opt)));
+        ep.setConfig(address(a), lib, params);
+        UlnConfig memory got = abi.decode(ep.getConfig(address(a), lib, B, 2), (UlnConfig));
+        assertEq(got.confirmations, def.confirmations, "0 = default");
+        assertEq(got.requiredDVNCount, 2);
+        assertEq(got.optionalDVNCount, 2);
+        assertEq(got.optionalDVNThreshold, 1);
+
+        // urutan DVN tidak naik -> revert
+        req[0] = address(0x2222);
+        req[1] = address(0x1111);
+        params[0] = SetConfigParam(B, 2, abi.encode(UlnConfig(15, 2, 2, 1, req, opt)));
+        vm.expectRevert();
+        ep.setConfig(address(a), lib, params);
+    }
+
+    function test_renounceNullsDelegateFirst_thenConfigLocked() public {
+        ILayerZeroEndpointV2 ep = ILayerZeroEndpointV2(endpoints[A]);
+        assertEq(IDelegates(address(ep)).delegates(address(a)), address(this));
+        a.renounceOwnership();
+        assertEq(a.owner(), address(0));
+        assertEq(IDelegates(address(ep)).delegates(address(a)), address(0));
+        address lib = ep.getSendLibrary(address(a), B);
+        SetConfigParam[] memory params = new SetConfigParam[](0);
+        vm.expectRevert();
+        ep.setConfig(address(a), lib, params);
+    }
+}

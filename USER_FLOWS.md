@@ -253,7 +253,8 @@ Edge case:
 | F4 | HTML: Graduate/Retry tidak ada; brief: tombol untuk siapa pun + Retry per chain | Tambah di `/t/[address]` (Flow F) |
 | F5 | HTML: "Connect Wallet" hanya modal; brief: semua tx di wallet pengguna | Mode `preview` = modal; `simulation`/`live` = AppKit |
 | F6 | Brief: status Terkunci/Berubah; HTML: Locked; Changed belum ada | Copy Inggris Bonding / Locked / Changed (P25) |
-| F7 | HTML menyebut "Robinhood" sebagai chip ekspansi; pathway DVN-nya belum diverifikasi | Tetap tampil dengan label PLANNED sampai Phase 0 selesai |
+| F7 | HTML menyebut "Robinhood" sebagai chip ekspansi. Phase 0 (17 Nov 2026): pathway Base↔Robinhood ada dan Labs, DT, FCAT tersedia, tetapi Google Cloud dan Polyhedra tidak ada di Robinhood, jadi daftar operator tier untuk pathway ini belum final (`PRD.md` P1) | Tetap tampil dengan label PLANNED sampai owner memutuskan P1 |
+| F8 | Flow F menulis `Liquidity sent` → `Pool created` → `Locked` tanpa langkah konfigurasi; brief menaruh konfigurasi setelah likuiditas. Phase 0: konfigurasi dan peer harus terpasang sebelum likuiditas dikirim (`PRD.md` P28) | Urutan langkah di panel progres mengikuti keputusan P28 |
 
 ---
 

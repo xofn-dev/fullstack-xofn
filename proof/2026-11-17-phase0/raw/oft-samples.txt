@@ -1,0 +1,52 @@
+# 2026-11-17T08:45Z
+## base oft=0x6985884c4392d348587b19cb9eaaf157f13271cd remoteEid=30110 block=58573665
+owner()            = 0xC38009aA39ebDeF11850dfac9033632d88D4a282 
+endpoint()         = 0x1a44076050125825900e736c501f859c50fE728c 
+delegates(oft)     = 0x28937ca4873f7289Ebea0708c4E42b24835eCfF0 
+peers(eid)         = 0x0000000000000000000000006985884c4392d348587b19cb9eaaf157f13271cd 
+getSendLibrary     = 0xB5320B0B3a13cC860893E2Bd79FCd7e13484Dda2   isDefaultSendLibrary = false 
+getReceiveLibrary  = 0xc70AB6f32772f59fBfc23889Caf4Ba3376C84bAf false 
+receiveLibraryTimeout = 0x0000000000000000000000000000000000000000 0 
+SEND endpoint.getConfig(type 2) decoded = (10, 2, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25, 0xD56e4eAb23cb81f43168F9F45211Eb027b9aC7cc], []) 
+SEND lib.getAppUlnConfig (raw app)      = (10, 2, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25, 0xD56e4eAb23cb81f43168F9F45211Eb027b9aC7cc], []) 
+SEND executor config (type 1) decoded   = (99, 0x2CCA08ae69E0C44b18a57Ab2A87644234dAebaE4) 
+RECV endpoint.getConfig(type 2) decoded = (20, 2, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25, 0xD56e4eAb23cb81f43168F9F45211Eb027b9aC7cc], []) 
+RECV lib.getAppUlnConfig (raw app)      = (20, 2, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25, 0xD56e4eAb23cb81f43168F9F45211Eb027b9aC7cc], []) 
+RECV getConfig(type 1) on receive lib   = Error: execution reverted: LZ_ULN_InvalidConfigType(1)  Context: - server returned an error response: error code 3: execution reverted, data
+EIP-1967 impl slot = 0x0000000000000000000000000000000000000000000000000000000000000000
+EIP-1967 admin slot= 0x0000000000000000000000000000000000000000000000000000000000000000
+
+## base oft=0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34 remoteEid=30110 block=58573785
+owner()            = 0xD896F26f76ed089A1711284a00aF497B19D65171 
+endpoint()         = 0x1a44076050125825900e736c501f859c50fE728c 
+delegates(oft)     = 0xD896F26f76ed089A1711284a00aF497B19D65171 
+peers(eid)         = 0x0000000000000000000000000000000000000000000000000000000000000000 
+getSendLibrary     = 0xB5320B0B3a13cC860893E2Bd79FCd7e13484Dda2   isDefaultSendLibrary = true 
+getReceiveLibrary  = 0xc70AB6f32772f59fBfc23889Caf4Ba3376C84bAf true 
+receiveLibraryTimeout = 0x0000000000000000000000000000000000000000 0 
+SEND endpoint.getConfig(type 2) decoded = (10, 2, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25, 0xa7b5189bcA84Cd304D8553977c7C614329750d99], []) 
+SEND lib.getAppUlnConfig (raw app)      = (0, 2, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25, 0xa7b5189bcA84Cd304D8553977c7C614329750d99], []) 
+SEND executor config (type 1) decoded   = (10000 [1e4], 0x2CCA08ae69E0C44b18a57Ab2A87644234dAebaE4) 
+RECV endpoint.getConfig(type 2) decoded = (20, 2, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25, 0xa7b5189bcA84Cd304D8553977c7C614329750d99], []) 
+RECV lib.getAppUlnConfig (raw app)      = (0, 2, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25, 0xa7b5189bcA84Cd304D8553977c7C614329750d99], []) 
+RECV getConfig(type 1) on receive lib   = Error: execution reverted: LZ_ULN_InvalidConfigType(1)  Context: - server returned an error response: error code 3: execution reverted, data
+EIP-1967 impl slot = 0x0000000000000000000000000000000000000000000000000000000000000000
+EIP-1967 admin slot= 0x0000000000000000000000000000000000000000000000000000000000000000
+
+## base oft=0x1bc71130a0e39942a7658878169764bbd8a45993 remoteEid=30110 block=58573905
+owner()            = 0x7Da95539762Dd11005889F6B72a6674A4888B56d 
+endpoint()         = 0x1a44076050125825900e736c501f859c50fE728c 
+delegates(oft)     = 0x7Da95539762Dd11005889F6B72a6674A4888B56d 
+peers(eid)         = 0x0000000000000000000000000000000000000000000000000000000000000000 
+getSendLibrary     = 0xB5320B0B3a13cC860893E2Bd79FCd7e13484Dda2   isDefaultSendLibrary = true 
+getReceiveLibrary  = 0xc70AB6f32772f59fBfc23889Caf4Ba3376C84bAf true 
+receiveLibraryTimeout = 0x0000000000000000000000000000000000000000 0 
+SEND endpoint.getConfig(type 2) decoded = (42, 1, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25], []) 
+SEND lib.getAppUlnConfig (raw app)      = (42, 1, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25], []) 
+SEND executor config (type 1) decoded   = (99, 0x2CCA08ae69E0C44b18a57Ab2A87644234dAebaE4) 
+RECV endpoint.getConfig(type 2) decoded = (42, 1, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25], []) 
+RECV lib.getAppUlnConfig (raw app)      = (42, 1, 0, 0, [0x9e059a54699a285714207b43B055483E78FAac25], []) 
+RECV getConfig(type 1) on receive lib   = Error: execution reverted: LZ_ULN_InvalidConfigType(1)  Context: - server returned an error response: error code 3: execution reverted, data
+EIP-1967 impl slot = 0x0000000000000000000000000000000000000000000000000000000000000000
+EIP-1967 admin slot= 0x0000000000000000000000000000000000000000000000000000000000000000
+

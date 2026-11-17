@@ -1,0 +1,19 @@
+# 2026-11-17T08:46Z
+base -> arbitrum (eid 30110)
+  default executor cfg (maxMessageSize, executor) = (10000 [1e4], 0x2CCA08ae69E0C44b18a57Ab2A87644234dAebaE4) 
+  Executor.dstConfig (lzReceiveBaseGas, multBps, floorMarginUSD, nativeCap, lzComposeBaseGas) = 1 12000 [1.2e4] 25000000000000000000 [2.5e19] 240000000000000000 [2.4e17] 1 
+base -> robinhood (eid 30416)
+  default executor cfg (maxMessageSize, executor) = (10000 [1e4], 0x2CCA08ae69E0C44b18a57Ab2A87644234dAebaE4) 
+  Executor.dstConfig (lzReceiveBaseGas, multBps, floorMarginUSD, nativeCap, lzComposeBaseGas) = 85000 [8.5e4] 12000 [1.2e4] 25000000000000000000 [2.5e19] 301000000000000000 [3.01e17] 85000 [8.5e4] 
+arbitrum -> base (eid 30184)
+  default executor cfg (maxMessageSize, executor) = (10000 [1e4], 0x31CAe3B7fB82d847621859fb1585353c5720660D) 
+  Executor.dstConfig (lzReceiveBaseGas, multBps, floorMarginUSD, nativeCap, lzComposeBaseGas) = 85000 [8.5e4] 12000 [1.2e4] 25000000000000000000 [2.5e19] 50000000000000000 [5e16] 85000 [8.5e4] 
+arbitrum -> robinhood (eid 30416)
+  default executor cfg (maxMessageSize, executor) = (10000 [1e4], 0x31CAe3B7fB82d847621859fb1585353c5720660D) 
+  Executor.dstConfig (lzReceiveBaseGas, multBps, floorMarginUSD, nativeCap, lzComposeBaseGas) = 85000 [8.5e4] 12000 [1.2e4] 25000000000000000000 [2.5e19] 301000000000000000 [3.01e17] 85000 [8.5e4] 
+robinhood -> base (eid 30184)
+  default executor cfg (maxMessageSize, executor) = (10000 [1e4], 0x4208D6E27538189bB48E603D6123A94b8Abe0A0b) 
+  Executor.dstConfig (lzReceiveBaseGas, multBps, floorMarginUSD, nativeCap, lzComposeBaseGas) = 85000 [8.5e4] 12000 [1.2e4] 25000000000000000000 [2.5e19] 50000000000000000 [5e16] 85000 [8.5e4] 
+robinhood -> arbitrum (eid 30110)
+  default executor cfg (maxMessageSize, executor) = (10000 [1e4], 0x4208D6E27538189bB48E603D6123A94b8Abe0A0b) 
+  Executor.dstConfig (lzReceiveBaseGas, multBps, floorMarginUSD, nativeCap, lzComposeBaseGas) = 1 12000 [1.2e4] 25000000000000000000 [2.5e19] 240000000000000000 [2.4e17] 1 

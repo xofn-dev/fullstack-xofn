@@ -1,0 +1,12 @@
+# 2026-11-17T08:56Z smoke build di direktori sementara (di luar repo)
+forge Version: 1.8.3
+solc=0.8.24 evm_version=cancun optimizer_runs=200 via_ir=false
+paket (exact): {"@layerzerolabs/lz-evm-messagelib-v2":"3.0.168","@layerzerolabs/lz-evm-protocol-v2":"3.0.168","@layerzerolabs/lz-evm-v1-0.7":"3.0.168","@layerzerolabs/oapp-evm":"0.4.1","@layerzerolabs/oft-evm":"4.0.1","@layerzerolabs/test-devtools-evm-foundry":"8.0.1","@openzeppelin/contracts":"5.6.1","@openzeppelin/contracts-upgradeable":"5.6.1","solidity-bytes-utils":"0.8.4"}
+forge-std commit: 15b2df92a05d4d2f76a06653872fefb287e0e01c
+Ran 4 tests for test/Smoke.t.sol:SmokeTest
+[PASS] test_renounceNullsDelegateFirst_thenConfigLocked() (gas: 102192)
+[PASS] test_sendAndDustWithSharedDecimals6() (gas: 1169074)
+[PASS] test_sendWithoutPeerReverts() (gas: 78218)
+[PASS] test_ulnConfigZeroMeansDefault_andExplicit2plus1of2() (gas: 343565)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 83.01ms (32.88ms CPU time)
+Ran 1 test suite in 108.29ms (83.01ms CPU time): 4 tests passed, 0 failed, 0 skipped (4 total tests)

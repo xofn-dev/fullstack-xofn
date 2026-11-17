@@ -49,7 +49,7 @@ Konflik yang belum diputuskan tercantum di `PRD.md` §11 (P#), `DESIGN_SYSTEM.md
 
 | Phase | Fokus | Status |
 |---|---|---|
-| **0** | Verifikasi riset: DVN per pathway, AMM, aset pasangan, EID, semantik ULN. Read-only, **tanpa transaksi** | Belum mulai |
+| **0** | Verifikasi riset: DVN per pathway, AMM, aset pasangan, EID, semantik ULN. Read-only, **tanpa transaksi** | Selesai 17 Nov 2026; menunggu persetujuan gerbang (`proof/2026-11-17-phase0/notes.md`) |
 | **1** | Fondasi repo + port landing HTML (mode `preview`) | Belum mulai |
 | **2** | XofN Check: baca `getConfig` OFT yang sudah ada + cache + kartu share | Belum mulai |
 | **3** | Kontrak (Token, Curve, Graduator, Remote, Registry), **lokal saja** (forge test + Anvil) | Belum mulai |
