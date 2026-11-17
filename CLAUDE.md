@@ -21,7 +21,7 @@ Inti produk berjalan dalam **dua tahap**:
 3. `XofNRegistry.verify(token)` membuktikan status kunci on-chain. Registry ada di setiap chain.
 4. **XofN Check** membaca konfigurasi DVN dari OFT mana pun.
 
-**Ini proyek baru dari nol.** Stack diturunkan dari proyek Cognita, Assize, dan Fademan (`ARCHITECTURE.md` §1). Phase 0 (riset) sudah selesai; belum ada kode produk.
+**Ini proyek baru dari nol.** Stack diturunkan dari proyek Cognita, Assize, dan Fademan (`ARCHITECTURE.md` §1). Status tiap phase ada di §4.
 
 ## 2. Urutan membaca
 
@@ -31,8 +31,9 @@ Inti produk berjalan dalam **dua tahap**:
 4. `DESIGN_SYSTEM.md` — wajib untuk task UI
 5. `ARCHITECTURE.md` — wajib sebelum menyentuh kode
 6. `deployguide-xofn.md` — panduan deploy dari PM (peran chain, fase deploy, struktur repo, env). Prosedur deploy-nya **FROZEN** (§5.1)
-7. `proof/2026-11-17-phase0/` — hasil riset Phase 0, termasuk `09-addendum-robinhood-home.md`
-8. Sumber asli: `brief-xofn.md` (protokol, keamanan, klaim) dan `xofn-coinfall-v8-galaxy.html` (visual)
+7. `ROBINHOOD_PRE_CA_MAINNET_DEPLOYMENT.md` — playbook deploy sebelum CA. **Acuan Phase 6–7; tidak membuka deploy.** Diselaraskan dengan XofN di `ARCHITECTURE.md` §5.6.1 (Opsi A, PRD P47). Bagian yang tidak relevan untuk XofN: factory reservasi anak per token dan validasi CA (gate review `proof/2026-11-17-phase3/gate-review-playbook.md` Bagian 2)
+8. `proof/2026-11-17-phase0/` — hasil riset Phase 0, termasuk `09-addendum-robinhood-home.md`
+9. Sumber asli: `brief-xofn.md` (protokol, keamanan, klaim) dan `xofn-coinfall-v8-galaxy.html` (visual)
 
 **Hierarki kebenaran** saat ada konflik:
 1. Instruksi owner/PM terbaru.
@@ -68,7 +69,7 @@ Konflik yang belum diputuskan tercantum di `PRD.md` §11 (P#), `DESIGN_SYSTEM.md
 | **0** | Verifikasi riset: EID, DVN per pathway, semantik ULN, AMM, aset pasangan, paket, CreateX. Read-only, **tanpa transaksi** | Selesai 17 Nov 2026 + addendum home Robinhood; menunggu persetujuan gerbang (`proof/2026-11-17-phase0/notes.md`) |
 | **1** | Fondasi repo + port landing HTML (mode `preview`) | Selesai 17 Nov 2026; menunggu persetujuan gerbang (`proof/2026-11-17-phase1/notes.md`) |
 | **2** | XofN Check: baca OFT yang sudah ada di Robinhood/Base/Arbitrum + cache + kartu share | Selesai 17 Nov 2026; menunggu persetujuan gerbang (`proof/2026-11-17-phase2/notes.md`) |
-| **3** | Kontrak **lokal saja**. **3a** tahap 1: Token (OFT), Curve (implementation + clone), Graduator `graduate()`, Registry. **3b** tahap 2: Remote, `expandAndLock`, composer, `retryRemote`, multi-endpoint | Belum mulai |
+| **3** | Kontrak **lokal saja**. **3a** tahap 1: Token (OFT), Curve (implementation + clone), Graduator `graduate()`, Registry. **3b** tahap 2: Remote, `expandAndLock`, composer, `retryRemote`, multi-endpoint | **Belum selesai**: temuan HIGH `PoolSeeder` (PRD P55) menunggu persetujuan owner untuk perubahan kontrak. Opsi A deploy dorman sudah diuji tanpa mengubah kontrak (`test/lz/GoLive.t.sol`). Rincian di `proof/2026-11-17-phase3/notes.md` |
 | **4** | Integrasi frontend aplikasi terhadap Anvil lokal / mode `simulation` (flow tahap 1 lebih dulu) | Belum mulai |
 | **5** | Hardening & paket audit (audit eksternal wajib sebelum deploy mainnet 1b) | Belum mulai |
 | **6** | **Deploy Fase 1** (guide §5–6): 1a Robinhood testnet → 1b Robinhood mainnet + rilis publik XofN Check | **FROZEN total** |
@@ -89,6 +90,10 @@ Isi `deployguide-xofn.md` §1, §5–9 (perintah deploy, smoke test, transfer ke
 - Menjalankan task LayerZero devtools yang **menulis** konfigurasi (mis. `lz:oapp:wire`). Task baca (`lz:oapp:config:get*`) boleh.
 - Push migrasi Supabase ke project remote/produksi, mengubah env produksi, atau deploy aplikasi web.
 - Mengubah copy menjadi klaim "live", atau menghapus label NOT LIVE/DEMO.
+- Memanggil `launch`, `buy`, `sell`, `graduate`, `expandAndLock`, `retryRemote`, `retryCompose`, `reAck`, atau fungsi produk lain di jaringan publik (testnet maupun mainnet), **termasuk untuk smoke test**. Fungsi produk hanya boleh dipanggil di Anvil lokal.
+- Membuat CA token atau me-launch token di jaringan publik. **CA dan launch adalah tugas PM**, bukan tugas agent (PRD P53).
+- Menyiapkan atau menjalankan broadcast dengan `--private-key`. Broadcast ke jaringan publik **hanya dilakukan manusia** lewat `--account` (keystore) atau `--ledger`. Agent paling jauh menyiapkan dry-run tanpa key.
+- Memanggil `Registry.setRegistrar` (saklar go-live, PRD P47) di luar Anvil. Itu aksi Safe atas perintah PM.
 
 Jika sebuah task tampak membutuhkan salah satu hal di atas: **berhenti**, jelaskan kebutuhannya, dan tanyakan ke owner.
 
@@ -201,6 +206,8 @@ Dependency baru di `package.json` yang **tidak** tercantum di `ARCHITECTURE.md` 
   - tidak ada operasi destruktif (`reset --hard`, force push, hapus branch);
   - commit/push hanya bila diminta;
   - bila di `main`, buat branch dulu.
+- **Playbook pre-CA** (`ROBINHOOD_PRE_CA_MAINNET_DEPLOYMENT.md`) §1.1–1.3 berlaku penuh untuk agent: larangan, kewajiban, dan format laporan gate §1.3 di setiap akhir phase. Bila playbook bertentangan dengan fakta kontrak XofN (mis. factory reservasi per token), fakta yang menang dan konfliknya dicatat untuk PM.
+- **Status alamat: Reserved ≠ Deployed (dorman) ≠ Live.** Di XofN, Deployed (dorman) berarti kontrak sudah ada tetapi `registrar` Registry masih kosong, sehingga `launch()` revert. Live baru tercapai setelah Safe memanggil `setRegistrar`. Aplikasi tidak boleh menyalakan aksi launch untuk alamat yang belum Live (PRD P52).
 - **Lingkungan dev:** DNS Telkomsel memblokir `*.robinhood.com`. Pakai VPN atau DNS lain sebelum menguji RPC Robinhood. RPC publik Robinhood dibatasi rate.
 
 ## 10. Pemeriksaan & pengujian

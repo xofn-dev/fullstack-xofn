@@ -305,7 +305,7 @@ Edge case:
 | F5 | HTML: "Connect Wallet" hanya modal; brief: semua tx di wallet pengguna | Mode `preview` = modal; `simulation`/`live` = AppKit |
 | F6 | Brief/guide: status Terkunci/Berubah/Lulus menunggu ekspansi; HTML: Locked; Changed dan Graduated belum ada | Copy Inggris: Bonding / Graduated · awaiting expansion / Expanding / Locked / Changed (P25). "Expanding" adalah [Usulan], bukan status dari guide |
 | F7 | HTML menempatkan Base sebagai home ("HOME CHAIN · MVP BASE") dan Robinhood sebagai ekspansi; guide membaliknya | Copy dan 3D mengikuti guide: home = Robinhood (D15). Base/Arbitrum tampil sebagai "EXPANSION · PLANNED" |
-| F8 | Urutan ekspansi di brief/guide (likuiditas sebelum resep) tidak bisa dijalankan [Phase 0] | Panel progres F.2 mengikuti keputusan P28 |
+| F8 | Urutan ekspansi di brief/guide (likuiditas sebelum resep) tidak bisa dijalankan [Phase 0] | **Diputuskan owner 17 Nov 2026 (P28): resep sebelum likuiditas.** Panel progres F.2 memakai urutan itu. Catatan Phase 3 untuk UI: `Token deployed` dan `Pathway configured` terjadi di pesan yang sama; `Pool created` dan `Locked` (chain ekspansi) terjadi di satu `lzCompose` |
 | F9 | HTML memakai narasi "omnichain" sebagai fitur; guide melarang klaim "Omnichain" sebelum Fase 2b | Copy omnichain di landing berlabel "planned" sampai tahap 2 live (`DESIGN_SYSTEM.md` §10.2a) |
 | F10 | HTML menyebut Google Cloud dan Polyhedra sebagai operator wajib (section Security, sampel Check, footnote); Phase 0: keduanya tidak tersedia di pathway Robinhood, dan P1 belum diputuskan | Selama P1 terbuka, landing menampilkan jumlah DVN tanpa nama operator pengganti (D17) |
 
@@ -320,8 +320,8 @@ Edge case:
 | C XofN Check | **Selesai** (Phase 2, 17 Nov 2026): `/check` dan `/check/[chain]/[address]` membaca chain, cache 15 menit, Re-check, Share + kartu OG; sampel di landing tetap berlabel simulasi. Belum: hasil `verify()` untuk token XofN (butuh manifest) | — | FROZEN (rilis publik di Fase 1b) |
 | D Launch | **Pratinjau di landing** (Phase 1): validasi form + modal ringkasan tanpa transaksi. Halaman `/launch` di Phase 4 | Belum mulai | FROZEN |
 | E Trading | Belum mulai | Belum mulai | FROZEN |
-| F.1 Graduate | Belum mulai | Belum mulai | FROZEN (Fase 1) |
-| F.2 Expand & lock | Belum mulai | Belum mulai | FROZEN (Fase 2) |
+| F.1 Graduate | Belum mulai | UI belum mulai. Kontrak siap (Phase 3): `XofNGraduator.graduate(token)` | FROZEN (Fase 1) |
+| F.2 Expand & lock | Belum mulai | UI belum mulai. Kontrak siap: `expandAndLock(token)`, `retryRemote(token, eid)`, `quoteExpandAndLock`, `quoteRetry`; di chain ekspansi `XofNRemote.reAck` dan `endpoint.lzCompose` (retryCompose). Siklus penuh berjalan di Anvil lewat `script/local` | FROZEN (Fase 2) |
 | G Halaman token | Belum mulai | Belum mulai | FROZEN |
 | H Bridge | **Pratinjau di landing** (Phase 1): widget + modal "preview only", rute hub dijelaskan. Halaman `/bridge` di Phase 4 | Belum mulai | FROZEN (Fase 2) |
 | I Contracts & Proof | **Section di landing** (Phase 1): semua status NOT DEPLOYED / PLANNED. Halaman `/contracts` dan `/proof` di Phase 4 | Belum mulai | FROZEN |

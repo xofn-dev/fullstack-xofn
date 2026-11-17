@@ -1,0 +1,68 @@
+# Uniswap v2 fee — read-only eth_call / eth_getCode, 17 Nov 2026
+# Script: /tmp/xofn-univ2/check.sh (cast call/code/chain-id/block-number saja; tanpa key, tanpa tx)
+# RPC publik: rpc.mainnet.chain.robinhood.com, mainnet.base.org, arb1.arbitrum.io/rpc, ethereum-rpc.publicnode.com (pembanding)
+
+== robinhood
+chainId: 4663
+block: 116672584
+router.factory(): 0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f (expected 0x8bceaa40b9acdfaedf85adf4ff01f5ad6517937f)
+router.WETH(): 0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73
+router.getAmountOut(1e18,1e21,1e21): 996006981039903216 [9.96e17]
+router.getAmountIn(1e18,1e21,1e21): 1004013040121365097 [1.004e18]
+factory.feeTo(): 0x2aC03e14Cfe755426DaAEe0a4994184Ce81482F8
+factory.feeToSetter(): 0x2BAD8182C09F50c8318d769245beA52C32Be46CD
+factory.allPairsLength(): 150088 [1.5e5]
+factory.allPairs(0): 0x4b26f2f37Db21DFe226465307E7fcE8D5910064F
+pair.factory(): 0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f
+pair.MINIMUM_LIQUIDITY(): 1000
+pair runtime bytes: 11293
+pair runtime keccak: 0x5b83bdbcc56b2e630f2807bbadd2b0c21619108066b92a58de081261089e9ce5
+router runtime bytes: 21902  keccak: 0xbd55ea26b2f8d42a8ff151511cef92a326a9817686899fe96a8a8f81ee7fc55e
+factory runtime bytes: 13859  keccak: 0xbab145d02e7005f0d84c6c1639d39b799b0ea16df99ebbdaf5a14d9da820b4e0
+== base
+chainId: 8453
+block: 58689700
+router.factory(): 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6 (expected 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6)
+router.WETH(): 0x4200000000000000000000000000000000000006
+router.getAmountOut(1e18,1e21,1e21): 996006981039903216 [9.96e17]
+router.getAmountIn(1e18,1e21,1e21): 1004013040121365097 [1.004e18]
+factory.feeTo(): 0x9bD25e67bF390437C8fAF480AC735a27BcF6168c
+factory.feeToSetter(): 0x31FAfd4889FA1269F7a13A66eE0fB458f27D72A9
+factory.allPairsLength(): 3078654 [3.078e6]
+factory.allPairs(0): 0x88A43bbDF9D098eEC7bCEda4e2494615dfD9bB9C
+pair.factory(): 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6
+pair.MINIMUM_LIQUIDITY(): 1000
+pair runtime bytes: 11293
+pair runtime keccak: 0x5b83bdbcc56b2e630f2807bbadd2b0c21619108066b92a58de081261089e9ce5
+router runtime bytes: 17891  keccak: 0xec2a9bc649a4a1f23eee18c570628b28c03c665cdd7ebbdb3c46a6c4007959c1
+factory runtime bytes: 13859  keccak: 0xbab145d02e7005f0d84c6c1639d39b799b0ea16df99ebbdaf5a14d9da820b4e0
+== arbitrum
+chainId: 42161
+block: 525068948
+router.factory(): 0xf1D7CC64Fb4452F05c498126312eBE29f30Fbcf9 (expected 0xf1D7CC64Fb4452F05c498126312eBE29f30Fbcf9)
+router.WETH(): 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+router.getAmountOut(1e18,1e21,1e21): 996006981039903216 [9.96e17]
+router.getAmountIn(1e18,1e21,1e21): 1004013040121365097 [1.004e18]
+factory.feeTo(): 0x95E337C5B155385945D407f5396387D0c2a3A263
+factory.feeToSetter(): 0x2BAD8182C09F50c8318d769245beA52C32Be46CD
+factory.allPairsLength(): 8892
+factory.allPairs(0): 0xF64Dfe17C8b87F012FCf50FbDA1D62bfA148366a
+pair.factory(): 0xf1D7CC64Fb4452F05c498126312eBE29f30Fbcf9
+pair.MINIMUM_LIQUIDITY(): 1000
+pair runtime bytes: 11293
+pair runtime keccak: 0x5b83bdbcc56b2e630f2807bbadd2b0c21619108066b92a58de081261089e9ce5
+router runtime bytes: 17891  keccak: 0xaeb21ca7ccfc03227bb0bc9daac40b771d261e04f1de56c3fd3dd34886dee730
+factory runtime bytes: 13859  keccak: 0xbab145d02e7005f0d84c6c1639d39b799b0ea16df99ebbdaf5a14d9da820b4e0
+== ethereum reference pair 0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc
+pair runtime bytes: 11293  keccak: 0x5b83bdbcc56b2e630f2807bbadd2b0c21619108066b92a58de081261089e9ce5
+expected getAmountOut 0.3%: 996006981039903216
+expected getAmountIn 0.3%: 1004013040121365097
+
+# Fork test (EVM lokal forge; tanpa broadcast)
+$ FORK_RPC_*=<RPC publik> forge test --match-path test/fork/ForkUniV2.t.sol -vv
+Ran 3 tests for test/fork/ForkUniV2.t.sol:ForkUniV2Test
+[PASS] test_fork_arbitrum_univ2() (gas: 29767463)
+[PASS] test_fork_base_univ2() (gas: 29334534)
+[PASS] test_fork_robinhood_univ2() (gas: 29754161)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 21.66s (36.58s CPU time)
+Ran 1 test suite in 21.67s (21.66s CPU time): 3 tests passed, 0 failed, 0 skipped (3 total tests)
