@@ -1,0 +1,26 @@
+# dependency & build
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# env: tidak pernah di-commit (CLAUDE.md §9)
+.env
+.env.*
+
+# foundry (dipakai mulai Phase 3)
+cache/
+broadcast/
+/out/
+
+# supabase lokal
+supabase/.temp/
+supabase/.branches/
+
+# tooling
+coverage/
+.DS_Store
+*.log
+.vscode/
+*.code-workspace
