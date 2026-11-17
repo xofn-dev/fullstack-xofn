@@ -1,5 +1,7 @@
 # 08 — Rekomendasi untuk keputusan terbuka (P1–P9, P13, dan terkait)
 
+> **Catatan (17 Nov 2026):** dokumen ini ditulis saat **Base** masih home chain. Deploy Guide v1.0 memindahkan home ke **Robinhood**. Data di sini tetap sah, tetapi pembacaannya berubah: lihat [`09-addendum-robinhood-home.md`](09-addendum-robinhood-home.md). P13 dan P29 sudah terselesaikan oleh guide; angka native drop dan fee yang relevan sekarang adalah arah dari Robinhood. Isi di bawah tidak ditulis ulang.
+
 Tanggal: **17 Nov 2026**. Dokumen ini berisi fakta ringkas dan rekomendasi developer. **Tidak ada keputusan yang diambil di sini**; pemilik keputusan tetap seperti di `PRD.md` §11.
 
 Tingkat keyakinan:
