@@ -568,11 +568,11 @@ Butir 1–5, 7, dan 8 diverifikasi di Phase 0 (17 Nov 2026). Bukti: `proof/2026-
 7. OFT API LayerZero — endpoint dan auth **terverifikasi** (§7). Rate limit tetap [Belum].
 8. ~~AMM di ketiga chain (P9)~~ — **terverifikasi**: Uniswap v2, v3, v4 ada di Robinhood, Base, dan Arbitrum. Antarmuka compose mengikuti keputusan P2/P9.
 9. Perbedaan API three r170 (HTML) → ≥ r184 (npm), misalnya `OutputPass`, `RoomEnvironment`, dan clipping. Cek saat port.
-10. Pola URL LayerZero Scan untuk `scan.ts` (situs merespons 429 saat diperiksa). Cek di Phase 2.
+10. Pola URL halaman LayerZero Scan untuk `scan.ts` (situs web merespons 429 saat diperiksa). Cek di Phase 2. API Scan bisa dibaca tanpa key: `https://scan.layerzero-api.com/v1/messages/{guid|tx|oapp|pathway}/…` (spesifikasi di `/v1/openapi`) [pelengkap Phase 0].
 11. `block.number` di Arbitrum dan Robinhood adalah perkiraan blok L1. Batas ukuran kode Robinhood 96 KB. Biaya = gas L2 + data L1.
 12. Urutan state machine §5.3 (resep sebelum likuiditas): keputusan P28 harus tercatat sebelum Phase 3 dimulai.
-13. Pelengkap guide §4.2: default config **mainnet** keenam arah sudah dibaca lewat `cast call` di Phase 0 (setara `lz:oapp:config:get:default`; `proof/2026-11-17-phase0/02-dvn-pathways.md`). Yang tersisa: default config dan `dstConfig` DVN **testnet**, serta contoh transaksi di LayerZero Scan (metode 3).
-14. Pelengkap P2: konfirmasi USDG/USDT0/USDe sebagai OFT dan peer-nya ke/dari Robinhood.
+13. Pelengkap guide §4.2: default config **mainnet** keenam arah sudah dibaca lewat `cast call` di Phase 0 (setara `lz:oapp:config:get:default`; `proof/2026-11-17-phase0/02-dvn-pathways.md`). ~~Default config dan `dstConfig` DVN testnet, serta contoh transaksi di LayerZero Scan~~ — **terverifikasi** (`proof/2026-11-17-phase0-addendum/notes.md`). Catatan: default testnet = 1 DVN LayerZero Labs (bukan Dead DVN), jadi tes testnet tanpa konfigurasi eksplisit tidak gagal seperti di mainnet; `nativeCap` dari Robinhood testnet = 0.
+14. ~~Pelengkap P2: USDG/USDT0/USDe sebagai OFT dan peer-nya ke/dari Robinhood~~ — **terverifikasi**: tidak ada rute OFT langsung Robinhood↔Base/Arbitrum; USDe dan USDG lewat Ethereum, USDT0 tidak ada di Robinhood.
 15. Foundry: v1.8.3 terpasang di mesin dev; v1.8.x tertinggi v1.8.7; rilis terbaru v1.9.0.
 16. Versi Hardhat + `@layerzerolabs/toolbox-hardhat` yang kompatibel dengan layout Foundry-root + Next. Hanya relevan bila PM mensyaratkan keluaran task devtools; pembacaan `cast call` sudah setara.
 17. Bentuk `deployments/local.json` untuk tiga chain simulasi (§10.3).
