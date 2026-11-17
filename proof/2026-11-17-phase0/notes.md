@@ -17,6 +17,7 @@
 | [06-robinhood-chain.md](06-robinhood-chain.md) | CreateX ada di Robinhood dengan bytecode identik; opcode cancun didukung kecuali `BLOBBASEFEE`. |
 | [07-oft-api-rpc.md](07-oft-api-rpc.md) | OFT API `/list` gratis tanpa key tetapi tidak mencakup Robinhood; RPC publik Robinhood dibatasi rate. |
 | [08-recommendations.md](08-recommendations.md) | Rekomendasi P1–P9 dan P13, plus dua temuan yang butuh keputusan owner (urutan graduation, topologi pathway). |
+| [09-addendum-robinhood-home.md](09-addendum-robinhood-home.md) | Pembacaan ulang data Phase 0 setelah deploy guide v1.0 menjadikan Robinhood home: tier brief tidak terpenuhi di pathway mana pun, batas native drop Robinhood→Base 0,05 ETH, P13/P29 terselesaikan, daftar keputusan PM. |
 
 ### Keluaran mentah (`raw/`)
 
@@ -42,6 +43,8 @@
 | Rekomendasi P1–P9 dan P13 | **Terpenuhi**, dengan catatan: P4 dan P7 baru bisa diukur di Phase 3, P6 hanya estimasi, P8 milik owner | 08 |
 
 Gerbang brief P0 ("tier Standard tersedia di Base ↔ Arbitrum dan Base ↔ Robinhood"): **belum lolos untuk Robinhood** dengan daftar operator di brief. Lolos setelah owner memilih operator wajib kedua untuk pathway itu (P1).
+
+> **Pembaruan 17 Nov 2026 (Deploy Guide v1.0):** home chain sekarang Robinhood, jadi pathway yang relevan adalah Robinhood↔Base dan Robinhood↔Arbitrum, dan daftar operator brief/guide tidak terpenuhi di keduanya. Baca [09-addendum-robinhood-home.md](09-addendum-robinhood-home.md) untuk pembacaan ulang, koreksi data testnet, dan daftar tugas pelengkap. Bagian lain catatan ini ditulis saat Base masih home dan tidak diubah.
 
 ## Yang gagal, dilewati, atau tetap `[Belum]`
 

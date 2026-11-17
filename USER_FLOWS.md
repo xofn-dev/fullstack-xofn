@@ -3,13 +3,16 @@
 > **Tujuan dokumen:** mendefinisikan alur pengguna yang wajib berjalan, lengkap dengan langkah, error, edge case, dan state UI. Setiap perubahan UI atau logika harus menjaga alur ini.
 >
 > **Sumber kebenaran:**
-> - Perilaku → `brief-xofn.md`.
+> - Peran chain dan lifecycle dua tahap → `deployguide-xofn.md`.
+> - Perilaku lainnya → `brief-xofn.md`.
 > - Tampilan → `xofn-coinfall-v8-galaxy.html`.
 > - Detail teknis → `ARCHITECTURE.md`.
 >
 > **Label:**
 > - **[Brief]** — dari brief
+> - **[Guide]** — dari deploy guide
 > - **[Desain]** — dari HTML
+> - **[Phase 0]** — fakta riset
 > - **[Usulan]** — dari dokumen ini
 > - **[Belum]** — butuh keputusan
 >
@@ -17,6 +20,8 @@
 > - `preview` — default, tanpa transaksi
 > - `simulation` — Anvil lokal, Phase 3–4
 > - `live` — Phase 6–7, **FROZEN**
+>
+> **Peran chain:** Robinhood = home; Base & Arbitrum = ekspansi (hub lewat Robinhood).
 >
 > **Dokumen terkait:** `PRD.md` §5–6, `DESIGN_SYSTEM.md` §5–6, `CLAUDE.md`.
 
@@ -27,11 +32,12 @@
 | Peran | Wallet? | Bisa melakukan |
 |---|---|---|
 | **Pengunjung** | Tidak | Menjelajah landing, melihat token, XofN Check, membuka `/contracts` dan `/proof` |
-| **Trader** | Ya | Buy/sell di curve atau pool, bridge setelah graduation |
-| **Creator** | Ya | Launch token di Base (satu tanda tangan) |
-| **Pemanggil graduation** | Ya (siapa saja) | `graduate()` saat ambang tercapai; `retryRemote(eid)` bila ada chain gagal |
+| **Trader** | Ya | Buy/sell di curve atau pool Robinhood; bridge setelah token Locked |
+| **Creator** | Ya | Launch token di Robinhood (satu tanda tangan) |
+| **Pemanggil graduation** | Ya (siapa saja) | `graduate()` saat ambang tercapai (menerima insentif tetap) |
+| **Pemanggil ekspansi** | Ya (siapa saja, P31) | `expandAndLock(token)` untuk token Graduated (membayar fee LZ); `retryRemote(eid)` bila ada chain gagal |
 | **Builder / aggregator** | — | Memanggil `XofNRegistry.verify(token)` on-chain (di luar UI) |
-| **Owner infra (Safe 2-of-3)** | Safe | Mengelola daftar putih DVN dan label operator; **tidak ada UI admin** di aplikasi [Usulan] |
+| **Owner infra (Safe 2-of-3)** | Safe | Mengelola label DVN dan daftar putih untuk token **baru**; **tidak ada UI admin** di aplikasi [Usulan] |
 
 ---
 
@@ -41,8 +47,9 @@
 /  (landing: hero → … → explore → check → inside → security → graduation → launch → bridge → proof → contracts → CTA)
 ├─ /launch                       ──(sukses)──► /t/[address]
 ├─ /t/[address]                  ◄── klik TokenCard (Explore / /)
-│    ├─ panel trade (curve | pool)
-│    ├─ panel graduation (per chain, Retry)
+│    ├─ panel trade (curve | pool Robinhood)
+│    ├─ panel graduation (tahap 1: Graduate)
+│    ├─ panel ekspansi (tahap 2: Expand & lock, progres per chain, Retry)
 │    └─ TierBadge ► DvnList (popover/drawer)
 ├─ /check                        ──(submit)──► /check/[chain]/[address]
 │                                               └─ Share ► gambar kartu (OG)
@@ -60,11 +67,11 @@ Mobile (≤900px): tombol ☰ → panel link (wajib ada)
 **Langkah**
 1. Pengguna membuka `/`. Hero muncul dengan intro motion, dan scene 3D Coinfall dimuat lazy (fallback statis tampil lebih dulu).
 2. Scroll melewati Vision, Thesis, Architecture (pilih stasiun, ganti mode kamera, tur), Manifesto, dan seterusnya.
-3. Di **Explore**, filter All / Bonding / Locked (toggle `aria-pressed`) memperbarui grid.
+3. Di **Explore**, filter All / Bonding / Graduated / Locked (toggle `aria-pressed`) memperbarui grid.
 4. Klik atau Enter pada TokenCard:
    - `preview` → drawer detail demo;
    - `simulation` / `live` → navigasi ke `/t/[address]`.
-5. Klik TierBadge di kartu → DvnList.
+5. Klik TierBadge di kartu → DvnList. Untuk token yang belum diekspansi, DvnList menjelaskan "Tier committed — DVN configuration is applied at expansion."
 
 **Error & edge case**
 | Kasus | Perilaku |
@@ -84,7 +91,13 @@ Mobile (≤900px): tombol ☰ → panel link (wajib ada)
    - `isWeb3Configured = false` atau mode `preview` → modal penjelasan "preview only" (teks HTML), tanpa koneksi.
    - Selain itu, modal AppKit terbuka.
 2. Setelah terhubung, alamat tampil ringkas di nav.
-3. Aksi yang butuh chain tertentu (launch & trade curve di Base; bridge di chain asal) memeriksa network. Bila salah, tampil **NetworkGuard** "Switch to <chain>" dengan nama chain dari registry.
+3. Aksi yang butuh chain tertentu memeriksa network:
+   - launch, trade curve/pool, `graduate()`, dan `expandAndLock` → **Robinhood**;
+   - `retryRemote(eid)` → **Robinhood** (fungsi Graduator);
+   - `retryCompose` (menjalankan ulang compose di endpoint) → chain tujuan yang gagal (Base atau Arbitrum);
+   - bridge → chain asal.
+
+   Bila salah, tampil **NetworkGuard** "Switch to <chain>" dengan nama chain dari registry.
 
 **Error & edge case**
 - Pengguna menolak koneksi → toast "Connection cancelled." Tidak ada perubahan state.
@@ -97,13 +110,16 @@ Mobile (≤900px): tombol ☰ → panel link (wajib ada)
 ## 5. Flow C — XofN Check
 
 **Langkah**
-1. Di `/check` (atau section Check di `/`), pengguna menempel alamat OFT dan memilih chain.
+1. Di `/check` (atau section Check di `/`), pengguna menempel alamat OFT dan memilih chain (Robinhood, Base, Arbitrum).
 2. Validasi klien memastikan format `0x` + 40 hex, lalu alamat di-lowercase.
 3. Submit → navigasi ke `/check/[chain]/[address]`. Halaman (RSC) memanggil logika Check:
    1. **Cache Supabase.** Bila segar (TTL, P20), langsung ditampilkan.
-   2. **Bila basi**, baca RPC: `owner()`, `endpoint.delegates()`, daftar peer (OFT API atau pindai `peers(eid)`), lalu per pathway dan per arah: library (+ apakah default) serta `getConfig` ULN + executor.
+   2. **Bila basi**, baca RPC:
+      - `owner()` dan `endpoint.delegates()`;
+      - daftar peer lewat pemindaian `peers(eid)` (OFT API hanya pelengkap dan tidak memuat Robinhood [Phase 0]);
+      - per pathway dan per arah: library (+ apakah default, `receiveLibraryTimeout`) serta `getConfig` ULN + executor (efektif dan mentah).
    3. Hitung label per pathway, lalu label keseluruhan (yang terburuk).
-   4. Untuk token XofN, tambahkan hasil `verify` / `verifyEid`.
+   4. Untuk token XofN, tambahkan status lifecycle dan hasil `verify` / `verifyEid`.
    5. Simpan ke cache, kemudian render.
 4. **Hasil** menampilkan:
    - badge (mis. `2+1/2` efektif, atau `1-of-1`);
@@ -123,11 +139,14 @@ Mobile (≤900px): tombol ☰ → panel link (wajib ada)
 |---|---|
 | Alamat tidak valid | Error inline: "Enter a valid EVM address (0x + 40 hex characters)." [Desain] |
 | Alamat bukan kontrak / bukan OFT | "This address is not an OFT on <chain>." Tidak ada badge |
-| RPC gagal (sebagian/total) | Pathway terkait berstatus **NOT READ** dengan pesan jujur. **Tidak ada nilai tebakan** [Brief: fakta, bukan tuduhan] |
+| RPC gagal (sebagian/total); RPC publik Robinhood dibatasi rate | Pathway terkait berstatus **NOT READ** dengan pesan jujur. **Tidak ada nilai tebakan** [Brief: fakta, bukan tuduhan] |
 | Pathway ke chain di luar daftar baca (P19) | Ditampilkan sebagai "Pathway to <EID> — not read in MVP" |
 | Masih memakai library/config default | Ditandai "Uses default config (can change)". Tidak memenuhi syarat "locked" |
+| DVN pathway = Dead DVN | Label **BLOCKED** + penjelasan "No verifier configured; messages cannot be delivered" |
+| Kontrak adalah proxy dengan admin | Tidak pernah diberi label "locked" |
 | Ditemukan 1-of-1 | Label merah **1-OF-1** + penjelasan netral, tanpa kata *unsafe* |
 | Token XofN dengan konfigurasi menyimpang | Status **CHANGED** (merah) di Check dan di `/t/[address]` |
+| Hasil Check ternyata salah | Perbaiki, tampilkan koreksi dengan waktu cek baru, kabari tim token [Guide §9] |
 | Mode `preview` tanpa RPC terkonfigurasi | Pesan "Live check unavailable — no RPC connection. No result will be fabricated." [Desain] |
 
 ---
@@ -139,16 +158,17 @@ Mobile (≤900px): tombol ☰ → panel link (wajib ada)
 2. Pilih tier (radiogroup):
    - **Standard** `XofN 2+1/2` (default);
    - **Fortress** `XofN 3+1/2`.
-3. Pilih chain ekspansi (Arbitrum, Robinhood; minimal satu).
-   - Bila pathway sebuah chain tidak memenuhi 3 operator, Fortress dinonaktifkan **untuk chain itu**, dengan alasan tertulis [Brief].
+3. Pilih chain ekspansi (Base, Arbitrum; minimal satu). Pilihan ini **diterapkan saat ekspansi** (tahap 2), bukan saat launch.
+   - Bila pathway Robinhood↔chain itu tidak memenuhi Fortress, Fortress dinonaktifkan **untuk chain itu**, dengan alasan tertulis.
    - Kombinasi yang tidak valid tidak bisa dikirim.
 4. Ringkasan:
-   - supply 999,000,000 FIXED, home Base;
+   - supply 999,000,000 FIXED, home **Robinhood**, token OFT;
    - perkiraan biaya per pesan Standard vs Fortress (quote). Sebelum ada quote: **"NOT QUOTED"**;
-   - ambang graduation dari parameter (P8).
-5. Klik **Review launch configuration** → modal ringkasan → **Sign on Base**.
-6. Satu tanda tangan di Base. UI menampilkan status "Confirm in wallet…", lalu "Pending…" beserta tautan tx.
-7. Setelah sukses, redirect ke **`/t/[address]`** dengan status **Bonding** dan progres 0%.
+   - ambang graduation dari parameter (P8);
+   - catatan: "Graduation happens on Robinhood first. Expansion and locking are a separate step."
+5. Klik **Review launch configuration** → modal ringkasan → **Sign on Robinhood**.
+6. Satu tanda tangan di Robinhood. UI menampilkan status "Confirm in wallet…", lalu "Pending…" beserta tautan tx (Blockscout).
+7. Setelah sukses, redirect ke **`/t/[address]`** dengan badge `XofN 2+1/2 · Bonding` dan progres 0%.
 
 **Mode**
 - `preview` → langkah 5 berakhir di modal "Launch configuration preview — no transaction" [Desain].
@@ -167,8 +187,9 @@ Mobile (≤900px): tombol ☰ → panel link (wajib ada)
 
 **Langkah**
 1. `/t/[address]`: toggle **Buy / Sell**, input jumlah, quote (harga, slippage, minimum diterima).
-2. Network guard memastikan Base. Tanda tangan → pending → selesai, lalu chart dan progres diperbarui (polling / react-query).
+2. Network guard memastikan Robinhood. Tanda tangan → pending → selesai, lalu chart dan progres diperbarui (polling / react-query).
 3. Progres bar menunjukkan posisi menuju ambang graduation.
+4. Setelah graduation, trading berpindah ke pool Robinhood (bukan curve).
 
 **Error & edge case**
 - Slippage terlampaui → revert dengan pesan jelas. Pengguna bisa menyesuaikan slippage.
@@ -179,49 +200,77 @@ Mobile (≤900px): tombol ☰ → panel link (wajib ada)
 
 ---
 
-## 8. Flow F — Graduation (siapa pun)
+## 8. Flow F — Graduation & ekspansi
 
+### 8.1 Flow F.1 — Graduate (tahap 1, lokal di Robinhood)
 **Langkah**
-1. Saat ambang tercapai, tombol **Graduate** muncul untuk **siapa pun** [Brief]. UI menampilkan:
-   - fee LayerZero total (quote);
-   - insentif pemanggil (tetap, P15).
-2. Tanda tangan `graduate()` di Base.
-3. Panel progres **per chain** [Brief]:
-   - Base: `Base pool created`
-   - Arbitrum: `Token deployed` → `Liquidity sent` → `Pool created` → `Locked`
-   - Robinhood: urutan yang sama
-   - Final: `All chains verified` → **Locked**
-4. Setiap langkah menampilkan status (`pending` / `ok` / `failed`), tautan tx, dan tautan LayerZero Scan untuk pesan LZ.
-5. Bila sebuah langkah gagal, tombol **Retry** muncul **untuk chain itu**. `retryRemote(eid)` mengulang langkah yang sama dengan parameter yang sama; pemanggil membayar fee (P14).
-6. Status berubah menjadi **Locked** hanya setelah `verify` bernilai true di **semua** chain [Brief].
+1. Saat ambang tercapai, tombol **Graduate** muncul untuk **siapa pun** [Brief]. UI menampilkan insentif pemanggil (tetap, P15).
+2. Tanda tangan `graduate()` di Robinhood.
+3. Panel menampilkan `Robinhood pool created` beserta tautan tx.
+4. Badge berubah menjadi **`XofN 2+1/2 · Graduated · awaiting expansion`** [Guide]. Penjelasan singkat di UI:
+   - "Tier committed. Owner and delegate are still the XofN Graduator contract until expansion completes."
+   - `verify()` = false (ditampilkan sebagai fakta, bukan peringatan).
 
 **Error & edge case**
 | Kasus | Perilaku |
 |---|---|
 | Ambang belum tercapai | Tombol tidak tampil; progres tetap |
-| Sudah di-graduate orang lain | Tombol hilang; panel progres tampil (graduate hanya sekali) |
+| Sudah di-graduate orang lain | Tombol hilang; status langsung Graduated (graduate hanya sekali) |
+| `preview` | Panel graduation demo [Desain] dengan label "concept" |
+
+### 8.2 Flow F.2 — Expand & lock (tahap 2: Robinhood → Base, Arbitrum)
+**Langkah**
+1. Untuk token **Graduated**, tombol **Expand & lock** muncul (siapa pun boleh memanggil, P31). UI menampilkan:
+   - chain tujuan (pilihan creator saat launch);
+   - fee LayerZero total dari `quoteSend`, dibayar pemanggil [Guide].
+2. Tanda tangan `expandAndLock(token)` di Robinhood. Status menjadi **Expanding**.
+3. Panel progres **per chain** (Base, lalu Arbitrum):
+   - `Token deployed`
+   - `Pathway configured` (library, ULN, executor, options, peer)
+   - `Liquidity sent`
+   - `Pool created` (compose)
+   - `Locked`
+   - Final: `All chains verified` → **Locked**
+
+   Urutan `Pathway configured` sebelum `Liquidity sent` mengikuti rekomendasi Phase 0 (P28). Bila PM memutuskan lain, panel mengikuti keputusan itu.
+4. Setiap langkah menampilkan status (`pending` / `ok` / `failed`), tautan tx, dan tautan LayerZero Scan untuk pesan LZ.
+5. Bila sebuah langkah gagal, tombol **Retry** muncul **untuk chain itu**. `retryRemote(eid)` mengulang langkah yang sama dengan parameter yang sama; pemanggil membayar fee (P14).
+6. Status berubah menjadi **Locked** hanya setelah `verify` bernilai true di Registry **semua** chain [Brief + Guide].
+
+**Error & edge case**
+| Kasus | Perilaku |
+|---|---|
+| Token belum Graduated | Tombol Expand & lock tidak tampil |
+| Infrastruktur Fase 2 belum aktif (mis. Phase 6/1b, sebelum 2a/2b) | Tombol nonaktif + "Expansion opens in a later release" (tanpa janji tanggal) |
 | Pesan LZ tertunda lama | Langkah tetap `pending` dengan tautan Scan + catatan "Cross-chain delivery can take several minutes" |
-| Compose gagal (gas/revert) | Langkah `Pool created` = failed + Retry (`retryCompose`, P3) |
-| Satu chain sukses, satu gagal | Status keseluruhan **Graduating** (bukan Locked); hanya chain gagal yang punya Retry |
-| `preview` | Panel graduation demo 5 langkah [Desain] dengan label "concept" |
+| Compose gagal (gas/revert) | Langkah `Pool created` = failed + Retry (`retryCompose`, P3). Tidak ada pembuatan pool manual oleh tim [Guide §9] |
+| Satu chain sukses, satu gagal | Status keseluruhan **Expanding** (bukan Locked); hanya chain gagal yang punya Retry |
+| Fortress tidak tersedia di satu pathway | Tidak diturunkan diam-diam; UI menjelaskan; chain itu tidak diekspansi dengan tier lebih rendah [Guide §9] |
+| `verify()` false untuk token yang tercatat Locked | Badge otomatis **CHANGED** (merah) + tautan penjelasan [Guide §9] |
+| `preview` | Panel ekspansi demo 5 langkah [Desain] dengan label "concept" |
 
 ---
 
 ## 9. Flow G–I
 
 ### 9.1 Flow G — Halaman token (`/t/[address]`)
-1. **Header:** nama, ticker, logo, TierBadge + status.
-2. **Bagian utama:** chart, panel trade (curve sebelum graduation, pool setelahnya), dan panel graduation.
-3. **Security:** daftar DVN per pathway (DvnList), owner/delegate per chain, dan hasil **`verify()` live** per chain dengan "checked at".
-4. **Supply per chain:** jumlah ketiganya selalu 999,000,000 (ditampilkan sebagai invariant).
+1. **Header:** nama, ticker, logo, TierBadge + status lifecycle.
+2. **Bagian utama:** chart, panel trade (curve sebelum graduation, pool Robinhood setelahnya), panel graduation (F.1), dan panel ekspansi (F.2).
+3. **Security:**
+   - daftar DVN per pathway (DvnList), yang setelah ekspansi berisi konfigurasi nyata, dan sebelumnya berisi rencana tier;
+   - owner/delegate per chain;
+   - hasil **`verify()` live** per chain dengan "checked at".
+4. **Supply per chain:** jumlah semua chain selalu 999,000,000 (ditampilkan sebagai invariant).
 
 Edge case:
 - Konfigurasi menyimpang → **Changed** (merah) + penjelasan pathway yang berbeda.
 - Alamat bukan token XofN → arahkan ke `/check/[chain]/[address]`.
 
 ### 9.2 Flow H — Bridge (`/bridge`)
-1. Pilih token (hanya token **Locked**; token Bonding diblokir dengan penjelasan "Bridging opens after graduation").
+1. Pilih token (hanya token **Locked**). Token Bonding/Graduated/Expanding diblokir dengan penjelasan "Bridging opens after expansion is locked".
 2. Pilih chain asal/tujuan (tombol ↕ untuk menukar) dan jumlah.
+   - Rute langsung: Robinhood ↔ Base, Robinhood ↔ Arbitrum.
+   - Base ↔ Arbitrum lewat Robinhood (dua langkah; UI menjelaskan, P29).
 3. **`quoteSend` tepat sebelum `send`** [Brief]. Ringkasan menampilkan fee pesan, jumlah diterima, dan **dust**: "Amounts below 0.000001 stay in your wallet" [Brief].
 4. Network guard di chain asal → tanda tangan → tautan **LayerZero Scan** → status terkirim/diterima.
 
@@ -233,28 +282,32 @@ Edge case:
 - `preview` → modal "Bridge route — preview only" [Desain].
 
 ### 9.3 Flow I — Contracts & Proof
-- `/contracts`: tabel 5 kontrak per chain dari manifest. Sebelum deploy: "Not published" + PLANNED [Desain]. Sesudahnya: alamat + tautan explorer + status Verified.
+- `/contracts`: tabel kontrak **per chain** (Robinhood: Graduator, Curve implementation, Registry; Base/Arbitrum: Remote, Registry) dari `deployments/<network>.json`.
+  - Sebelum deploy: "Not published" + PLANNED [Desain].
+  - Sesudahnya: alamat, tautan explorer (Blockscout untuk Robinhood), owner (Safe), dan status Verified.
 - `/proof`:
   - checklist invariant `verify()`;
-  - milestone phase (status per `PRD.md` §8);
+  - milestone fase (1a / 1b / 2a / 2b, status per `PRD.md` §8);
   - daftar bukti dari `proof/YYYY-MM-DD-<milestone>/notes.md`;
   - laporan audit (setelah ada).
 - Item yang belum terpenuhi tampil sebagai NOT DEPLOYED / NOT VERIFIED / PLANNED, **tidak** dengan centang.
 
 ---
 
-## 10. Konflik desain vs brief / kode yang perlu keputusan
+## 10. Konflik desain vs brief/guide / kode yang perlu keputusan
 
 | # | Konflik | Rekomendasi |
 |---|---|---|
 | F1 | HTML hanya landing satu halaman, sedangkan brief mendefinisikan 8 route | Halaman aplikasi disusun dari komponen section (`DESIGN_SYSTEM.md` §6.2, P24) |
 | F2 | HTML menampilkan Check demo; brief meminta Check nyata | Phase 2: Check nyata menjadi default; sample tetap tersedia dengan label simulasi |
-| F3 | Teks HTML "Google Cloud* required" vs brief "Google Cloud (atau Polyhedra)" | Tampilkan operator aktual per pathway dari daftar putih (P18) |
-| F4 | HTML: Graduate/Retry tidak ada; brief: tombol untuk siapa pun + Retry per chain | Tambah di `/t/[address]` (Flow F) |
+| F3 | Teks HTML "Google Cloud* required" vs fakta Phase 0 (Google tidak ada di Robinhood) | Tampilkan operator aktual per pathway dari `config/tiers.json` setelah P1 diputuskan. Sebelum itu: F10 |
+| F4 | HTML: Graduate/Retry tidak ada; brief/guide: tombol untuk siapa pun, lifecycle dua tahap, Retry per chain | Tambah panel Graduate (F.1) dan Expand & lock (F.2) di `/t/[address]` |
 | F5 | HTML: "Connect Wallet" hanya modal; brief: semua tx di wallet pengguna | Mode `preview` = modal; `simulation`/`live` = AppKit |
-| F6 | Brief: status Terkunci/Berubah; HTML: Locked; Changed belum ada | Copy Inggris Bonding / Locked / Changed (P25) |
-| F7 | HTML menyebut "Robinhood" sebagai chip ekspansi. Phase 0 (17 Nov 2026): pathway Base↔Robinhood ada dan Labs, DT, FCAT tersedia, tetapi Google Cloud dan Polyhedra tidak ada di Robinhood, jadi daftar operator tier untuk pathway ini belum final (`PRD.md` P1) | Tetap tampil dengan label PLANNED sampai owner memutuskan P1 |
-| F8 | Flow F menulis `Liquidity sent` → `Pool created` → `Locked` tanpa langkah konfigurasi; brief menaruh konfigurasi setelah likuiditas. Phase 0: konfigurasi dan peer harus terpasang sebelum likuiditas dikirim (`PRD.md` P28) | Urutan langkah di panel progres mengikuti keputusan P28 |
+| F6 | Brief/guide: status Terkunci/Berubah/Lulus menunggu ekspansi; HTML: Locked; Changed dan Graduated belum ada | Copy Inggris: Bonding / Graduated · awaiting expansion / Expanding / Locked / Changed (P25). "Expanding" adalah [Usulan], bukan status dari guide |
+| F7 | HTML menempatkan Base sebagai home ("HOME CHAIN · MVP BASE") dan Robinhood sebagai ekspansi; guide membaliknya | Copy dan 3D mengikuti guide: home = Robinhood (D15). Base/Arbitrum tampil sebagai "EXPANSION · PLANNED" |
+| F8 | Urutan ekspansi di brief/guide (likuiditas sebelum resep) tidak bisa dijalankan [Phase 0] | Panel progres F.2 mengikuti keputusan P28 |
+| F9 | HTML memakai narasi "omnichain" sebagai fitur; guide melarang klaim "Omnichain" sebelum Fase 2b | Copy omnichain di landing berlabel "planned" sampai tahap 2 live (`DESIGN_SYSTEM.md` §10.2a) |
+| F10 | HTML menyebut Google Cloud dan Polyhedra sebagai operator wajib (section Security, sampel Check, footnote); Phase 0: keduanya tidak tersedia di pathway Robinhood, dan P1 belum diputuskan | Selama P1 terbuka, landing menampilkan jumlah DVN tanpa nama operator pengganti (D17) |
 
 ---
 
@@ -264,12 +317,13 @@ Edge case:
 |---|---|---|---|
 | A Jelajah landing | Belum mulai | Belum mulai | FROZEN |
 | B Wallet & network | Belum mulai | Belum mulai | FROZEN |
-| C XofN Check | Belum mulai (Check nyata hanya membaca, berlaku di semua mode) | — | FROZEN (klaim "live di mainnet") |
+| C XofN Check | Belum mulai (Check nyata hanya membaca, berlaku di semua mode) | — | FROZEN (rilis publik di Fase 1b) |
 | D Launch | Belum mulai | Belum mulai | FROZEN |
 | E Trading | Belum mulai | Belum mulai | FROZEN |
-| F Graduation | Belum mulai | Belum mulai | FROZEN |
+| F.1 Graduate | Belum mulai | Belum mulai | FROZEN (Fase 1) |
+| F.2 Expand & lock | Belum mulai | Belum mulai | FROZEN (Fase 2) |
 | G Halaman token | Belum mulai | Belum mulai | FROZEN |
-| H Bridge | Belum mulai | Belum mulai | FROZEN |
+| H Bridge | Belum mulai | Belum mulai | FROZEN (Fase 2) |
 | I Contracts & Proof | Belum mulai | Belum mulai | FROZEN |
 
 Perbarui tabel ini di akhir setiap task yang menyentuh sebuah flow.

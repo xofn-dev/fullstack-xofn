@@ -4,7 +4,8 @@
 >
 > **Sumber kebenaran:**
 > - Visual → HTML V8. HTML adalah **baseline**: boleh ditingkatkan (animasi, UX, performa), tetapi tidak boleh diganti dengan desain yang tidak berhubungan.
-> - Aturan klaim dan copy → `brief-xofn.md` (dirangkum di `PRD.md` §4.3).
+> - Aturan klaim dan copy → `brief-xofn.md` + klaim per tahap di `deployguide-xofn.md` (dirangkum di `PRD.md` §4.3).
+> - Peran chain → `deployguide-xofn.md`: **Robinhood = home**, Base & Arbitrum = ekspansi. Copy HTML yang menyebut Base sebagai home diganti (D15).
 >
 > **Label:**
 > - **[Desain]** — nilai diambil dari HTML
@@ -62,7 +63,7 @@ Semua token didefinisikan di `@theme` dalam `src/app/globals.css`. **Hex baru ti
 | `mint-2` | `#6af0d5` | [Desain] PAL.mint2 | Glow, titik status, label section |
 | `ice` | `#abcbff` | [Desain] v3 | Ujung gradient |
 | `blue` | `#91a5ff` | [Desain] PAL.blue | Chain ekspansi, DVN opsional |
-| `violet` | `#ac8cff` | [Desain] PAL.violet | Aksen kedua, Robinhood di 3D |
+| `violet` | `#ac8cff` | [Desain] PAL.violet | Aksen kedua; Arbitrum di 3D (di HTML: Robinhood, lihat D15) |
 | `orange` | `#ffbb82` | [Desain] | Status Bonding, tag warn, "PLANNED" |
 | `caution` | `#ffd97a` | [Usulan] D13 | Label Check "2+" (brief: kuning) |
 | `danger` | `#ff7b8b` | [Desain] | 1-of-1, Changed, error |
@@ -73,6 +74,7 @@ Lapisan `.v3` di HTML sedikit menggeser mint menjadi `#baffdf` / `#7cf7c9`. Doku
 | Status | Latar | Border | Teks | Asal |
 |---|---|---|---|---|
 | ok / Locked | `#172b29` | `#466057` | `#a2f2d1` | `.status` |
+| Graduated · awaiting expansion / Expanding | `#20243a` | `#424c78` | `#c5cbff` | `.status.blue` (D16) |
 | Bonding / warn | `#2e261d` | `#65513b` | `#ffcb9b` | `.status.orange` |
 | info / blue | `#20243a` | `#424c78` | `#c5cbff` | `.status.blue` |
 | danger / Changed / 1-of-1 | `#351d27` | `#7e4858` | `#ff9eaa` | `.big-status.danger` |
@@ -172,7 +174,8 @@ Komponen generik ada di `src/components/ui/`, komponen domain di foldernya masin
 
 ### 5.3 TierBadge — elemen visual utama [Brief]
 - Teks `XofN 2+1/2` / `XofN 3+1/2`, mono 10px, border mint, latar `#152a29` [Desain `.token-badge`].
-- **Selalu tampil bersama status** (Bonding / Locked / Changed).
+- **Selalu tampil bersama status** dengan format `XofN 2+1/2 · <status>` [Guide]. Status: Bonding / Graduated · awaiting expansion / Expanding / Locked / Changed (D16).
+- Sebelum ekspansi, DvnList menampilkan **rencana tier** dengan label "Tier committed — applied at expansion", bukan konfigurasi on-chain.
 - **Selalu bisa diklik** (button) → popover/drawer `DvnList`: per pathway, DVN wajib dan opsional (nama operator + alamat terpotong + tombol salin + tautan explorer), threshold, owner, delegate, dan "checked at".
 - Contoh demo diberi akhiran `*` dan label DEMO.
 
@@ -205,11 +208,16 @@ Komponen generik ada di `src/components/ui/`, komponen domain di foldernya masin
 - Pilihan tier dibagi ke rig, ke "inside the coin", dan ke hoop DVN di scene arsitektur (§8).
 
 ### 5.7 Graduation display + GradStep [Desain `.grad-display`, `.grad-step`]
-- **Display:** ring berputar, inti X, node Base / Arbitrum / Robinhood, caption tahap.
-- **Daftar langkah:** 5 langkah dengan nomor kotak, judul, sub-mono, panah, timeline bar 20% per langkah, dan penjelas (explainer).
-- Di `/t/[address]` (nyata), komponen ini menjadi **progres per chain**:
-  - setiap langkah: status `pending` / `ok` / `failed`, tautan tx, tautan LayerZero Scan;
-  - tombol **Retry** per chain bila gagal (`USER_FLOWS.md` Flow F).
+- **Display:** ring berputar, inti X, node chain, caption tahap. Node HTML "BASE / HOME" diganti **"ROBINHOOD / HOME"**, dan dua node lain menjadi **BASE** dan **ARBITRUM** (ekspansi) (D15).
+- **Daftar langkah:** 5 langkah dengan nomor kotak, judul, sub-mono, panah, timeline bar 20% per langkah, dan penjelas (explainer). Copy landing disesuaikan dengan lifecycle dua tahap:
+  1. Bonding threshold reached
+  2. Robinhood liquidity goes live (graduate)
+  3. Expand through LayerZero (deploy + send/compose)
+  4. Verify every pathway
+  5. Lock & publish proof
+- Di `/t/[address]` (nyata), komponen ini dipecah menjadi dua panel:
+  - **Graduation panel** (F.1): progres ke ambang → tombol Graduate → `Robinhood pool created` → badge `Graduated · awaiting expansion`;
+  - **Expansion panel** (F.2): progres **per chain** (Base, Arbitrum). Setiap langkah punya status `pending` / `ok` / `failed`, tautan tx, dan tautan LayerZero Scan. Tombol **Retry** muncul per chain bila gagal (`USER_FLOWS.md` §8.2).
 
 ### 5.8 LaunchForm [Desain `.launch-form`]
 - Field: nama, ticker, logo (preview lokal), supply tetap, tier (radio card), chain ekspansi (checkbox), form-note biaya ("NOT QUOTED" sampai ada quote), submit, dan `error-msg` dengan `aria-live`.
@@ -253,10 +261,10 @@ Komponen generik ada di `src/components/ui/`, komponen domain di foldernya masin
 | 4 | Thesis | Dial "1/1 DENIED", heading "ONE OF ONE IS NOT ENOUGH." | Dial fokus masuk |
 | 5 | Architecture (`architecture`) | Shell: top bar + mode kamera (Coin run / Overview / X-ray), **ArchStage 3D**, hotspot pod, panel inspector, pill stasiun, tombol tur | Pilih stasiun, ganti mode, tur otomatis (2,1 dtk/stasiun) |
 | 6 | Manifesto | 3 baris kinetik + segel berputar "X ≠ 1/1" | Baris bergeser mengikuti scroll |
-| 7 | Explore (`explore`) | Filter All/Bonding/Locked + TokenGrid + catatan demo | Buka drawer |
+| 7 | Explore (`explore`) | Filter All/Bonding/Graduated/Locked (D16) + TokenGrid + catatan demo | Buka drawer |
 | 8 | Check (`check`) | Copy + perks + CheckPanel | Inspect sample / alamat |
 | 9 | Inside the coin (`inside`) | Section pinned 200vh: "DON'T TRUST" ◇ "VERIFY", koin terbuka, kode tier | Scroll membuka koin; drag memutar |
-| 10 | Security (`security`) | TierCard ×2 + DVN rig + catatan Polyhedra | Pilih tier |
+| 10 | Security (`security`) | TierCard ×2 + DVN rig + catatan operator (di HTML: catatan Polyhedra; diganti sesuai D17) | Pilih tier |
 | 11 | Graduation (`graduation`) | Display + 5 GradStep | Scroll berjalan per langkah; klik override 6 dtk |
 | 12 | Launch (`launch`) | Intro + langkah mini + LaunchForm (demo) | Validasi + modal ringkasan |
 | 13 | Bridge (`bridge`) | Copy + BridgeWidget (demo) | Tukar chain, modal |
@@ -268,7 +276,7 @@ Komponen generik ada di `src/components/ui/`, komponen domain di foldernya masin
 | Halaman | Disusun dari |
 |---|---|
 | `/launch` | Section 12 (LaunchForm) + TierCard/DVN rig (10) + catatan biaya |
-| `/t/[address]` | Isi drawer token diperluas: header token, chart, TierBadge + DvnList, trade toggle, panel Graduation (11) dalam versi data nyata, supply per chain, `verify()` live |
+| `/t/[address]` | Isi drawer token diperluas: header token, chart, TierBadge + DvnList, trade toggle, panel Graduation (F.1) dan panel Expansion (F.2) dari section 11 dalam versi data nyata (§5.7), supply per chain, `verify()` live |
 | `/check` | Section 8 tanpa sample sebagai default; sample tetap tersedia dengan label |
 | `/check/[chain]/[address]` | CheckPanel hasil penuh + tabel pathway + Share + kartu OG (§5.5) |
 | `/bridge` | Section 13 dengan data nyata |
@@ -339,17 +347,21 @@ Semua geometri dibuat prosedural dalam kode (tanpa file model, tekstur, atau vid
 ### 8.2 Hero — Coinfall
 - **Komposisi:** dua track (atas dan bawah), gate di tengah. Pool 17 koin berjalan, jatuh menembus gate, lalu muncul di bawah dengan ring mint atau biru ("verified").
 - **Makna data:** koin `1/1` (emblem merah) **ditolak**, terpental dan gate berkedip merah. Chip "1-of-1 BLOCKED" ikut menyala merah.
-- **Chip chain** (BASE / ARBITRUM / ROBINHOOD / SECURITY POLICY) dipin ke anchor 3D lewat proyeksi.
+- **Chip chain** dipin ke anchor 3D lewat proyeksi. Teks disesuaikan dengan guide (D15):
+  - f1 `HOME CHAIN · MVP` → **ROBINHOOD**;
+  - f2/f3 `EXPANSION · PLANNED` → **BASE** dan **ARBITRUM**;
+  - f4 `SECURITY POLICY` → 1-of-1 BLOCKED (tetap).
 - **Interaksi:** parallax pointer, kamera turun mengikuti scroll, klik menjatuhkan koin.
 - **Layout:** desktop memakai canvas 66% kanan dengan mask kiri; layout bertumpuk memakai canvas penuh lebar di bawah copy dengan mask atas.
 
 ### 8.3 Architecture — Coin run (6 stasiun)
-- **Stasiun:**
-  - `base` (track A + hoop)
-  - `core` (gate Graduator)
+- **Stasiun** (key HTML → peran baru sesuai guide, D15):
+  - `base` → **`robinhood`** (01 / ORIGIN: home, curve + pool pertama; track A + hoop)
+  - `core` (gate Graduator: `graduate()` lalu `expandAndLock()`)
   - `dvn` (track B dengan 5 hoop: 3 wajib mint, 2 opsional biru)
-  - `arb` (pad biru) / `robin` (pad violet)
-  - `registry` (alas + tumpukan koin + cincin kunci)
+  - `arb` → **`base`** (04 / REMOTE, pad biru) dan `robin` → **`arbitrum`** (05 / REMOTE, pad violet)
+  - `registry` (alas + tumpukan koin + cincin kunci; Registry ada di setiap chain)
+- Teks inspector (`archData` di HTML) ditulis ulang mengikuti lifecycle dua tahap. Contoh: stasiun origin = "Robinhood / Bonding curve & local graduation".
 - **Mode kamera:** `run` (terbang ke stasiun aktif), `overview` (seluruh pipeline), `xray` (struktur jadi wireframe + grid, koin dan glow tetap).
 - **Makna data:** jumlah hoop wajib yang menyala mengikuti tier (2 untuk Standard, 3 untuk Fortress), ditambah 1 hoop opsional. Kunci registry turun dan menyala di akhir.
 - **DOM:** pod hotspot diproyeksikan ke posisi 3D dan disembunyikan bila keluar layar. Inspector, pill, dan tur tersinkron.
@@ -384,7 +396,7 @@ Semua geometri dibuat prosedural dalam kode (tanpa file model, tekstur, atau vid
 - Ilustrasi fitur adalah SVG inline stroke tipis, mint/biru dengan drop-shadow glow [Desain].
 - Glyph token demo: karakter (◇ ✳ ⬡) di kotak 47px. Logo token nyata berasal dari upload creator.
 - Simbol UI: `↗ → ↕ ✓ ✕ ☰ ↑ ◉ ✳ ✦`. Simbol dekoratif diberi `aria-hidden`.
-- **Tidak ada logo chain atau LayerZero.** Chain diwakili nama + titik warna (Base mint, Arbitrum biru, Robinhood violet).
+- **Tidak ada logo chain atau LayerZero.** Chain diwakili nama + titik warna menurut **peran** (D15): **Robinhood (home) mint**, **Base biru**, **Arbitrum violet**. Di HTML, mint dipakai untuk Base karena Base saat itu home.
 
 ---
 
@@ -405,6 +417,31 @@ Semua geometri dibuat prosedural dalam kode (tanpa file model, tekstur, atau vid
 | `live` | (Phase 6–7, FROZEN) | — |
 
 Label versi konsep ("COINFALL V8", "DESIGN CONCEPT 008", "COIN RUN · V5") dihapus dari copy produksi (D10).
+
+### 10.2a Copy home chain & klaim per tahap [Guide]
+HTML ditulis saat Base masih home. Copy berikut **wajib** disesuaikan (D15):
+
+| Lokasi di HTML | Teks HTML | Teks baru |
+|---|---|---|
+| Hero chip f1 | `HOME CHAIN · MVP` / `BASE` | `HOME CHAIN · MVP` / `ROBINHOOD` |
+| Hero chip f2/f3 | `EXPANSION · PLANNED` / `ARBITRUM`, `ROBINHOOD` | `EXPANSION · PLANNED` / `BASE`, `ARBITRUM` |
+| Vision kartu 002 | "Begin on a Base bonding curve…" | "Begin on a Robinhood Chain bonding curve. Expand to Base and Arbitrum only when graduation and expansion conditions are met." |
+| Architecture intro | "One token begins on Base…" | "One token begins on Robinhood Chain…" |
+| Graduation intro & langkah | "Start with a bonding curve on Base…", "Create and seed Base AMM pool" | Robinhood sebagai home; langkah sesuai §5.7 |
+| Launch form | `BASE · EVM`, "Create once on Base…", "Review fees and sign on Base" | `ROBINHOOD · EVM`, "Create once on Robinhood Chain…", "sign on Robinhood" |
+| Bridge select default | Base → Arbitrum | Robinhood → Base |
+| Contracts note | "Base / Arbitrum / Robinhood reflect the original MVP brief" | "Robinhood (home) / Base / Arbitrum follow the deploy guide v1.0" |
+| Contracts tabel, baris XofNCurve | "Base bonding curve" | "Robinhood Chain bonding curve" |
+| Bridge select | Opsi Base ↔ Arbitrum sebagai rute langsung | Rute langsung hanya Robinhood ↔ Base dan Robinhood ↔ Arbitrum; Base ↔ Arbitrum dijelaskan sebagai dua langkah lewat Robinhood |
+| Security: tier card Standard | "LayerZero Labs required · Google Cloud* required · 1 of DT MMS / FCAT" | Lihat D17 |
+| Security: tier card Fortress | "LayerZero Labs · Google Cloud · Polyhedra required · 1 of DT MMS / FCAT" | Lihat D17 |
+| Security: footnote | "*The brief allows Polyhedra as an alternative required DVN in Standard…" | Diganti catatan D17 |
+| Check: data sampel | `reqNames: 'Labs · Google Cloud'`, `'Labs · Google · Polyhedra'` | Lihat D17 (sampel tetap berlabel SIMULATED) |
+
+Copy bertema omnichain ("Omnichain by demand", "One token. Multiple horizons.", "Expand cross-chain") boleh tetap dipakai sebagai **visi**, tetapi:
+- harus disertai label `PLANNED` atau berada di konteks yang jelas "concept/preview";
+- tidak boleh menjadi klaim live "Omnichain" sebelum Fase 2b;
+- klaim yang boleh di Fase 1b: "Live on Robinhood Chain", "Check any OFT's X-of-N", "Built on LayerZero OFT" (`PRD.md` §4.3).
 
 ### 10.3 Disclaimer footer (wajib) [Brief]
 *XofN is an independent project built on LayerZero. Not affiliated with or endorsed by LayerZero Labs.*
@@ -435,6 +472,8 @@ Lalu, selama belum live, ditambah kalimat HTML: tidak ada live verification, tok
 | Konteks | Nilai | Token | Teks |
 |---|---|---|---|
 | Badge status | Bonding | `orange` | BONDING |
+| | Graduated · awaiting expansion | `blue` | GRADUATED · AWAITING EXPANSION (ringkas di kartu: GRADUATED) |
+| | Expanding | `blue` + progres | EXPANDING |
 | | Locked | `mint` | LOCKED |
 | | Changed | `danger` | CHANGED |
 | Label pathway Check | 1-of-1 | `danger` | 1-OF-1 |
@@ -474,6 +513,10 @@ Item `[Belum]` diputuskan owner atau desainer. Sampai diputuskan, pakai rekomend
 | D12 | Nav: anchor (HTML) vs route aplikasi | HTML hanya anchor | Nav route: Explore · Check · Launch · Bridge · Proof · Contracts; anchor tetap di `/` |
 | D13 | Warna "2+" (brief: kuning) | HTML tidak punya kuning (hanya oranye) | Token baru `caution #ffd97a` agar tidak tertukar dengan Bonding (oranye) |
 | D14 | Tier card `role=button` | HTML | Ubah ke `radiogroup` + `radio` |
+| D15 | Home chain di HTML = Base; guide v1.0 = Robinhood | Chip hero, node graduation, stasiun 3D, launch form, bridge, warna titik chain | Copy & 3D mengikuti guide (tabel §10.2a). Warna menurut peran: Robinhood (home) mint, Base biru, Arbitrum violet. **Deviasi disengaja dari HTML** |
+| D16 | Status "Graduated · awaiting expansion" [Guide] dan "Expanding" [Usulan] tidak ada di HTML | HTML hanya Bonding/Locked. Guide hanya punya "Lulus, menunggu ekspansi"; "Expanding" adalah tambahan dokumen (`PRD.md` P25) | Pakai warna `blue` (`.status.blue` HTML); format badge `XofN 2+1/2 · <status>`; filter Explore menambah "Graduated" (token Expanding ikut di filter ini) |
+| D17 | Copy operator tier selama P1 belum diputuskan | HTML menyebut Google Cloud dan Polyhedra sebagai operator wajib. Phase 0: Google tidak ada di Robinhood, Polyhedra deprecated atau tidak ada, jadi teks itu tidak boleh di-port | [Usulan] Tier card dan sampel Check menampilkan **jumlah** ("2 required DVNs · 1 of 2 optional", "3 required DVNs · 1 of 2 optional"). Nama yang sudah pasti boleh disebut: LayerZero Labs (wajib), Deutsche Telekom dan FCAT (opsional). Slot wajib lain ditulis "operator to be confirmed". Setelah P1 diputuskan, nama dibaca dari `config/tiers.json` |
+| D18 | NoticeBar preview berbunyi "NO … LIVE VERIFICATION", sedangkan XofN Check tetap membaca chain di mode preview | Teks HTML ditulis saat semua masih konsep | [Usulan] Phase 1 memakai teks §10.2 apa adanya (Check masih demo). Saat Check nyata masuk di Phase 2, teks diganti menjadi `PREVIEW / NOT LIVE · NO TOKEN SALE · CHECK READS PUBLIC CHAIN DATA` |
 
 ---
 

@@ -6,14 +6,22 @@ Instruksi kerja permanen untuk Claude Code di repository ini. Baca seluruhnya se
 
 **XofN** (*Never one of one. · Graduate on proof, not promises.*) adalah launchpad token omnichain di atas LayerZero V2. Keamanan lintas chain dijadikan standar yang terukur: setiap token membawa badge jumlah DVN (`XofN 2+1/2` / `XofN 3+1/2`), dan konfigurasi 1-of-1 tidak pernah diizinkan.
 
-Inti produk:
-1. Token dibuat di bonding curve di **Base**.
-2. Saat ambang tercapai, siapa pun memanggil `graduate()`.
-3. Graduator membuat pool, men-deploy token ke **Arbitrum** dan **Robinhood Chain**, menyalurkan likuiditas lewat lzCompose, memasang tier DVN, lalu **mengunci semuanya** (owner = 0, delegate = 0).
-4. `XofNRegistry.verify(token)` membuktikannya on-chain.
-5. **XofN Check** membaca konfigurasi DVN OFT mana pun.
+**Peran chain** (`deployguide-xofn.md`, 17 Nov 2026): **Robinhood Chain = home**, sedangkan **Base dan Arbitrum = chain ekspansi**. Topologinya hub lewat Robinhood.
 
-**Ini proyek baru dari nol.** Stack diturunkan dari proyek Cognita, Assize, dan Fademan (`ARCHITECTURE.md` §1). Per 17 Nov 2026 belum ada kode.
+Inti produk berjalan dalam **dua tahap**:
+1. **Tahap 1 — lokal di Robinhood.**
+   - Token di-launch sebagai **OFT sejak awal**, lalu diperdagangkan di bonding curve.
+   - Saat ambang tercapai, siapa pun memanggil `graduate()`, yang membuat pool di Robinhood.
+   - Status token menjadi **Graduated · awaiting expansion**.
+   - Owner dan delegate **tetap `XofNGraduator`**. Tidak ada renounce.
+2. **Tahap 2 — ekspansi + kunci.**
+   - Siapa pun memanggil `expandAndLock(token)`.
+   - Graduator men-deploy token ke Base dan Arbitrum, mengirim likuiditas lewat lzCompose, lalu memasang tier DVN.
+   - Setelah itu semuanya **dikunci**: owner = 0, delegate = 0.
+3. `XofNRegistry.verify(token)` membuktikan status kunci on-chain. Registry ada di setiap chain.
+4. **XofN Check** membaca konfigurasi DVN dari OFT mana pun.
+
+**Ini proyek baru dari nol.** Stack diturunkan dari proyek Cognita, Assize, dan Fademan (`ARCHITECTURE.md` §1). Phase 0 (riset) sudah selesai; belum ada kode produk.
 
 ## 2. Urutan membaca
 
@@ -22,54 +30,64 @@ Inti produk:
 3. `USER_FLOWS.md` — alur yang tidak boleh rusak
 4. `DESIGN_SYSTEM.md` — wajib untuk task UI
 5. `ARCHITECTURE.md` — wajib sebelum menyentuh kode
-6. Sumber asli bila ragu: `brief-xofn.md` (protokol, keamanan, klaim) dan `xofn-coinfall-v8-galaxy.html` (visual)
+6. `deployguide-xofn.md` — panduan deploy dari PM (peran chain, fase deploy, struktur repo, env). Prosedur deploy-nya **FROZEN** (§5.1)
+7. `proof/2026-11-17-phase0/` — hasil riset Phase 0, termasuk `09-addendum-robinhood-home.md`
+8. Sumber asli: `brief-xofn.md` (protokol, keamanan, klaim) dan `xofn-coinfall-v8-galaxy.html` (visual)
 
 **Hierarki kebenaran** saat ada konflik:
-- Aturan protokol, keamanan, dan klaim publik → `brief-xofn.md`.
-- Tampilan → `xofn-coinfall-v8-galaxy.html` (baseline; boleh ditingkatkan, tidak boleh diganti dengan desain yang tidak berhubungan).
-- Struktur teknis → `ARCHITECTURE.md`, lalu kode yang sudah ada.
-- Instruksi owner terbaru mengalahkan semuanya.
+1. Instruksi owner/PM terbaru.
+2. `deployguide-xofn.md`: peran chain, lifecycle dua tahap, fase deploy, struktur repo, manifest, env, klaim per tahap.
+3. `brief-xofn.md`: aturan protokol, keamanan, dan klaim publik lainnya.
+4. `xofn-coinfall-v8-galaxy.html`: tampilan (baseline; boleh ditingkatkan, tidak boleh diganti dengan desain yang tidak berhubungan).
+5. `ARCHITECTURE.md`, lalu kode yang sudah ada: struktur teknis.
+
+Bila guide bertentangan dengan **fakta on-chain** yang terverifikasi di Phase 0 (contoh: operator DVN yang tidak ada di Robinhood), **fakta yang menang**. Konfliknya dicatat sebagai keputusan untuk PM.
 
 Konflik yang belum diputuskan tercantum di `PRD.md` §11 (P#), `DESIGN_SYSTEM.md` §14 (D#), dan `USER_FLOWS.md` §10 (F#). **Jangan memutuskannya diam-diam.** Ikuti rekomendasi yang tertulis, atau tanyakan.
 
-## 3. Prinsip non-negotiable (dari brief)
+## 3. Prinsip non-negotiable (dari brief + guide)
 
-1. **1-of-1 tidak pernah diizinkan**: di kontrak, di form launch, dan di konfigurasi apa pun.
-2. **Tidak ada status "Locked" tanpa `verify()` on-chain** yang bernilai true di **semua** chain token. DB hanya cache.
-3. **Server tidak pernah memegang key.** Semua transaksi disusun di browser dan ditandatangani di wallet pengguna. Tidak ada route yang menandatangani.
-4. **Aturan klaim publik** (`PRD.md` §4.3):
+1. **1-of-1 tidak pernah diizinkan**: di kontrak, di form launch, dan di konfigurasi apa pun. Tier hanya Standard (2+1/2) dan Fortress (3+1/2).
+2. **Token adalah OFT sejak tahap 1.** Selama bonding dan sampai ekspansi selesai, owner dan delegate token = kontrak `XofNGraduator`, bukan wallet orang.
+3. **Tidak ada renounce atau delegate = 0 di tahap 1**, termasuk untuk token yang sudah lulus graduation lokal. Penguncian hanya terjadi di `expandAndLock`.
+4. **Tidak ada status "Locked" tanpa `verify()` on-chain** yang bernilai true di **semua** chain token. DB hanya cache.
+5. **Server tidak pernah memegang key.** Semua transaksi disusun di browser dan ditandatangani di wallet pengguna. Tidak ada route yang menandatangani.
+6. **Aturan klaim publik** (`PRD.md` §4.3), termasuk klaim per tahap:
    - tidak pernah memakai *unsafe*, *unhackable*, *zero risk*, *official/partner of LayerZero*;
+   - "Omnichain" belum boleh dipakai sebagai klaim live sebelum tahap 2;
    - XofN Check menampilkan fakta, bukan tuduhan;
    - data demo selalu berlabel.
-5. **Disclaimer wajib** di footer: *XofN is an independent project built on LayerZero. Not affiliated with or endorsed by LayerZero Labs.* Logo dan nama produk LayerZero tidak boleh dipakai di branding.
-6. **Hasil tidak pernah dipalsukan.** RPC gagal ditampilkan sebagai "not read", bukan tebakan.
-7. Aturan bisnis (supply 999M, shared decimals 6, tier, urutan graduation, dust 0,000001) tidak boleh diubah karena alasan visual.
+7. **Disclaimer wajib** di footer: *XofN is an independent project built on LayerZero. Not affiliated with or endorsed by LayerZero Labs.* Logo dan nama produk LayerZero tidak boleh dipakai di branding.
+8. **Hasil tidak pernah dipalsukan.** RPC gagal ditampilkan sebagai "not read", bukan tebakan.
+9. Aturan bisnis (supply 999M, shared decimals 6, tier, urutan graduation dan ekspansi, dust 0,000001) tidak boleh diubah karena alasan visual.
 
 ## 4. Phase
 
 | Phase | Fokus | Status |
 |---|---|---|
-| **0** | Verifikasi riset: DVN per pathway, AMM, aset pasangan, EID, semantik ULN. Read-only, **tanpa transaksi** | Selesai 17 Nov 2026; menunggu persetujuan gerbang (`proof/2026-11-17-phase0/notes.md`) |
+| **0** | Verifikasi riset: EID, DVN per pathway, semantik ULN, AMM, aset pasangan, paket, CreateX. Read-only, **tanpa transaksi** | Selesai 17 Nov 2026 + addendum home Robinhood; menunggu persetujuan gerbang (`proof/2026-11-17-phase0/notes.md`) |
 | **1** | Fondasi repo + port landing HTML (mode `preview`) | Belum mulai |
-| **2** | XofN Check: baca `getConfig` OFT yang sudah ada + cache + kartu share | Belum mulai |
-| **3** | Kontrak (Token, Curve, Graduator, Remote, Registry), **lokal saja** (forge test + Anvil) | Belum mulai |
-| **4** | Integrasi frontend aplikasi terhadap Anvil lokal / mode `simulation` | Belum mulai |
-| **5** | Hardening & kesiapan audit | Belum mulai |
-| **6** | **Deploy testnet** | **FROZEN: menunggu brief tambahan dari owner** |
-| **7** | **Deploy mainnet** (audit eksternal, rollout) | **FROZEN: menunggu brief tambahan dari owner** |
-| Backlog | lzRead / XofN Score | Pasca-MVP |
+| **2** | XofN Check: baca OFT yang sudah ada di Robinhood/Base/Arbitrum + cache + kartu share | Belum mulai |
+| **3** | Kontrak **lokal saja**. **3a** tahap 1: Token (OFT), Curve (implementation + clone), Graduator `graduate()`, Registry. **3b** tahap 2: Remote, `expandAndLock`, composer, `retryRemote`, multi-endpoint | Belum mulai |
+| **4** | Integrasi frontend aplikasi terhadap Anvil lokal / mode `simulation` (flow tahap 1 lebih dulu) | Belum mulai |
+| **5** | Hardening & paket audit (audit eksternal wajib sebelum deploy mainnet 1b) | Belum mulai |
+| **6** | **Deploy Fase 1** (guide §5–6): 1a Robinhood testnet → 1b Robinhood mainnet + rilis publik XofN Check | **FROZEN total** |
+| **7** | **Deploy Fase 2** (guide §7–8): 2a omnichain testnet → 2b omnichain mainnet | **FROZEN total** |
+| Backlog | lzRead / XofN Score | Pasca-MVP (Robinhood belum punya ReadLib1002) |
 
 Gerbang tiap phase ada di `PRD.md` §8–9. Kerjakan **hanya** phase yang diminta di task. Temuan untuk phase lain dicatat di laporan sebagai rekomendasi.
 
 ## 5. Scope & larangan per phase
 
-### 5.1 Phase 6–7 FROZEN — larangan mutlak sampai owner memberi brief tambahan
-- Membuat atau mengubah script deploy untuk jaringan publik (testnet maupun mainnet). Yang boleh hanya `contracts/script/local/*` untuk Anvil.
-- Mengisi `[etherscan]`, profil deploy, atau RPC testnet/mainnet untuk keperluan deploy di `foundry.toml`. RPC **fork read-only** untuk tes boleh dipakai, nilainya dibaca dari env.
-- Membuat `deployments/testnet.json` atau `deployments/mainnet.json`. Yang boleh hanya `deployments/local.json`.
-- Meminta, membuat, atau menyiapkan private key, mnemonic, faucet, atau Safe.
-- Menjalankan `forge script --broadcast`, `cast send`, atau transaksi on-chain apa pun di jaringan publik.
-- Push migrasi Supabase ke project remote/produksi, atau mengubah env produksi.
+### 5.1 Phase 6–7 FROZEN total — larangan mutlak sampai PM memberi perintah mulai
+Isi `deployguide-xofn.md` §1, §5–9 (perintah deploy, smoke test, transfer ke Safe, wiring, ekspansi mainnet) hanya **referensi**. Selama frozen, yang dilarang:
+- Membuat atau mengubah script deploy untuk jaringan publik: `script/01_DeployCore.s.sol`, `02_TransferToSafe.s.sol`, `10_DeployRemote.s.sol`, `11_WireInfra.s.sol`, atau sejenisnya. Yang boleh hanya `script/local/*` untuk Anvil.
+- Mengisi `[etherscan]`, profil deploy, verifier, atau RPC testnet/mainnet untuk keperluan deploy di `foundry.toml`. RPC **fork read-only** untuk tes boleh dipakai, nilainya dibaca dari env.
+- Membuat file `deployments/` untuk jaringan publik (`robinhood-testnet.json`, `robinhood.json`, `base-sepolia.json`, `arbitrum-sepolia.json`, `base.json`, `arbitrum.json`). Yang boleh hanya `deployments/local.json`.
+- Membuat, mengimpor, atau meminta keystore/private key/mnemonic (`cast wallet import`, `--account`), faucet, atau Safe.
+- Menjalankan `forge script --broadcast`, `--verify`, `cast send`, atau transaksi on-chain apa pun di jaringan publik.
+- Menjalankan task LayerZero devtools yang **menulis** konfigurasi (mis. `lz:oapp:wire`). Task baca (`lz:oapp:config:get*`) boleh.
+- Push migrasi Supabase ke project remote/produksi, mengubah env produksi, atau deploy aplikasi web.
 - Mengubah copy menjadi klaim "live", atau menghapus label NOT LIVE/DEMO.
 
 Jika sebuah task tampak membutuhkan salah satu hal di atas: **berhenti**, jelaskan kebutuhannya, dan tanyakan ke owner.
@@ -77,14 +95,14 @@ Jika sebuah task tampak membutuhkan salah satu hal di atas: **berhenti**, jelask
 ### 5.2 Batas per phase
 | Phase | Boleh | Tidak boleh |
 |---|---|---|
-| 0 | Membaca docs LZ, `cast call` read-only, menulis temuan ke `proof/` dan memperbarui `[Belum]` di dokumen | Kode produksi, transaksi |
-| 1 | `src/app/**` (markup, layout, metadata), `src/components/**`, `src/lib/{client,three,cn,format,mode,env,public-env,chains}`, `globals.css`, aset `public/`, setup tooling | `contracts/**`, `supabase/**`, `src/app/api/**` (kecuali stub), aksi Web3 |
-| 2 | `src/lib/{lz,check,supabase}`, `src/app/api/check/**`, `src/app/check/**`, migrasi Supabase **lokal**, `tests/**` | `contracts/**`, aksi tx |
-| 3 | `contracts/**` (src, test, `script/local`), `deployments/local.json` | Script publik (§5.1), perubahan frontend |
+| 0 | Membaca docs LZ, `cast call` read-only, task `lz:oapp:config:get*`, menulis temuan ke `proof/`, memperbarui `[Belum]` di dokumen | Kode produksi, transaksi |
+| 1 | `src/app/**` (markup, layout, metadata), `src/components/**`, `src/lib/{client,three,cn,format,mode,env,public-env,chains}`, `globals.css`, aset `public/`, setup tooling (`package.json`, ESLint, Vitest, ignore untuk `contracts/` `test/` `script/`) | `contracts/**`, `script/**`, `foundry.toml`, `config/**`, `deployments/**`, `supabase/**`, `src/app/api/**` (kecuali stub), aksi Web3 |
+| 2 | `src/lib/{lz,check,supabase,tiers}`, `src/app/api/check/**`, `src/app/check/**`, `config/dvn-labels.json`, migrasi Supabase **lokal**, `tests/**` | `contracts/**`, aksi tx |
+| 3 | `contracts/**`, `test/**` (forge), `script/local/**`, `foundry.toml`, `remappings.txt`, `config/tiers.json` (data), `layerzero.config.ts` (inspeksi), `deployments/local.json` | Script publik (§5.1), perubahan frontend |
 | 4 | `src/lib/web3/**`, halaman aplikasi, `src/app/api/tokens/**`, `api/cron/**` | Mengubah kontrak tanpa kembali ke gerbang Phase 3 |
 | 5 | Review, tes tambahan, NatSpec, dokumen audit | Fitur baru |
 
-Dependency baru di `package.json` atau `contracts/package.json` yang **tidak** tercantum di `ARCHITECTURE.md` §1 → minta persetujuan dulu.
+Dependency baru di `package.json` yang **tidak** tercantum di `ARCHITECTURE.md` §1 → minta persetujuan dulu.
 
 ## 6. Standar kode
 
@@ -96,7 +114,7 @@ Dependency baru di `package.json` atau `contracts/package.json` yang **tidak** t
   - Tidak ada `any` baru.
   - Tipe domain di `src/types/domain.ts` dan `src/types/enums.ts`.
   - `src/types/db.ts` dihasilkan otomatis (jangan diedit manual).
-- **Env:** `process.env` hanya dibaca di `src/lib/env.ts` (server, `server-only`) dan `src/lib/public-env.ts`. Tidak boleh ada fallback `|| 'default'`. Env wajib yang hilang → error.
+- **Env:** `process.env` hanya dibaca di `src/lib/env.ts` (server, `server-only`) dan `src/lib/public-env.ts`. Tidak boleh ada fallback `|| 'default'`. Env wajib yang hilang → error. Nama variabel mengikuti `ARCHITECTURE.md` §12 (selaras dengan guide).
 - **Tailwind v4:**
   - token di `@theme` dalam `src/app/globals.css`, tanpa `tailwind.config`;
   - **tidak ada hex hard-code baru di komponen**; tambahkan token;
@@ -113,8 +131,9 @@ Dependency baru di `package.json` atau `contracts/package.json` yang **tidak** t
 - **Font** lewat `next/font/google` di `layout.tsx` (D3), bukan `<link>`.
 - **Web3:**
   - hook AppKit hanya di komponen `*Active` yang dirender saat `isWeb3Configured`;
-  - alamat hanya dari `src/lib/web3/addresses.ts` (yang membaca `deployments/`);
+  - alamat hanya dari `src/lib/web3/addresses.ts`, yang membaca `deployments/<network>.json`;
   - chain/EID/nama chain hanya dari `src/lib/chains`;
+  - definisi tier dan label DVN hanya dari `config/tiers.json` dan `config/dvn-labels.json`;
   - **jangan menyalin alamat dari proyek lain**.
 - **Keamanan:**
   - teks dari pengguna di-escape (`src/lib/escape-html.ts`) sebelum `dangerouslySetInnerHTML`;
@@ -130,22 +149,30 @@ Dependency baru di `package.json` atau `contracts/package.json` yang **tidak** t
 
 ## 7. Standar kontrak
 
-- Foundry, solc 0.8.24, `evm_version = cancun`, optimizer 200, OZ v5, paket `@layerzerolabs/*` (versi dipin; lihat `ARCHITECTURE.md` §1.2).
-- `XofNToken`:
+- Foundry **di root repo** (`foundry.toml`: `src = "contracts"`, `test = "test"`, `script = "script"`), sesuai layout guide.
+- Compiler: solc 0.8.24, `evm_version = cancun` (jangan pakai `block.blobbasefee`), optimizer 200.
+- Library: OZ v5 (jangan impor file ber-pragma `^0.8.26`), paket `@layerzerolabs/*` (versi dipin; `ARCHITECTURE.md` §1.2).
+- `XofNToken` (OFT sejak tahap 1):
   - tanpa `mint` publik, `pause`, `setFee`, `blacklist`, `upgrade`;
   - `renounceOwnership()` **menolkan delegate lebih dulu**.
+- `XofNCurve`: implementation + clone per launch (OZ `Clones`).
 - `XofNGraduator`:
   - tidak upgradeable;
-  - tidak punya fungsi admin di luar jalur graduation;
-  - tidak bisa mengubah tier setelah launch.
-- Konfigurasi ULN dan library selalu **eksplisit** (jangan bergantung pada default). Array DVN terurut naik dan unik.
-- `lzCompose` hanya dari endpoint dan untuk token terdaftar; pool dibuat dan diisi dalam satu panggilan.
+  - fungsi yang mengubah state token hanya jalur launch, `graduate()`, `expandAndLock()`, dan `retryRemote()`;
+  - sebagai OApp ia juga punya `lzReceive` (ack dari Remote) dan fungsi owner bawaan OApp (peer/delegate pathway infrastruktur, `PRD.md` P38), tetapi tidak ada fungsi yang bisa mengubah tier atau konfigurasi token di luar jalur di atas;
+  - alamat DVN dikunci di constructor dari `config/tiers.json`;
+  - tidak bisa mengubah tier setelah launch;
+  - **tidak me-renounce di `graduate()`**.
+- Konfigurasi ULN dan library selalu **eksplisit**:
+  - nilai 0 berarti default, jadi factory menolak field 0;
+  - array DVN terurut naik dan unik.
+- `lzCompose` hanya menerima panggilan dari endpoint, untuk token terdaftar. Pool dibuat dan diisi dalam satu panggilan.
 - Semua **tes wajib** di `PRD.md` §9.2 harus ada dan lulus. Jalankan `forge test --profile ci` sebelum menyatakan Phase 3/5 selesai.
 - Fork test hanya membaca; tidak ada broadcast.
 
 ## 8. Panduan UI/UX, animasi, 3D
 
-- Ikuti `DESIGN_SYSTEM.md`: dark navy + mint, glass panel, mono uppercase untuk data, TierBadge yang selalu bisa diklik dan selalu bersama status.
+- Ikuti `DESIGN_SYSTEM.md`: dark navy + mint, glass panel, mono uppercase untuk data, TierBadge yang selalu bisa diklik dan selalu bersama status (Bonding / Graduated · awaiting expansion / Expanding / Locked / Changed).
 - **Responsif:** breakpoint 1150 / 900 / 760 / 640 / 430. **Navigasi mobile wajib.** Tidak ada overflow horizontal di 360–390px.
 - **Motion** menjelaskan status. Micro-interaction 150–700ms. Semua animasi, Lenis, dan parallax menghormati `prefers-reduced-motion`.
 - **3D:**
@@ -161,30 +188,30 @@ Dependency baru di `package.json` atau `contracts/package.json` yang **tidak** t
   - `radiogroup` untuk tier, `aria-pressed` untuk toggle;
   - dialog dengan fokus terjebak, `aria-live` untuk hasil Check dan error form;
   - kontras AA.
-- Jangan menambah efek yang tidak membawa makna data atau mengganggu input. Panel review "coin-lab" dari HTML **tidak** di-port (D1).
+- Copy yang menyebut Base sebagai home di HTML diganti ke Robinhood (D15). Panel review "coin-lab" dari HTML **tidak** di-port (D1).
 
 ## 9. Batasan Web3 & keamanan
 
 - **Jangan membaca, menampilkan, menyalin, atau commit isi `.env*`.** Cantumkan nama variabel saja.
 - **Jangan mengasumsikan kontrak XofN sudah ter-deploy.** Semua halaman berjalan di mode `preview` sampai manifest yang sah ada.
-- Nama chain di copy diambil dari registry chain. EID yang masih `[Belum]` tidak boleh ditebak.
+- Nama chain di copy diambil dari registry chain. Data yang masih `[Belum]` tidak boleh ditebak.
 - Jangan memindahkan otorisasi ke klien atau ke `proxy.ts`. Klien hanya memilih tombol mana yang tampil.
 - Tidak ada deploy, migrasi remote, `forge script --broadcast`, atau transaksi on-chain (lihat juga §5.1).
 - **Git:**
   - tidak ada operasi destruktif (`reset --hard`, force push, hapus branch);
   - commit/push hanya bila diminta;
   - bila di `main`, buat branch dulu.
-- **Lingkungan dev:** DNS Telkomsel memblokir `*.robinhood.com`. Pakai VPN atau DNS lain sebelum menguji RPC Robinhood.
+- **Lingkungan dev:** DNS Telkomsel memblokir `*.robinhood.com`. Pakai VPN atau DNS lain sebelum menguji RPC Robinhood. RPC publik Robinhood dibatasi rate.
 
 ## 10. Pemeriksaan & pengujian
 
 Sebelum melaporkan selesai:
 1. **Web:** `npm run lint` (`eslint`, **bukan** `next lint` yang sudah dihapus di Next 16), `npm run typecheck` (`tsc --noEmit`), `npm run test` (Vitest), `npm run build`. Semuanya harus lulus.
-2. **Kontrak** (bila disentuh): `forge build && forge test` (Phase 3) dan `forge test --profile ci` (Phase 5). Jalankan dari `contracts/`.
+2. **Kontrak** (bila disentuh): `forge build && forge test`, termasuk `--match-contract Invariant` (Phase 3), dan `forge test --profile ci` (Phase 5). Jalankan dari root repo.
 3. **Uji manual** `npm run dev` di mode yang relevan (`preview` / `simulation`), mengikuti flow terkait di `USER_FLOWS.md`.
 4. Cek lebar **390, 768, 1280, 1680px**, reduced motion, dan navigasi bolak-balik antar halaman (memastikan tidak ada kebocoran konteks WebGL).
 5. Pastikan tidak ada perubahan di area terlarang: `git status` / `git diff --stat`.
-6. Pastikan copy mematuhi aturan klaim (`PRD.md` §4.3) dan data demo berlabel.
+6. Pastikan copy mematuhi aturan klaim (`PRD.md` §4.3, termasuk klaim per tahap) dan data demo berlabel.
 
 Script `npm run e2e*` (bila nanti ada) yang menyentuh chain publik **tidak boleh** dijalankan tanpa izin.
 
@@ -202,8 +229,8 @@ Setiap akhir task, laporkan:
 
 ## 12. Larangan perubahan scope
 
-- Jangan mengubah aturan protokol (supply, tier, urutan graduation, composer, `verify`, aturan klaim) karena alasan visual atau kemudahan.
-- Jangan menambah fitur yang tidak ada di brief tanpa persetujuan. Contoh: UI admin, token $XOFN, lzRead, chain tambahan, fitur AI, verifikasi creator.
+- Jangan mengubah aturan protokol (supply, tier, lifecycle dua tahap, urutan graduation/ekspansi, composer, `verify`, aturan klaim) karena alasan visual atau kemudahan.
+- Jangan menambah fitur yang tidak ada di brief/guide tanpa persetujuan. Contoh: UI admin, token $XOFN, lzRead, chain tambahan (termasuk Solana), fitur AI, verifikasi creator.
 - Jangan melakukan refactor besar di luar kebutuhan task.
 - Jangan menghapus file atau fitur tanpa keputusan.
 - Jangan mengerjakan apa pun dari Phase 6–7 (§5.1).
