@@ -231,8 +231,8 @@ export function mountGalaxy(opts: GalaxyOptions): GalaxyController | null {
     const ringMat = bag.track(new THREE.MeshBasicMaterial({ color: hdr(PAL.mint2, 0.95), transparent: true }));
     const glyphMat = bag.track(
       new THREE.MeshBasicMaterial({
-        map: glyphTexture(bag, 'x'),
-        color: PAL.galaxyGlyph,
+        map: glyphTexture(bag, 'brand'),
+        color: PAL.white,
         transparent: true,
         depthWrite: false,
       }),
@@ -263,12 +263,20 @@ export function mountGalaxy(opts: GalaxyOptions): GalaxyController | null {
         const ring = new THREE.Mesh(bag.track(new THREE.TorusGeometry(0.61, 0.046, 12, 56, Math.PI)), ringMat);
         ring.position.z = z - d * 0.008;
         g.add(ring);
-        const pg = bag.track(new THREE.PlaneGeometry(0.84, 0.42));
+        const pg = bag.track(new THREE.PlaneGeometry(0.78, 0.39));
         const uv = pg.attributes.uv;
-        // setengah atas tanda X; setengah bawahnya adalah belahan ini yang diputar
-        for (let i = 0; i < uv.count; i++) uv.setY(i, 0.5 + 0.5 * uv.getY(i));
+        // Setiap belahan menampilkan separuh logo. Belahan bawah ikut diputar 180 derajat di grup,
+        // jadi UV-nya dibalik agar separuh bawah logo tampak tegak. Sisi belakang sudah dicerminkan
+        // oleh rotasi Y muka, sehingga flip horizontal hanya berlaku di sisi depan.
+        for (let i = 0; i < uv.count; i++) {
+          if (top) uv.setY(i, 0.5 + 0.5 * uv.getY(i));
+          else {
+            uv.setY(i, 0.5 - 0.5 * uv.getY(i));
+            if (d > 0) uv.setX(i, 1 - uv.getX(i));
+          }
+        }
         const face = new THREE.Mesh(pg, glyphMat);
-        face.position.set(0, 0.21, z + d * 0.004);
+        face.position.set(0, 0.195, z + d * 0.004);
         if (d < 0) face.rotation.y = Math.PI;
         face.renderOrder = 2;
         g.add(face);

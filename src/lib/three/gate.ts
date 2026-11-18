@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { flareTexture } from './glyphs';
+import { flareTexture, glyphTexture } from './glyphs';
 import { PAL } from './palette';
 import { V, damp, hdr, type ResourceBag } from './util';
 
@@ -19,7 +19,7 @@ export interface Gate {
 }
 
 // Gate XofN: pelat bercahaya yang ditembus koin.
-export function makeGate(bag: ResourceBag, R = 1.2, markYaw = 0, markAngle = Math.PI / 4): Gate {
+export function makeGate(bag: ResourceBag, R = 1.2, markYaw = 0): Gate {
   const group = new THREE.Group();
   const dark = bag.track(new THREE.MeshStandardMaterial({ color: PAL.gateDark, metalness: 1, roughness: 0.3 }));
   const base = new THREE.Mesh(bag.track(new THREE.CylinderGeometry(R, R * 0.93, 0.1, 80)), dark);
@@ -64,18 +64,15 @@ export function makeGate(bag: ResourceBag, R = 1.2, markYaw = 0, markAngle = Mat
   const edge = new THREE.Mesh(bag.track(new THREE.TubeGeometry(loop, 180, 0.026, 8, true)), edgeMat);
   edge.position.y = 0.012;
   group.add(edge);
-  const markMat = bag.track(new THREE.MeshBasicMaterial({ color: PAL.gateMark }));
-  // Tanda X dimiringkan lebih dulu supaya dari kamera terbaca sebagai X.
+  // Tanda gate: logo XofN rebah di pelat; yaw memutarnya supaya tegak dari kamera hero.
+  const markMat = bag.track(new THREE.MeshBasicMaterial({ map: glyphTexture(bag, 'brand'), transparent: true }));
   const mark = new THREE.Group();
   mark.rotation.y = markYaw;
   mark.position.y = 0.014;
   group.add(mark);
-  const markGeo = bag.track(new THREE.BoxGeometry(R * 0.6, 0.012, R * 0.1));
-  for (const a of [markAngle, -markAngle]) {
-    const m = new THREE.Mesh(markGeo, markMat);
-    m.rotation.y = a;
-    mark.add(m);
-  }
+  const markFace = new THREE.Mesh(bag.track(new THREE.CircleGeometry(R * 0.4, 64)), markMat);
+  markFace.rotation.x = -Math.PI / 2;
+  mark.add(markFace);
   const lightUp = new THREE.PointLight(PAL.mint2, 26, 9, 2);
   lightUp.position.y = 0.7;
   group.add(lightUp);

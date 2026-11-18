@@ -88,7 +88,7 @@ export async function runCheck(request: CheckRequest): Promise<CheckOutcome> {
     return {
       ok: false,
       code: 'network_unavailable',
-      message: 'Live check unavailable — no RPC connection is configured for this network. No result will be fabricated.',
+      message: 'Live check unavailable: no RPC connection is configured for this network. No result will be fabricated.',
     };
   }
 

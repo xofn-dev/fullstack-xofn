@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { cn } from '@/lib/cn';
 import { TIERS, type Tier } from '@/types/enums';
+import { Coin3D } from '@/components/ui/coin-3d';
 import { SplitHeading } from '@/components/landing/split-heading';
 import { TIER_COPY, useTier } from '@/components/landing/tier-context';
 
@@ -20,7 +21,7 @@ interface TierCardCopy {
 // keduanya tidak tersedia di pathway Robinhood (proof/2026-11-17-phase0).
 const CARDS: Record<Tier, TierCardCopy> = {
   standard: {
-    name: 'TIER_01 / DEFAULT',
+    name: 'DEFAULT TIER',
     heading: '2+1/2',
     copy: 'Two required DVNs plus one of two optional DVNs.',
     bullets: [
@@ -32,7 +33,7 @@ const CARDS: Record<Tier, TierCardCopy> = {
     footer: 'STANDARD · SELECT TO PREVIEW',
   },
   fortress: {
-    name: 'TIER_02 / HIGH ASSURANCE',
+    name: 'HIGH ASSURANCE TIER',
     heading: '3+1/2',
     copy: 'Three required DVNs plus one of two optional DVNs.',
     bullets: [
@@ -68,7 +69,7 @@ export function Security() {
     <section className="section tier-section" id="security">
       <div className="container tier-wrap">
         <div className="tier-intro">
-          <div className="section-label">05 / SECURITY POLICY</div>
+          <div className="section-label">SECURITY POLICY</div>
           <SplitHeading
             lines={[
               'More than',
@@ -135,7 +136,8 @@ export function Security() {
         <div className="v3-dvn-rig" id="v3DvnRig" data-tier={tier}>
           <div className="v3-dvn-lines" />
           <div className="v3-dvn-core">
-            X<span>of</span>N<small>SECURITY POLICY</small>
+            <Coin3D />
+            <small>SECURITY POLICY</small>
           </div>
           <div className="v3-verifier v3-required v3-v1">
             01 <span>LABS</span>

@@ -37,9 +37,9 @@ Catatan cara membaca HTML: CSS ditulis berlapis per versi (`.v2` … `.v8` di `<
 | Nama | **XofN**. Wordmark `X` + `of` kecil (13px, mint2, letter-spacing −.06em) + `N`; 27px bold, letter-spacing −.08em |
 | Logo-mark | Kotak 33×33, radius 6, latar mint terang, huruf `X` mono 23px, **rotasi −9°** |
 | Tagline | *Never one of one.* / *Graduate on proof, not promises.* [Brief] |
-| Motif | Koin gelap metalik dengan emblem X; gerbang (gate) bercahaya yang dilewati koin; koin "1/1" ditolak (merah); pelat lapisan DVN di dalam koin; langit bintang |
+| Motif | Koin gelap metalik dengan logo XofN (`public/logo.jpeg`); gerbang (gate) bercahaya yang dilewati koin; koin "1/1" ditolak (merah); pelat lapisan DVN di dalam koin; langit bintang |
 | Nada | Teknis, presisi, berbasis angka, ala dashboard infrastruktur [Brief]. Headline besar dan tegas; detail ditulis dalam mono uppercase |
-| Larangan [Brief] | Tidak memakai logo atau nama produk LayerZero di branding; tidak memakai logo chain (emblem koin digambar sendiri) |
+| Larangan [Brief] | Tidak memakai logo atau nama produk LayerZero di branding; tidak memakai logo LayerZero. Logo chain (Robinhood, Base, Arbitrum) hanya dipakai sebagai identifikasi pada koin hero (D20), tanpa kesan afiliasi |
 
 ---
 
@@ -399,7 +399,7 @@ Semua geometri dibuat prosedural dalam kode (tanpa file model, tekstur, atau vid
 - Ilustrasi fitur adalah SVG inline stroke tipis, mint/biru dengan drop-shadow glow [Desain].
 - Glyph token demo: karakter (◇ ✳ ⬡) di kotak 47px. Logo token nyata berasal dari upload creator.
 - Simbol UI: `↗ → ↕ ✓ ✕ ☰ ↑ ◉ ✳ ✦`. Simbol dekoratif diberi `aria-hidden`.
-- **Tidak ada logo chain atau LayerZero.** Chain diwakili nama + titik warna menurut **peran** (D15): **Robinhood (home) mint**, **Base biru**, **Arbitrum violet**. Di HTML, mint dipakai untuk Base karena Base saat itu home.
+- **Tidak ada logo LayerZero.** Logo chain hanya muncul di koin hero (D20). Di tempat lain chain diwakili nama + titik warna menurut **peran** (D15): **Robinhood (home) mint**, **Base biru**, **Arbitrum violet**. Di HTML, mint dipakai untuk Base karena Base saat itu home.
 
 ---
 
@@ -521,6 +521,9 @@ Item `[Belum]` diputuskan owner atau desainer. Sampai diputuskan, pakai rekomend
 | D17 | Copy operator tier selama P1 belum diputuskan | HTML menyebut Google Cloud dan Polyhedra sebagai operator wajib. Phase 0: Google tidak ada di Robinhood, Polyhedra deprecated atau tidak ada, jadi teks itu tidak boleh di-port | [Usulan] Tier card dan sampel Check menampilkan **jumlah** ("2 required DVNs · 1 of 2 optional", "3 required DVNs · 1 of 2 optional"). Nama yang sudah pasti boleh disebut: LayerZero Labs (wajib), Deutsche Telekom dan FCAT (opsional). Slot wajib lain ditulis "operator to be confirmed". Setelah P1 diputuskan, nama dibaca dari `config/tiers.json` |
 | D18 | NoticeBar preview berbunyi "NO … LIVE VERIFICATION", sedangkan XofN Check tetap membaca chain di mode preview | Teks HTML ditulis saat semua masih konsep | [Usulan] Phase 1 memakai teks §10.2 apa adanya (Check masih demo). Saat Check nyata masuk di Phase 2, teks diganti menjadi `PREVIEW / NOT LIVE · NO TOKEN SALE · CHECK READS PUBLIC CHAIN DATA` |
 | D19 | Intro loader landing | Tidak ada di HTML. Diminta owner 18 Nov 2026 ("loading screen yang wow": koin → pecah jadi lapisan → zoom masuk ke landing) | **Diputuskan owner.** CSS 3D + GSAP tanpa WebGL (tampil sebelum chunk three.js; batas 3 konteks WebGL tetap). Hanya di `/`, penuh sekali per sesi, varian singkat untuk sesi berulang/hash, Skip + Escape, reduced motion = fade. Copy hanya `PROTOCOL PREVIEW · NOT LIVE`, label DVN, `1-OF-1 · BLOCKED`, dan tagline |
+| D20 | Koin hero memakai logo chain, dan emblem X diganti logo XofN | Diminta owner 18 Nov 2026. Sebelumnya §2 melarang logo chain dan emblem koin berupa glyph X digambar sendiri | **Diputuskan owner.** Koin yang jatuh membawa logo Robinhood/Base/Arbitrum (`public/chains/*.svg`, sumber: simple-icons dan web3icons); koin 1/1 tetap plat teks merah. Setelah lolos gate, koin berganti ke logo XofN. Semua glyph X (header, footer, favicon, loader, galaxy, gate) memakai `public/logo.jpeg`. Logo LayerZero tetap dilarang |
+| D21 | Panel manifesto, security, graduation berupa koin CSS 3D | Diminta owner 18 Nov 2026 (sebelumnya cincin + X, "XofN" bulat, kotak X) | **Diputuskan owner.** Komponen `Coin3D` (CSS 3D tanpa WebGL, batas 3 konteks WebGL tetap). Label teks `≠ 1/1`, `SECURITY POLICY`, `XofNGraduator` dipertahankan. Reduced motion = koin diam |
+| D22 | Section label tanpa garis dash dan tanpa nomor | Diminta owner 18 Nov 2026 | **Diputuskan owner.** `.section-label:before` dihapus, awalan angka dihapus. Penomoran "field notes" di sisi kiri tetap. Em dash dan en dash tidak dipakai di copy (placeholder kosong = `n/a`) |
 
 ---
 

@@ -43,7 +43,7 @@ export function LaunchDemo({ home, expansions }: { home: ChainInfo; expansions: 
       return;
     }
     if (!isValidTicker(cleanTicker)) {
-      setError('Ticker should contain 2–12 letters or numbers.');
+      setError('Ticker should contain 2 to 12 letters or numbers.');
       return;
     }
     if (selected.length === 0) {
@@ -76,7 +76,7 @@ export function LaunchDemo({ home, expansions }: { home: ChainInfo; expansions: 
     <section className="section launch-section" id="launch">
       <div className="container launch-layout">
         <div className="launch-intro">
-          <div className="section-label">07 / CREATE A TOKEN</div>
+          <div className="section-label">CREATE A TOKEN</div>
           <SplitHeading
             className="h2"
             lines={[

@@ -29,7 +29,7 @@ export function validateLaunchInput(input: LaunchInput, supportedEids: number[])
   const name = input.name.trim();
   if (name.length === 0) return 'Enter a token name.';
   if (byteLength(name) > 32) return 'Token name must be at most 32 bytes.';
-  if (!TICKER.test(input.symbol.trim())) return 'Ticker should contain 2–12 letters or numbers.';
+  if (!TICKER.test(input.symbol.trim())) return 'Ticker should contain 2 to 12 letters or numbers.';
   if (input.eids.length === 0) return 'Choose at least one expansion chain.';
   if (new Set(input.eids).size !== input.eids.length) return 'An expansion chain was selected twice.';
   if (input.eids.some((eid) => !supportedEids.includes(eid))) {

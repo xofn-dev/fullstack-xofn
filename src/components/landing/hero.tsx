@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { ChainInfo } from '@/lib/chains';
 import { formatInt } from '@/lib/format';
 import { HeroCanvas } from '@/components/landing/scene-loaders';
@@ -59,11 +60,15 @@ export function Hero({ home, expansions }: { home: ChainInfo; expansions: ChainI
         >
           <div className="coin-fallback" aria-hidden="true">
             <i className="cf-track cf-track-a" />
-            <span className="cf-coin cf-coin-a">X</span>
+            <span className="cf-coin cf-coin-a">
+              <Image src="/chains/robinhood.svg" alt="" width={90} height={90} />
+            </span>
             <span className="cf-gate">
               <b />
             </span>
-            <span className="cf-coin cf-coin-b" />
+            <span className="cf-coin cf-coin-b">
+              <Image src="/logo.jpeg" alt="" width={90} height={90} />
+            </span>
             <i className="cf-track cf-track-b" />
           </div>
           <div className="hero-float f1">

@@ -50,7 +50,7 @@ export function DvnList({
       <p className="pathway-note">
         {applied
           ? 'Tier configuration is applied on every pathway below.'
-          : 'Tier committed — DVN configuration is applied at expansion.'}{' '}
+          : 'Tier committed. DVN configuration is applied at expansion.'}{' '}
         {tierDvnSummary(tier)}.
       </p>
       {pathways.length === 0 && <p className="pathway-note">Pathway configuration was not read.</p>}

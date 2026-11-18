@@ -38,10 +38,10 @@ function buildStations(home: ChainInfo, expA: ChainInfo, expB: ChainInfo): Recor
   return {
     home: {
       idx: '01',
-      podId: '01 / ORIGIN',
+      podId: 'ORIGIN',
       podTitle: home.shortName,
       podNote: 'HOME · CURVE',
-      blueprintId: '01 / GENESIS',
+      blueprintId: 'GENESIS',
       blueprintNote: 'BONDING CURVE',
       pill: `01 ${home.shortName}`,
       ariaLabel: `Explore ${home.name}`,
@@ -51,10 +51,10 @@ function buildStations(home: ChainInfo, expA: ChainInfo, expB: ChainInfo): Recor
     },
     core: {
       idx: '02',
-      podId: '02 / TRIGGER',
+      podId: 'TRIGGER',
       podTitle: 'GRADUATOR',
       podNote: 'IMMUTABLE RECIPE',
-      blueprintId: '02 / TRIGGER',
+      blueprintId: 'TRIGGER',
       blueprintNote: 'IMMUTABLE RECIPE',
       pill: '02 CORE',
       ariaLabel: 'Explore XofN Graduator',
@@ -64,10 +64,10 @@ function buildStations(home: ChainInfo, expA: ChainInfo, expB: ChainInfo): Recor
     },
     dvn: {
       idx: '03',
-      podId: '03 / SECURITY',
+      podId: 'SECURITY',
       podTitle: 'DVN NETWORK',
       podNote: 'REQUIRED + OPTIONAL',
-      blueprintId: '03 / SECURITY',
+      blueprintId: 'SECURITY',
       blueprintNote: 'PATHWAY QUORUM',
       pill: '03 DVNs',
       ariaLabel: 'Explore security DVN network',
@@ -77,10 +77,10 @@ function buildStations(home: ChainInfo, expA: ChainInfo, expB: ChainInfo): Recor
     },
     expA: {
       idx: '04',
-      podId: '04 / REMOTE',
+      podId: 'REMOTE',
       podTitle: expA.shortName,
       podNote: 'DEPLOY · POOL',
-      blueprintId: '04 / EXPANSION',
+      blueprintId: 'EXPANSION',
       blueprintNote: 'REMOTE + POOL',
       pill: `04 ${expA.shortName}`,
       ariaLabel: `Explore ${expA.name}`,
@@ -89,10 +89,10 @@ function buildStations(home: ChainInfo, expA: ChainInfo, expB: ChainInfo): Recor
     },
     expB: {
       idx: '05',
-      podId: '05 / REMOTE',
+      podId: 'REMOTE',
       podTitle: expB.shortName,
       podNote: 'DEPLOY · POOL',
-      blueprintId: '05 / EXPANSION',
+      blueprintId: 'EXPANSION',
       blueprintNote: 'REMOTE + POOL',
       pill: `05 ${expB.shortName}`,
       ariaLabel: `Explore ${expB.name}`,
@@ -102,10 +102,10 @@ function buildStations(home: ChainInfo, expA: ChainInfo, expB: ChainInfo): Recor
     },
     registry: {
       idx: '06',
-      podId: '06 / PROOF',
+      podId: 'PROOF',
       podTitle: 'REGISTRY',
       podNote: 'VERIFY() · LOCK',
-      blueprintId: '06 / FINALITY',
+      blueprintId: 'FINALITY',
       blueprintNote: 'VERIFY + LOCK',
       pill: '06 PROOF',
       ariaLabel: 'Explore security Registry',
@@ -202,7 +202,7 @@ export function Architecture({ home, expansions }: { home: ChainInfo; expansions
       <div className="container">
         <div className="sec-head arch-heading">
           <div>
-            <div className="section-label">02 / PROTOCOL ARCHITECTURE · INTERACTIVE</div>
+            <div className="section-label">PROTOCOL ARCHITECTURE · INTERACTIVE</div>
             <SplitHeading
               id="architectureTitle"
               lines={[
@@ -292,7 +292,7 @@ export function Architecture({ home, expansions }: { home: ChainInfo; expansions
             >
               <div className="v3-blueprint-head">
                 <span>{'// XOFN / PROTOCOL BLUEPRINT'}</span>
-                <span>SPECIFICATION / 001</span>
+                <span>SPECIFICATION</span>
               </div>
               <div className="v3-blueprint-watermark" aria-hidden="true">
                 X / N

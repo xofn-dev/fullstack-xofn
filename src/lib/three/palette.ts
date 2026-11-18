@@ -21,7 +21,6 @@ export const PAL = {
   // gate
   gateDark: 0x0c111a,
   gatePlate: 0xd8fff2,
-  gateMark: 0x0a2a25,
   // atmosfer
   dust: 0x9fd9ff,
   starWhite: 0xeef4ff,
@@ -35,13 +34,20 @@ export const PAL = {
   // galaxy
   studioBg: 0x050a12,
   galaxyMetal: 0x1b212d,
-  galaxyGlyph: 0xeaf3ff,
   slotOff: 0x26323f,
   plateGlass: 0x101a26,
 } as const;
 
 // Tinta emblem di canvas 2D: putih, lalu diwarnai lewat material.
 export const GLYPH_INK = '#fff';
+
+// Alas cakram di belakang logo chain (canvas 2D) supaya tiap logo terbaca di badan koin yang gelap.
+export const LOGO_BADGE = {
+  robinhood: '#0b1511',
+  base: '#b9c4dc',
+  arbitrum: '#b9c4dc',
+  brand: '#000000',
+} as const;
 
 export type Rgb = readonly [number, number, number];
 

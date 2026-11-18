@@ -7,7 +7,7 @@ export function Thesis() {
       <div className="v3-thesis-ambience" />
       <div className="container v3-thesis-layout">
         <div className="v3-thesis-side">
-          <span className="section-label">TRUST IS THE PRODUCT / 001</span>
+          <span className="section-label">TRUST IS THE PRODUCT</span>
           <p>
             Every chain is another question.
             <br />

@@ -29,13 +29,13 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.siteUrl),
   title: {
-    default: 'XofN — Never one of one.',
+    default: 'XofN. Never one of one.',
     template: '%s · XofN',
   },
   description:
     'Building the launchpad where 1-of-1 is never allowed. Preview build: no token sale, deployment or live verification.',
   openGraph: {
-    title: 'XofN — Never one of one.',
+    title: 'XofN. Never one of one.',
     description:
       'Building the launchpad where 1-of-1 is never allowed. Preview build: no token sale, deployment or live verification.',
     type: 'website',

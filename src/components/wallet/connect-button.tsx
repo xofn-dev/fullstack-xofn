@@ -22,7 +22,7 @@ export function ConnectButton({ mode, className = 'btn secondary small', onDone 
     const explain = () => {
       onDone?.();
       openModal({
-        title: 'Wallet connection — preview only',
+        title: 'Wallet connection: preview only',
         copy: 'This build is a preview. It deliberately does not request signatures, connect to wallet providers, or process transfers.',
         detail:
           'Production integration: wallet client + supported EVM chains + quote simulation + user-signed transactions. Never enter a seed phrase or private key on any website.',

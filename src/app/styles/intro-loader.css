@@ -258,7 +258,7 @@
   border-radius: 50%;
 }
 
-/* muka koin: logam gelap, cincin mint, glyph X (selaras koin hero) */
+/* muka koin: logam gelap, cincin mint, logo XofN (selaras koin hero) */
 .il-face {
   display: grid;
   place-items: center;
@@ -281,11 +281,13 @@
     inset 0 0 14px var(--il-glow);
   opacity: 0.9;
 }
-.il-face b {
+.il-face img {
   position: relative;
-  font: 700 calc(var(--il-coin) * 0.3) / 1 var(--display);
-  color: var(--color-text);
-  text-shadow: 0 0 22px color-mix(in srgb, var(--color-ice) 45%, transparent);
+  width: 58%;
+  height: 58%;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--color-ice) 30%, transparent);
 }
 .il-face.front {
   transform: translateZ(calc(var(--il-coin) * 0.055));

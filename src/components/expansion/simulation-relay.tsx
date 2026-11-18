@@ -35,7 +35,7 @@ export function SimulationRelay({
   return (
     <div className="sim-relay">
       <p>
-        SIMULATION · LOCAL RELAY — cross-chain messages on this test node are delivered only when
+        SIMULATION · LOCAL RELAY: cross-chain messages on this test node are delivered only when
         someone asks the local relay to deliver them. On a real network DVNs and executors do this.
       </p>
       <dl className="quote-list">

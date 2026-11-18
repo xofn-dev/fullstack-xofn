@@ -37,7 +37,7 @@ export function BridgeDemo({ home, expansions }: { home: ChainInfo; expansions: 
     const direct = from === home.key || to === home.key;
     openModal({
       eyebrow: 'LAYERZERO / DEMONSTRATION',
-      title: 'Bridge route — preview only',
+      title: 'Bridge route: preview only',
       copy: 'This token and route are a visual demonstration. Actual bridging is only possible after a token has been expanded and locked, and only on configured pathways.',
       detail: [
         `FROM: ${nameOf(from)}`,
@@ -57,7 +57,7 @@ export function BridgeDemo({ home, expansions }: { home: ChainInfo; expansions: 
       <div className="container bridge-layout">
         <div>
           <div className="section-label">
-            08 / OMNICHAIN TRANSFER<span className="planned-chip">PLANNED</span>
+            OMNICHAIN TRANSFER<span className="planned-chip">PLANNED</span>
           </div>
           <SplitHeading
             className="h2"
@@ -138,7 +138,7 @@ export function BridgeDemo({ home, expansions }: { home: ChainInfo; expansions: 
               <span>Estimated receipt unavailable</span>
             </div>
             <div className="transfer-main">
-              <div className="transfer-dash">—</div>
+              <div className="transfer-dash">n/a</div>
               <select
                 id="bridgeTo"
                 aria-label="Destination chain"

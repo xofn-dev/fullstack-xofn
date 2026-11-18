@@ -96,7 +96,7 @@ export default function ProofPage() {
                   <b>Infrastructure pathway</b>
                   <span>
                     Its peers can be set only once, but its delegate can still change the DVNs of the
-                    Graduator–Remote pathway. That affects tokens that are not locked yet.
+                    Graduator to Remote pathway. That affects tokens that are not locked yet.
                   </span>
                 </li>
                 <li>

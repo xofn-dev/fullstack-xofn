@@ -54,10 +54,10 @@ function SecurityTable({ token }: { token: TokenDetail }) {
               return (
                 <tr key={reading.chain}>
                   <td>{getChain(publicEnv.network, reading.chain).shortName}</td>
-                  <td>{reading.token ? shortAddress(reading.token) : '—'}</td>
-                  <td>{reading.token ? holder(reading.owner) : '—'}</td>
-                  <td>{reading.token ? holder(reading.delegate) : '—'}</td>
-                  <td>{reading.totalSupply !== null ? formatTokens(reading.totalSupply, 0) : '—'}</td>
+                  <td>{reading.token ? shortAddress(reading.token) : 'n/a'}</td>
+                  <td>{reading.token ? holder(reading.owner) : 'n/a'}</td>
+                  <td>{reading.token ? holder(reading.delegate) : 'n/a'}</td>
+                  <td>{reading.totalSupply !== null ? formatTokens(reading.totalSupply, 0) : 'n/a'}</td>
                   <td className={cell.className}>{cell.text}</td>
                 </tr>
               );
@@ -216,7 +216,7 @@ export function TokenView({
       )}
       {token.status === 'changed' && (
         <div className="checker-error is-visible" role="status">
-          CHANGED — this token is recorded as locked, but verify() is not true on every chain. See the
+          CHANGED: this token is recorded as locked, but verify() is not true on every chain. See the
           security table below for the chain-by-chain reads.
         </div>
       )}

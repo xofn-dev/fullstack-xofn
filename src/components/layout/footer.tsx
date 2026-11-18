@@ -1,4 +1,6 @@
+import Image from 'next/image';
 import Link from 'next/link';
+import { XLink } from '@/components/ui/x-link';
 import type { AppMode } from '@/types/enums';
 
 // Disclaimer LayerZero wajib ada di setiap halaman (CLAUDE.md §3, PRD §4.3).
@@ -8,7 +10,10 @@ export function Footer({ mode }: { mode: AppMode }) {
     <footer>
       <div className="container footer-bottom">
         <div>
-          <div className="footer-symbol">XofN.</div>
+          <div className="footer-symbol">
+            <Image className="footer-mark" src="/logo.jpeg" alt="" width={40} height={40} />
+            XofN.
+          </div>
           <div className="disclaimer">
             XofN is an independent project built on LayerZero. Not affiliated with or endorsed by
             LayerZero Labs.{' '}
@@ -23,6 +28,7 @@ export function Footer({ mode }: { mode: AppMode }) {
           <Link href="/#top">TOP ↑</Link>
           <Link href="/contracts">CONTRACTS</Link>
           <Link href="/proof">PROOF</Link>
+          <XLink className="footer-x" label="X" />
         </div>
       </div>
     </footer>

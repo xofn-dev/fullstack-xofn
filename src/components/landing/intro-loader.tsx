@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { getGsap } from '@/lib/client/gsap';
@@ -345,10 +346,10 @@ export function IntroLoader() {
                 <i key={i} className="il-layer il-edge" style={{ '--i': i } as CSSProperties} />
               ))}
               <div className="il-layer il-face back">
-                <b>X</b>
+                <Image src="/logo.jpeg" alt="" width={192} height={192} priority />
               </div>
               <div className="il-layer il-face front">
-                <b>X</b>
+                <Image src="/logo.jpeg" alt="" width={192} height={192} priority />
               </div>
             </div>
           </div>
