@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { ChainInfo } from '@/lib/chains';
 import { cn } from '@/lib/cn';
+import { Coin3D } from '@/components/ui/coin-3d';
 import { SplitHeading } from '@/components/landing/split-heading';
 
 interface Step {
@@ -19,33 +20,33 @@ function buildSteps(home: ChainInfo): Step[] {
     {
       title: 'Bonding threshold reached',
       note: 'Anyone may call graduate()',
-      caption: '01 / BONDING',
+      caption: 'BONDING',
       explain: `Threshold is reached on the ${home.name} bonding curve. Graduation becomes callable by anyone, with a predetermined caller incentive.`,
     },
     {
       title: `${home.name} liquidity goes live`,
       note: `Create and seed the ${home.name} AMM pool`,
-      caption: `02 / ${home.shortName} POOL`,
+      caption: `${home.shortName} POOL`,
       explain: `graduate() creates and seeds the ${home.name} AMM pool using liquidity released from the bonding curve. The token is now graduated and awaiting expansion: owner and delegate are still the Graduator contract.`,
     },
     {
       title: 'Expand through LayerZero',
       note: 'expandAndLock() · deploy remote OFT · send + compose liquidity',
-      caption: '03 / REMOTE DEPLOY',
+      caption: 'REMOTE DEPLOY',
       explain:
         'expandAndLock() deploys remote OFTs and sends liquidity across the configured LayerZero pathways. lzCompose creates and seeds each destination pool in the same compose call.',
     },
     {
       title: 'Verify every pathway',
       note: 'Pin libraries · check DVNs · retry failures',
-      caption: '04 / PATHWAY CHECK',
+      caption: 'PATHWAY CHECK',
       explain:
         'Each pathway must match pinned library, ULN, DVN, executor, peer and gas settings in both directions. Failed steps must be retryable with the same parameters.',
     },
     {
       title: 'Lock & publish proof',
       note: 'Owner = 0 · delegate = 0 · registry verified',
-      caption: '05 / IMMUTABLE',
+      caption: 'IMMUTABLE',
       explain:
         'Only after every chain completes do endpoint delegates and contract ownership become zero. Each registry then returns an on-chain verifiable locked result.',
     },
@@ -65,7 +66,7 @@ export function Graduation({ home, expansions }: { home: ChainInfo; expansions: 
       <div className="container">
         <div className="sec-head">
           <div>
-            <div className="section-label">06 / GRADUATION ENGINE</div>
+            <div className="section-label">GRADUATION ENGINE</div>
             <SplitHeading
               lines={[
                 'Momentum meets',
@@ -89,7 +90,7 @@ export function Graduation({ home, expansions }: { home: ChainInfo; expansions: 
             <div className="little-label">XOFN / CROSS-CHAIN EXPANSION SCHEMATIC</div>
             <div className="grad-ring" />
             <div className="grad-center">
-              <div className="core">X</div>
+              <Coin3D />
               <span className="mono">XofNGraduator</span>
             </div>
             {/* Kelas posisi .base/.arb/.robin dari HTML dipertahankan; isinya mengikuti peran chain (D15). */}

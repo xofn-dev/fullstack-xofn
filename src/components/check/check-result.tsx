@@ -92,7 +92,7 @@ function DirectionCard({
         <dd>{isNilConfirmations(config.confirmations) ? '0 (explicit)' : config.confirmations}</dd>
         <dt>LIBRARY</dt>
         <dd>
-          {reading.library ? shortAddress(reading.library) : '—'} ·{' '}
+          {reading.library ? shortAddress(reading.library) : 'n/a'} ·{' '}
           {reading.libraryIsDefault ? 'default (can change)' : 'pinned by app'}
         </dd>
         {reading.direction === 'send' && (
@@ -328,7 +328,7 @@ export function CheckResultView({
             ))}
             <p className="pathway-note">
               {result.otherDeployments
-                ? `Also listed on: ${result.otherDeployments.join(', ')} — not read in this version.`
+                ? `Also listed on: ${result.otherDeployments.join(', ')}. Not read in this version.`
                 : 'Pathways to other networks are not read in this version.'}
             </p>
           </div>

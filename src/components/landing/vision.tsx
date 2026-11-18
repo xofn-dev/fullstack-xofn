@@ -16,7 +16,7 @@ export function Vision({ home, expansions }: { home: ChainInfo; expansions: Chai
       <div className="container">
         <div className="sec-head">
           <div>
-            <div className="section-label">01 / THE XOFN DIFFERENCE</div>
+            <div className="section-label">THE XOFN DIFFERENCE</div>
             <SplitHeading
               lines={[
                 <>Don&apos;t trust.</>,
@@ -33,7 +33,6 @@ export function Vision({ home, expansions }: { home: ChainInfo; expansions: Chai
         </div>
         <div className="feature-grid">
           <article className="feature">
-            <span className="num">/ 001</span>
             <span className="corner">↗</span>
             <div className="art">
               <svg viewBox="0 0 150 110" fill="none">
@@ -61,7 +60,6 @@ export function Vision({ home, expansions }: { home: ChainInfo; expansions: Chai
             </p>
           </article>
           <article className="feature">
-            <span className="num">/ 002</span>
             <span className="corner">↗</span>
             <div className="art">
               <svg viewBox="0 0 150 110" fill="none">
@@ -84,7 +82,6 @@ export function Vision({ home, expansions }: { home: ChainInfo; expansions: Chai
             </p>
           </article>
           <article className="feature">
-            <span className="num">/ 003</span>
             <span className="corner">↗</span>
             <div className="art">
               <svg viewBox="0 0 150 110" fill="none">
@@ -100,7 +97,7 @@ export function Vision({ home, expansions }: { home: ChainInfo; expansions: Chai
             </div>
             <h3>Check any OFT.</h3>
             <p>
-              Inspect cross-chain verifier pathways, owner and delegate settings—even for tokens
+              Inspect cross-chain verifier pathways, owner and delegate settings, even for tokens
               launched elsewhere.
             </p>
           </article>

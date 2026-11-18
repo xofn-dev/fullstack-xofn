@@ -29,13 +29,24 @@ interface HeroCoin extends Coin {
   lane: number;
   roll: number;
   hit: boolean;
-  tone: number;
   vel: THREE.Vector3;
   a: THREE.Vector3;
   b: THREE.Vector3;
 }
 
-const SEQ: readonly GlyphKind[] = ['x', 'diamond', 'star', 'hex', 'x', 'one', 'diamond', 'x', 'hex', 'star'];
+// Koin yang jatuh membawa logo chain XofN; hanya "1/1" yang ditolak gate.
+const SEQ: readonly GlyphKind[] = [
+  'robinhood',
+  'base',
+  'arbitrum',
+  'robinhood',
+  'base',
+  'one',
+  'arbitrum',
+  'robinhood',
+  'base',
+  'arbitrum',
+];
 
 /**
  * HERO "Coinfall": koin menggelinding, jatuh menembus gate, mendarat terverifikasi.
@@ -86,7 +97,7 @@ export function mountHero({ canvas }: HeroOptions): HeroController | null {
       ]),
       { seed: 29, width: 2.3 },
     );
-    const gate = makeGate(bag, 1.28, -0.29, 1.07);
+    const gate = makeGate(bag, 1.28, -0.29);
     gate.group.rotation.set(0.06, 0, -0.03);
     scene.add(upper.group, lower.group, gate.group);
     const dust = addDust(bag, scene, 150, V(18, 13, 12), V(1, 0, -1));
@@ -103,16 +114,14 @@ export function mountHero({ canvas }: HeroOptions): HeroController | null {
 
     const pool: HeroCoin[] = [];
     let seq = 0;
-    let verifiedCount = 0;
     for (let i = 0; i < 17; i++) {
-      const c: HeroCoin = Object.assign(makeCoin(bag), {
+      const c: HeroCoin = Object.assign(makeCoin(bag, 'robinhood'), {
         state: 'idle' as CoinState,
         s: 0,
         t: 0,
         lane: 0,
         roll: 0,
         hit: false,
-        tone: PAL.mint2 as number,
         vel: V(),
         a: V(),
         b: V(),
@@ -198,8 +207,9 @@ export function mountHero({ canvas }: HeroOptions): HeroController | null {
             c.hit = false;
             c.state = 'emerge';
             c.t = 0;
+            // Lolos scan: logo chain berganti logo brand XofN (tanda terverifikasi).
+            c.setKind('brand');
             c.setGlyph(0);
-            c.tone = verifiedCount++ % 4 === 3 ? PAL.blue : PAL.mint2;
             c.clipBelow(gN, gP);
             c.a.copy(gP).addScaledVector(gN, -0.12);
             place(c, startF);
@@ -213,7 +223,7 @@ export function mountHero({ canvas }: HeroOptions): HeroController | null {
           c.roll -= dt * 7;
           c.group.position.set(lerp(c.a.x, c.b.x, u), lerp(c.a.y, c.b.y, k), lerp(c.a.z, c.b.z, u));
           c.group.quaternion.slerpQuaternions(qEnd, qStart, smooth(u));
-          c.setRing(smooth(u * 1.6), c.tone);
+          c.setGlyph(smooth(u * 1.6));
           if (u >= 1) {
             c.state = 'roll2';
             c.s = 0;
@@ -320,7 +330,7 @@ export function mountHero({ canvas }: HeroOptions): HeroController | null {
     }
     const onClick = () => {
       if (reduced) return;
-      spawn(Math.random() < 0.5 ? -0.55 : 0.55, 'x');
+      spawn(Math.random() < 0.5 ? -0.55 : 0.55, 'brand');
       spawnClock = Math.max(spawnClock, 0.5);
     };
     visual.addEventListener('click', onClick);

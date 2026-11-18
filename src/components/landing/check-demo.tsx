@@ -38,7 +38,7 @@ export function CheckDemo({ home, expansions }: { home: ChainInfo; expansions: C
       }
       if (!liveAvailable) {
         setError(
-          'LIVE CHECK UNAVAILABLE — No RPC connection is configured for this network. No security result will be fabricated for this address.',
+          'LIVE CHECK UNAVAILABLE: No RPC connection is configured for this network. No security result will be fabricated for this address.',
         );
         return;
       }
@@ -57,7 +57,7 @@ export function CheckDemo({ home, expansions }: { home: ChainInfo; expansions: C
     <section className="section check-section" id="check">
       <div className="container check-layout">
         <div className="check-copy">
-          <div className="section-label">04 / XOFN CHECK</div>
+          <div className="section-label">XOFN CHECK</div>
           <SplitHeading
             lines={[
               'What does',
@@ -69,7 +69,7 @@ export function CheckDemo({ home, expansions }: { home: ChainInfo; expansions: C
           <p>
             A beautiful interface is easy to fake. Cross-chain verifier configuration isn&apos;t.
             Explore how XofN Check will expose the DVN threshold, endpoint pathways, owner and
-            delegate—publicly and inspectably.
+            delegate, publicly and inspectably.
           </p>
           <div className="check-perks">
             <div>

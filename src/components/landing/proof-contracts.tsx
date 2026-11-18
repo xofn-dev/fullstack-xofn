@@ -35,7 +35,7 @@ export function Proof() {
       <div className="container">
         <div className="sec-head">
           <div>
-            <div className="section-label">09 / ON-CHAIN RECEIPTS</div>
+            <div className="section-label">ON-CHAIN RECEIPTS</div>
             <SplitHeading
               lines={[
                 'Proof, not',
@@ -117,7 +117,7 @@ export function Contracts({ home, expansions }: { home: ChainInfo; expansions: C
       <div className="container">
         <div className="sec-head">
           <div>
-            <div className="section-label">10 / TRANSPARENT BY DESIGN</div>
+            <div className="section-label">TRANSPARENT BY DESIGN</div>
             <SplitHeading
               lines={[
                 'Meet the',

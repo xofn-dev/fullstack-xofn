@@ -47,6 +47,6 @@ export function getModeCopy(mode: AppMode): ModeCopy {
         actionTag: 'SIMULATION',
       };
     case 'live':
-      throw new Error('Mode "live" belum dibuka (Phase 6–7 FROZEN).');
+      throw new Error('Mode "live" belum dibuka (Phase 6 dan 7 FROZEN).');
   }
 }

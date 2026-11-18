@@ -227,16 +227,16 @@ export function BridgeWidget({ deployment }: { deployment: Deployment }) {
             <dd>{balance.data !== undefined ? `${formatTokens(balance.data, 6)} $${symbol}` : account ? 'Reading…' : 'Wallet not connected'}</dd>
           </div>
           <div>
-            <dt>RECEIVED ON {hop ? getChain(publicEnv.network, hop.to).shortName : '—'}</dt>
-            <dd>{split ? `${formatTokens(split.sendable, 6)} $${symbol}` : '—'}</dd>
+            <dt>RECEIVED ON {hop ? getChain(publicEnv.network, hop.to).shortName : 'n/a'}</dt>
+            <dd>{split ? `${formatTokens(split.sendable, 6)} $${symbol}` : 'n/a'}</dd>
           </div>
           <div>
             <dt>DUST · STAYS IN YOUR WALLET</dt>
-            <dd>{split ? `${formatTokens(split.dust, 18)} $${symbol}` : '—'}</dd>
+            <dd>{split ? `${formatTokens(split.dust, 18)} $${symbol}` : 'n/a'}</dd>
           </div>
           <div>
             <dt>{publicEnv.network === 'local' ? 'FEE · SIMULATION QUOTE' : 'FEE · LAYERZERO QUOTE'}</dt>
-            <dd>{fee !== null ? formatEth(fee, 8) : param ? 'Reading…' : '—'}</dd>
+            <dd>{fee !== null ? formatEth(fee, 8) : param ? 'Reading…' : 'n/a'}</dd>
           </div>
         </dl>
         <p className="step-note">Amounts below 0.000001 stay in your wallet.</p>
@@ -255,12 +255,12 @@ export function BridgeWidget({ deployment }: { deployment: Deployment }) {
         <h2>Delivery</h2>
         <dl className="quote-list">
           <div>
-            <dt>YOUR BALANCE ON {hop ? getChain(publicEnv.network, hop.to).shortName : '—'}</dt>
-            <dd>{targetBalance.data !== undefined ? `${formatTokens(targetBalance.data, 6)} $${symbol}` : '—'}</dd>
+            <dt>YOUR BALANCE ON {hop ? getChain(publicEnv.network, hop.to).shortName : 'n/a'}</dt>
+            <dd>{targetBalance.data !== undefined ? `${formatTokens(targetBalance.data, 6)} $${symbol}` : 'n/a'}</dd>
           </div>
           <div>
             <dt>TOKEN ON DESTINATION</dt>
-            <dd>{hopTarget?.token ? shortAddress(hopTarget.token) : '—'}</dd>
+            <dd>{hopTarget?.token ? shortAddress(hopTarget.token) : 'n/a'}</dd>
           </div>
           <div>
             <dt>MESSAGE TRACKING</dt>

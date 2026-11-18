@@ -19,6 +19,9 @@
 /* Intro loader landing (D19): koin CSS 3D → split → dive. */
 @import './styles/intro-loader.css';
 
+/* Koin CSS 3D reusable untuk panel manifesto, security, graduation. */
+@import './styles/coin-3d.css';
+
 /* ---------- Token (DESIGN_SYSTEM §2). Hex baru hanya boleh ditambahkan di sini. ---------- */
 @theme {
   --color-bg: #040711;

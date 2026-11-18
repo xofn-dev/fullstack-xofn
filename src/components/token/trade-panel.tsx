@@ -216,11 +216,11 @@ export function TradePanel({ token, homeChain, mockRouter }: TradePanelProps) {
         </div>
         <div>
           <dt>YOU RECEIVE (QUOTE)</dt>
-          <dd>{expectedOut !== null ? format(expectedOut) : hasAmount && !quoteFailed ? 'Reading…' : '—'}</dd>
+          <dd>{expectedOut !== null ? format(expectedOut) : hasAmount && !quoteFailed ? 'Reading…' : 'n/a'}</dd>
         </div>
         <div>
           <dt>MINIMUM RECEIVED</dt>
-          <dd>{minOut !== null ? format(minOut) : '—'}</dd>
+          <dd>{minOut !== null ? format(minOut) : 'n/a'}</dd>
         </div>
         {ethUsed !== null && hasAmount && ethUsed < amount && (
           <div>

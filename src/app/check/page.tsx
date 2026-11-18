@@ -52,7 +52,7 @@ export default function CheckPage() {
                 <CheckForm chains={options} defaultChain={chains[0]?.key ?? 'robinhood'} />
               ) : (
                 <div className="checker-error is-visible" role="status">
-                  Live check unavailable — no RPC connection is configured for this network. No
+                  Live check unavailable: no RPC connection is configured for this network. No
                   result will be fabricated.
                 </div>
               )}

@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 
-import { glyphTexture, type GlyphKind } from './glyphs';
+import { glyphTexture, isImageGlyph, type GlyphKind } from './glyphs';
 import { PAL } from './palette';
 import { UP, type ResourceBag } from './util';
 
 export const COIN_R = 0.5;
 export const COIN_H = 0.085;
+
+// Logo berwarna cukup diterangi sedikit; tinta "1/1" butuh lebih agar ikut bloom.
+const IMAGE_EMISSIVE = 0.05;
+const INK_EMISSIVE = 0.42;
 
 interface CoinGeometries {
   body: THREE.LatheGeometry;
@@ -57,7 +61,7 @@ export interface Coin {
   clipBelow(n: THREE.Vector3, p: THREE.Vector3): void;
 }
 
-export function makeCoin(bag: ResourceBag, kind: GlyphKind = 'x'): Coin {
+export function makeCoin(bag: ResourceBag, kind: GlyphKind = 'brand'): Coin {
   const G = coinGeometries(bag);
   const bodyMat = bag.track(
     new THREE.MeshStandardMaterial({ color: PAL.coinBody, metalness: 1, roughness: 0.28, side: THREE.DoubleSide }),
@@ -69,7 +73,7 @@ export function makeCoin(bag: ResourceBag, kind: GlyphKind = 'x'): Coin {
       transparent: true,
       color: PAL.coinGlyph,
       emissive: PAL.white,
-      emissiveIntensity: 0.42,
+      emissiveIntensity: isImageGlyph(kind) ? IMAGE_EMISSIVE : INK_EMISSIVE,
       metalness: 0.2,
       roughness: 0.4,
       depthWrite: false,
@@ -111,6 +115,7 @@ export function makeCoin(bag: ResourceBag, kind: GlyphKind = 'x'): Coin {
     setKind(k) {
       coin.kind = k;
       glyphMat.map = glyphMat.emissiveMap = glyphTexture(bag, k);
+      glyphMat.emissiveIntensity = isImageGlyph(k) ? IMAGE_EMISSIVE : INK_EMISSIVE;
     },
     setRing(v, hex = PAL.mint2) {
       for (const r of rings) r.visible = v > 0.01;
@@ -119,8 +124,14 @@ export function makeCoin(bag: ResourceBag, kind: GlyphKind = 'x'): Coin {
     setGlyph(v, hex = PAL.white) {
       for (const f of faces) f.visible = v > 0.01;
       glyphMat.opacity = v;
-      glyphMat.emissive.set(hex);
-      glyphMat.color.set(hex === PAL.white ? PAL.coinGlyph : hex);
+      // Logo berwarna tidak diwarnai ulang; hanya tinta "1/1" yang mengikuti `hex`.
+      if (isImageGlyph(coin.kind)) {
+        glyphMat.emissive.set(PAL.white);
+        glyphMat.color.set(PAL.white);
+      } else {
+        glyphMat.emissive.set(hex);
+        glyphMat.color.set(hex === PAL.white ? PAL.coinGlyph : hex);
+      }
     },
     clipNone() {
       plane.normal.copy(UP);

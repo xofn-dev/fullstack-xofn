@@ -25,7 +25,7 @@ type TradeMode = 'Buy' | 'Sell';
 
 const HEADING = (
   <div>
-    <div className="section-label">03 / DISCOVER</div>
+    <div className="section-label">DISCOVER</div>
     <SplitHeading
       lines={[
         'The next generation',
@@ -166,11 +166,11 @@ function ExploreDemo({ home }: { home: ChainInfo }) {
           <div className="drawer-grid">
             <div className="drawer-kv">
               <small>GRADUATION</small>
-              <strong>{selected ? `${selected.progress}% / SAMPLE` : '—'}</strong>
+              <strong>{selected ? `${selected.progress}% / SAMPLE` : 'n/a'}</strong>
             </div>
             <div className="drawer-kv">
               <small>SECURITY BADGE</small>
-              <strong>{selected ? `${TIER_COPY[selected.tier].badge} / DEMO` : '—'}</strong>
+              <strong>{selected ? `${TIER_COPY[selected.tier].badge} / DEMO` : 'n/a'}</strong>
             </div>
             <div className="drawer-kv">
               <small>HOME CHAIN</small>
@@ -178,7 +178,7 @@ function ExploreDemo({ home }: { home: ChainInfo }) {
             </div>
             <div className="drawer-kv">
               <small>STATUS</small>
-              <strong>{selected ? STATUS_COPY[selected.status].drawer : '—'}</strong>
+              <strong>{selected ? STATUS_COPY[selected.status].drawer : 'n/a'}</strong>
             </div>
           </div>
           <div className="trade-toggle" role="group" aria-label="Trade side">

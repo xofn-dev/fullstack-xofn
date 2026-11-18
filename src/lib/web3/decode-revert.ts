@@ -52,8 +52,8 @@ export function decodeRevertData(data: Hex): DecodedRevert | null {
 
 const MESSAGES: Record<string, string> = {
   OnlyRegistrar: 'Launching is not open on this deployment yet.',
-  InvalidName: 'Token name must be 1–32 bytes.',
-  InvalidSymbol: 'Ticker must be 2–12 bytes.',
+  InvalidName: 'Token name must be 1 to 32 bytes.',
+  InvalidSymbol: 'Ticker must be 2 to 12 bytes.',
   InvalidTier: 'This security tier does not exist. Only Standard and Fortress are allowed.',
   InvalidExpansionChains: 'Choose at least one supported expansion chain.',
   DuplicateEid: 'An expansion chain was selected twice.',

@@ -1,8 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { cn } from '@/lib/cn';
+import { XLink } from '@/components/ui/x-link';
 import { ConnectButton } from '@/components/wallet/connect-button';
 import type { AppMode } from '@/types/enums';
 
@@ -24,7 +26,7 @@ export function Nav({ tag, mode }: { tag: string; mode: AppMode }) {
     <div className="nav-wrap">
       <header className="nav container">
         <Link className="logo" href="/#top" aria-label="XofN home">
-          <span className="logo-mark">X</span>
+          <Image className="logo-mark" src="/logo.jpeg" alt="" width={33} height={33} priority />
           <span>
             X<span className="o">of</span>N
           </span>
@@ -42,6 +44,7 @@ export function Nav({ tag, mode }: { tag: string; mode: AppMode }) {
         </nav>
         <div className="nav-right">
           <span className="nav-tag">◉ {tag}</span>
+          <XLink className="btn secondary iconOnly nav-x" />
           {/* Anak langsung .nav-right: aturan CSS ≤640px menyembunyikan tombol ini di bar. */}
           <ConnectButton mode={mode} />
           <button

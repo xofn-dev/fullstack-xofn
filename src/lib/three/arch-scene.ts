@@ -140,7 +140,7 @@ export function mountArch(opts: ArchOptions): ArchController | null {
       ]),
       { width: 1.1, seed: 47 },
     );
-    const gate = makeGate(bag, 1.12, -0.22, 1.2);
+    const gate = makeGate(bag, 1.12, -0.22);
     gate.group.position.set(-3.95, 0.3, 0);
     gate.group.rotation.set(0.05, 0, -0.03);
     scene.add(A.group, B.group, C1.group, C2.group, D1.group, D2.group, gate.group);
@@ -207,7 +207,7 @@ export function mountArch(opts: ArchOptions): ArchController | null {
       g.add(ring.mesh);
       const stack: Coin[] = [];
       for (let i = 0; i < 3; i++) {
-        const c = makeCoin(bag, 'x');
+        const c = makeCoin(bag, 'brand');
         c.group.position.set(0, COIN_H + i * COIN_H * 2.15, 0);
         c.group.rotation.set(-Math.PI / 2, 0, i * 0.7);
         c.setGlyph(0);
@@ -240,8 +240,8 @@ export function mountArch(opts: ArchOptions): ArchController | null {
     );
 
     /* koin pengembara (+ salinan remote-nya setelah percabangan) */
-    const c1 = makeCoin(bag, 'x');
-    const c2 = makeCoin(bag, 'x');
+    const c1 = makeCoin(bag, 'brand');
+    const c2 = makeCoin(bag, 'brand');
     scene.add(c1.group, c2.group);
     const AEND = A.at(A.len);
     const BSTART = B.at(0);
