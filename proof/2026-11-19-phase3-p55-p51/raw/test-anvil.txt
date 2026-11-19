@@ -1,0 +1,13 @@
+
+> fullstack-xofn@0.1.0 test:anvil
+> vitest run --config vitest.anvil.config.mts
+
+
+ RUN  v4.1.12 /Applications/MAMP/htdocs/project-wp-id/fullstack-xofn
+
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  05:59:54
+   Duration  84.16s (transform 292ms, setup 0ms, import 727ms, tests 83.08s, environment 0ms)
+

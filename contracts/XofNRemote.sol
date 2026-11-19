@@ -26,15 +26,23 @@ import {XofNTokenDeployer} from "./libraries/XofNTokenDeployer.sol";
 ///      - Pool dibuat DAN diisi dalam satu panggilan (`PoolSeeder`), lalu token dikunci di
 ///        panggilan yang sama. Hanya terjadi sekali per token.
 ///      - Composer tidak bergantung pada identitas pemanggil atau `extraData`. Jumlah ETH
-///        pasangan ditentukan `composeMsg`; `msg.value` hanyalah sumber dananya dan harus
-///        menutup jumlah itu. Alamat AMM dan penerima LP dikunci di constructor, tidak dibawa
-///        pesan.
+///        pasangan ditentukan `composeMsg`. Alamat AMM dan penerima LP dikunci di constructor,
+///        tidak dibawa pesan.
 ///
-///      Bila `lzCompose` gagal (gas habis, value kurang): token sudah dikreditkan ke kontrak ini
+///      Dana (PRD P51): ETH pasangan dan fee ack dibayar dari SALDO kontrak ini, yang diisi tim
+///      langsung (`receive`). Graduator tidak mengirim value lewat executor, jadi `nativeCap`
+///      LayerZero tidak membatasi ekspansi. `msg.value` dari pemanggil `endpoint.lzCompose` ikut
+///      masuk saldo. Saldo dipakai bersama oleh semua token dan tidak bisa ditarik: kontrak ini
+///      tidak punya fungsi untuk mengeluarkan ETH selain membuat pool dan membayar fee ack.
+///      Ack otomatis hanya dikirim saat state token berubah, sehingga pesan DEPLOY berulang
+///      tidak bisa menguras saldo; ack yang tertunda dikirim lewat `reAck`, dibayar pemanggilnya.
+///
+///      Bila `lzCompose` gagal (gas habis, saldo kurang): token sudah dikreditkan ke kontrak ini
 ///      oleh `lzReceive` dan tetap di sini; pesan compose tetap tersimpan di endpoint dan bisa
 ///      dijalankan ulang oleh siapa pun lewat `endpoint.lzCompose(...)` ("retryCompose"), tanpa
-///      kedaluwarsa. Setelah berhasil sekali, tidak bisa dijalankan lagi. Kontrak ini sengaja
-///      TIDAK punya fungsi untuk mengeluarkan token itu dengan cara lain: tidak ada pool manual.
+///      kedaluwarsa, misalnya setelah saldo diisi. Setelah berhasil sekali, tidak bisa
+///      dijalankan lagi. Kontrak ini sengaja TIDAK punya fungsi untuk mengeluarkan token itu
+///      dengan cara lain: tidak ada pool manual.
 ///
 ///      Kontrak ini tidak punya fungsi yang mengubah konfigurasi token di luar pesan DEPLOY dari
 ///      Graduator dan `lzCompose`. Resep pathway ke home dikunci di constructor.
@@ -132,13 +140,14 @@ contract XofNRemote is OApp, IOAppComposer {
         _homePathway = _pathwayToHome;
     }
 
-    /// @dev Menampung value dari executor yang dipakai membayar ack.
+    /// @dev Saldo yang diisi tim: ETH pasangan pool ekspansi dan fee ack (PRD P51).
     receive() external payable {}
 
     // ───────────────────────────── Pesan dari Graduator ─────────────────────────────
 
     /// @dev Hanya terpanggil dari endpoint untuk pesan dari peer (Graduator) di home EID.
-    ///      Idempoten: pesan DEPLOY kedua untuk token yang sama hanya mengirim ack lagi.
+    ///      Idempoten: pesan DEPLOY kedua untuk token yang sama tidak mengubah apa pun dan tidak
+    ///      mengirim ack dari saldo kontrak (lihat `reAck`).
     function _lzReceive(
         Origin calldata,
         /*_origin*/
@@ -185,9 +194,10 @@ contract XofNRemote is OApp, IOAppComposer {
             d.tier = tier;
             homeTokenOf[token] = homeToken;
             emit TokenDeployed(homeToken, token, tier);
-        }
 
-        _tryAck(homeToken);
+            // Ack dari saldo hanya saat state berubah: DEPLOY berulang tidak bisa menguras saldo.
+            _tryAck(homeToken);
+        }
     }
 
     // ───────────────────────────── Composer ─────────────────────────────
@@ -219,8 +229,11 @@ contract XofNRemote is OApp, IOAppComposer {
             revert UntrustedComposeSource(srcEid, composeFrom);
         }
 
+        // ETH pasangan dari saldo kontrak (msg.value sudah termasuk), bukan dari executor.
         uint256 pairEth = abi.decode(OFTComposeMsgCodec.composeMsg(_message), (uint256));
-        if (msg.value < pairEth) revert InsufficientPairAsset(pairEth, msg.value);
+        if (address(this).balance < pairEth) {
+            revert InsufficientPairAsset(pairEth, address(this).balance);
+        }
 
         _seedAndLock(homeToken, _from, OFTComposeMsgCodec.amountLD(_message), pairEth);
         _tryAck(homeToken);
@@ -249,7 +262,7 @@ contract XofNRemote is OApp, IOAppComposer {
 
     /// @notice Mengirim ulang ack sesuai keadaan token di chain ini. Siapa pun boleh memanggil dan
     ///         membayar fee-nya; kelebihan dikembalikan.
-    /// @dev Dibutuhkan bila ack otomatis tidak terkirim (value dari executor tidak cukup) atau
+    /// @dev Dibutuhkan bila ack otomatis tidak terkirim (saldo kontrak tidak cukup) atau
     ///      pesannya tidak sampai. Graduator mengabaikan ack ganda.
     function reAck(address homeToken) external payable {
         uint256 fee = _sendAck(homeToken, msg.value);
@@ -306,7 +319,7 @@ contract XofNRemote is OApp, IOAppComposer {
             .addExecutorLzReceiveOption(locked ? ackLockedGas : ackConfiguredGas, 0);
     }
 
-    /// @dev Fee ack dibayar dari saldo kontrak (value dari executor atau pemanggil `reAck`).
+    /// @dev Fee ack dibayar dari saldo kontrak (diisi tim, atau value pemanggil `reAck`).
     ///      Jumlahnya selalu hasil quote di transaksi yang sama dan sudah dicek terhadap dana.
     function _payNative(uint256 _nativeFee) internal pure override returns (uint256) {
         return _nativeFee;

@@ -1,0 +1,33 @@
+No files changed, compilation skipped
+
+Ran 3 tests for test/fork/ForkUniV2.t.sol:ForkUniV2Test
+[PASS] test_fork_arbitrum_univ2() (gas: 52931673)
+[PASS] test_fork_base_univ2() (gas: 51879204)
+[PASS] test_fork_robinhood_univ2() (gas: 52902630)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 9.05s (25.19s CPU time)
+
+Ran 3 tests for test/fork/ForkRecipe.t.sol:ForkRecipeTest
+[PASS] test_fork_arbitrum_recipeToRobinhood() (gas: 23800636)
+Logs:
+  quoteSend standard (wei): 151698500311968
+  renounce + verify gas: 162461
+  quoteSend fortress (wei): 153767170846368
+  renounce + verify gas: 167608
+
+[PASS] test_fork_base_recipeToRobinhood() (gas: 18716875)
+Logs:
+  quoteSend standard (wei): 151525997009568
+  renounce + verify gas: 162461
+  quoteSend fortress (wei): 153648544855968
+  renounce + verify gas: 167608
+
+[PASS] test_fork_robinhood_recipeToBase() (gas: 12898444)
+Logs:
+  quoteSend standard (wei): 144761295387633
+  renounce + verify gas: 162461
+  quoteSend fortress (wei): 145393570587633
+  renounce + verify gas: 167608
+
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 40.72s (116.80s CPU time)
+
+Ran 2 test suites in 40.75s (49.77s CPU time): 6 tests passed, 0 failed, 0 skipped (6 total tests)

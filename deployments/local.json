@@ -5,7 +5,7 @@
       "chainId": 31337,
       "contracts": {
         "XofNRegistry": "0x21dF544947ba3E8b3c32561399E88B52Dc8b2823",
-        "XofNRemote": "0xb9bEECD1A582768711dE1EE7B0A1d582D9d72a6C"
+        "XofNRemote": "0x8A93d247134d91e0de6f96547cB0204e5BE8e5D8"
       },
       "deployBlock": 0,
       "eid": 3,

@@ -245,6 +245,7 @@ Mobile (≤900px): tombol ☰ → panel link (wajib ada)
 | Infrastruktur Fase 2 belum aktif (mis. Phase 6/1b, sebelum 2a/2b) | Tombol nonaktif + "Expansion opens in a later release" (tanpa janji tanggal) |
 | Pesan LZ tertunda lama | Langkah tetap `pending` dengan tautan Scan + catatan "Cross-chain delivery can take several minutes" |
 | Compose gagal (gas/revert) | Langkah `Pool created` = failed + Retry (`retryCompose`, P3). Tidak ada pembuatan pool manual oleh tim [Guide §9] |
+| Compose gagal karena saldo `XofNRemote` kurang (P51) | Sama dengan baris di atas: token tetap di Remote dan compose tetap antre. Retry berhasil setelah tim mengisi saldo Remote, tanpa value dari pemanggil. Copy UI belum membedakan penyebab ini (rekomendasi Phase 4) |
 | Satu chain sukses, satu gagal | Status keseluruhan **Expanding** (bukan Locked); hanya chain gagal yang punya Retry |
 | Fortress tidak tersedia di satu pathway | Tidak diturunkan diam-diam; UI menjelaskan; chain itu tidak diekspansi dengan tier lebih rendah [Guide §9] |
 | `verify()` false untuk token yang tercatat Locked | Badge otomatis **CHANGED** (merah) + tautan penjelasan [Guide §9] |

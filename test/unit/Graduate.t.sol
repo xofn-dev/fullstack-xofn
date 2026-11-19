@@ -94,10 +94,16 @@ contract GraduateTest is XofNTestBase {
         graduator.graduate(address(token));
 
         XofNGraduator.Launch memory l = graduator.launchOf(address(token));
-        uint256 liquidityEth = GRADUATION_THRESHOLD - CALLER_REWARD;
         uint256 liquidityTokens = TOTAL_SUPPLY - SALE_SUPPLY;
-        uint256 poolEth = liquidityEth - 2 * EXPANSION_PAIR_ETH;
+        // PRD P51: semua ETH curve (dikurangi insentif) masuk pool home.
+        uint256 poolEth = GRADUATION_THRESHOLD - CALLER_REWARD;
         uint256 poolTokens = liquidityTokens - 2 * l.tokensPerChain;
+        assertEq(
+            l.tokensPerChain,
+            (liquidityTokens * EXPANSION_PAIR_ETH / (poolEth + 2 * EXPANSION_PAIR_ETH)) / 1e12
+                * 1e12,
+            "tokensPerChain formula"
+        );
 
         MockV2Pair pair = _pair(HOME, address(token));
         assertEq(l.pool, address(pair));
@@ -109,11 +115,11 @@ contract GraduateTest is XofNTestBase {
         assertEq(pair.balanceOf(LP_RECIPIENT), pair.totalSupply() - pair.MINIMUM_LIQUIDITY());
         assertEq(pair.balanceOf(address(graduator)), 0);
 
-        // Porsi ekspansi disisihkan di Graduator sampai expandAndLock.
+        // Porsi token ekspansi disisihkan di Graduator sampai expandAndLock. Tidak ada ETH yang
+        // disisihkan: ETH pool ekspansi berasal dari saldo Remote (PRD P51).
         assertEq(l.tokensPerChain % 1e12, 0, "must be dust-free");
         assertEq(token.balanceOf(address(graduator)), 2 * l.tokensPerChain);
-        assertEq(graduator.reservedPairEth(), 2 * EXPANSION_PAIR_ETH);
-        assertEq(address(graduator).balance, 2 * EXPANSION_PAIR_ETH);
+        assertEq(address(graduator).balance, 0);
 
         // Curve kosong; supply tidak berubah.
         assertEq(address(curve).balance, 0);
@@ -122,7 +128,8 @@ contract GraduateTest is XofNTestBase {
         assertEq(token.totalSupply(), TOTAL_SUPPLY);
     }
 
-    /// @dev Pool home dan pool ekspansi dibuka pada harga yang sama.
+    /// @dev Pool home dan pool ekspansi dibuka pada harga yang sama, walau semua ETH curve
+    ///      masuk pool home dan ETH pool ekspansi berasal dari saldo Remote (PRD P51).
     function test_allPoolsOpenAtTheSamePrice() public {
         _reachThreshold(curve);
         vm.prank(keeper);
@@ -134,7 +141,8 @@ contract GraduateTest is XofNTestBase {
         assertApproxEqRel(reserveEth * tokensPerChain, EXPANSION_PAIR_ETH * reserveToken, 1e12);
     }
 
-    /// @dev Creator yang memilih satu chain: hanya satu porsi yang disisihkan.
+    /// @dev Creator yang memilih satu chain: hanya satu porsi token yang disisihkan, dan
+    ///      harganya tetap sama dengan pool home.
     function test_singleChainLaunchReservesOneShare() public {
         (XofNToken one, XofNCurve oneCurve) = _launch(STANDARD, _eids(ARB));
         _reachThreshold(oneCurve);
@@ -143,7 +151,10 @@ contract GraduateTest is XofNTestBase {
 
         uint256 tokensPerChain = graduator.launchOf(address(one)).tokensPerChain;
         assertEq(one.balanceOf(address(graduator)), tokensPerChain);
-        assertEq(graduator.reservedPairEth(), EXPANSION_PAIR_ETH);
+        assertEq(address(graduator).balance, 0);
+        (uint256 reserveToken, uint256 reserveEth) = chains[HOME].router.reservesOf(address(one));
+        assertEq(reserveEth, GRADUATION_THRESHOLD - CALLER_REWARD);
+        assertApproxEqRel(reserveEth * tokensPerChain, EXPANSION_PAIR_ETH * reserveToken, 1e12);
     }
 
     function test_tradingMovesToPoolAfterGraduation() public {
@@ -171,7 +182,7 @@ contract GraduateTest is XofNTestBase {
         graduator.graduate(address(token));
 
         (uint256 reserveToken, uint256 reserveEth) = chains[HOME].router.reservesOf(address(token));
-        assertEq(reserveEth, GRADUATION_THRESHOLD - CALLER_REWARD - 2 * EXPANSION_PAIR_ETH);
+        assertEq(reserveEth, GRADUATION_THRESHOLD - CALLER_REWARD);
         assertGt(reserveToken, 0);
     }
 
@@ -192,56 +203,80 @@ contract GraduateTest is XofNTestBase {
         assertEq(MockV2Pair(pair).balanceOf(attacker), 0);
         (, uint256 reserveEth) = chains[HOME].router.reservesOf(address(token));
         // Donasi menjadi milik pool.
-        assertEq(
-            reserveEth, GRADUATION_THRESHOLD - CALLER_REWARD - 2 * EXPANSION_PAIR_ETH + 0.5 ether
-        );
+        assertEq(reserveEth, GRADUATION_THRESHOLD - CALLER_REWARD + 0.5 ether);
     }
 
     /// @dev Penyerang membuka pool kecil lebih dulu dengan token yang terlalu MAHAL.
     function test_frontRun_overpricedPoolDoesNotProfit() public {
-        _assertSkewedPoolDoesNotProfit(1_000 ether, 1 ether, true);
+        _assertSkewedPoolDoesNotProfit(1_000 ether, 1 ether, 0, true);
     }
 
     /// @dev Penyerang membuka pool kecil lebih dulu dengan token yang terlalu MURAH.
     function test_frontRun_underpricedPoolDoesNotProfit() public {
-        _assertSkewedPoolDoesNotProfit(20_000_000 ether, 0.001 ether, true);
+        _assertSkewedPoolDoesNotProfit(20_000_000 ether, 0.001 ether, 0, true);
     }
 
     /// @dev Pool tandingan SEUKURAN likuiditas graduation, harga 2,26x target (temuan review
     ///      17 Nov 2026: versi awal PoolSeeder menyumbangkan sisa setorannya ke LP yang ada,
     ///      sehingga penyerang mendapat ~98 juta token dan ~0,7 ETH).
     function test_frontRun_largeOverpricedPoolDoesNotProfit() public {
-        _assertSkewedPoolDoesNotProfit(195_000_000 ether, 8.8 ether, false);
+        _assertSkewedPoolDoesNotProfit(195_000_000 ether, 8.8 ether, 0, false);
     }
 
     function test_frontRun_largeUnderpricedPoolDoesNotProfit() public {
-        _assertSkewedPoolDoesNotProfit(250_000_000 ether, 1 ether, false);
+        _assertSkewedPoolDoesNotProfit(250_000_000 ether, 1 ether, 0, false);
     }
 
-    /// @dev Ukuran dan harga pool tandingan apa pun: penyerang tidak untung, likuiditas protokol
-    ///      tidak berkurang, dan graduation tidak bisa diblokir.
-    function testFuzz_frontRun_anyPoolDoesNotProfit(uint256 attackTokens, uint256 attackEth)
-        public
-    {
+    /// @dev PRD P55 (HIGH): pool tandingan ±½ harga target + 5 WETH ditransfer ke pair TANPA
+    ///      `sync`. Sebelum perbaikan penyerang mengambil ±15% setoran graduation.
+    function test_frontRun_unsyncedDonationDoesNotProfit() public {
+        _assertSkewedPoolDoesNotProfit(30_000_000 ether, 0.3 ether, 5 ether, false);
+    }
+
+    /// @dev PRD P55 (MEDIUM): pair 1001/1001 + donasi besar tanpa `sync`. Sebelum perbaikan
+    ///      `graduate()` revert `INSUFFICIENT_LIQUIDITY_MINTED`.
+    function test_frontRun_unsyncedDonationCannotBlockGraduation() public {
+        _assertSkewedPoolDoesNotProfit(1001, 1001, 4_000 ether, false);
+        assertEq(
+            uint8(graduator.launchOf(address(token)).status), uint8(XofNGraduator.Status.Graduated)
+        );
+    }
+
+    /// @dev Ukuran dan harga pool tandingan apa pun, dengan atau tanpa donasi yang belum
+    ///      di-sync: penyerang tidak untung, likuiditas protokol tidak berkurang, dan
+    ///      graduation tidak bisa diblokir.
+    function testFuzz_frontRun_anyPoolDoesNotProfit(
+        uint256 attackTokens,
+        uint256 attackEth,
+        uint256 donation
+    ) public {
         attackTokens = bound(attackTokens, 1e15, 250_000_000 ether);
         attackEth = bound(attackEth, 1e12, 60 ether);
-        _assertSkewedPoolDoesNotProfit(attackTokens, attackEth, false);
+        donation = bound(donation, 0, 60 ether);
+        _assertSkewedPoolDoesNotProfit(attackTokens, attackEth, donation, false);
     }
 
     function _assertSkewedPoolDoesNotProfit(
         uint256 attackTokens,
         uint256 attackEth,
+        uint256 donation,
         bool expectTargetPrice
     ) private {
         // Penyerang membeli token di curve, lalu membuat pool dengan harga yang salah.
         uint256 bought = _buy(curve, attacker, 0.5 ether);
         assertGe(bought, attackTokens);
-        vm.deal(attacker, attackEth);
+        vm.deal(attacker, attackEth + donation);
         vm.startPrank(attacker);
         token.approve(address(chains[HOME].router), attackTokens);
         chains[HOME].router.addLiquidityETHRaw{value: attackEth}(
             address(token), attackTokens, attacker
         );
+        if (donation != 0) {
+            // WETH ditransfer langsung ke pair TANPA sync (PRD P55).
+            address pair = address(_pair(HOME, address(token)));
+            chains[HOME].weth.deposit{value: donation}();
+            chains[HOME].weth.transfer(pair, donation);
+        }
         vm.stopPrank();
 
         vm.deal(alice, GRADUATION_THRESHOLD);
@@ -249,7 +284,7 @@ contract GraduateTest is XofNTestBase {
         vm.prank(keeper);
         graduator.graduate(address(token));
 
-        uint256 targetEth = GRADUATION_THRESHOLD - CALLER_REWARD - 2 * EXPANSION_PAIR_ETH;
+        uint256 targetEth = GRADUATION_THRESHOLD - CALLER_REWARD;
         uint256 targetTokens =
             TOTAL_SUPPLY - SALE_SUPPLY - 2 * graduator.launchOf(address(token)).tokensPerChain;
 
@@ -262,28 +297,29 @@ contract GraduateTest is XofNTestBase {
         }
 
         // Likuiditas protokol (LP di LP_RECIPIENT), dinilai pada harga target, tidak lebih kecil
-        // dari setoran graduation; toleransi = fee swap penyeimbang (0,3%).
+        // dari setoran graduation. Toleransi 1e-5: kerugian terukur dari fee swap penyeimbang
+        // ±1,7e-6 (review 17 Nov 2026, temuan LOW).
         assertGe(
             _protocolLiquidityValue(targetEth, targetTokens),
-            (2 * targetEth * 997) / 1000,
+            (2 * targetEth * 99_999) / 100_000,
             "protocol liquidity was diluted"
         );
 
         // Penyerang menarik likuiditasnya. Dinilai pada harga target, ia tidak untung.
         // Toleransi: bagian penyerang atas fee 0,3% dari swap penyeimbang, paling besar
         // f^2 / 8 dari nilai setoran (~1e-6); di sini dipakai 1e-5.
-        uint256 valueIn = attackEth + (attackTokens * targetEth) / targetTokens;
+        uint256 valueIn = attackEth + donation + (attackTokens * targetEth) / targetTokens;
         uint256 valueOut = _attackerExitValue(targetEth, targetTokens);
         assertLe(valueOut, valueIn + (2 * targetEth) / 100_000, "front-runner must not profit");
 
-        // Supply utuh dan tidak ada sisa di Graduator selain porsi ekspansi.
+        // Supply utuh dan tidak ada sisa di Graduator selain porsi token ekspansi.
         assertEq(token.totalSupply(), TOTAL_SUPPLY);
         assertEq(
             token.balanceOf(address(graduator)),
             2 * graduator.launchOf(address(token)).tokensPerChain
         );
         assertEq(chains[HOME].weth.balanceOf(address(graduator)), 0);
-        assertEq(address(graduator).balance, graduator.reservedPairEth());
+        assertEq(address(graduator).balance, 0);
     }
 
     function _protocolLiquidityValue(uint256 targetEth, uint256 targetTokens)
@@ -297,15 +333,24 @@ contract GraduateTest is XofNTestBase {
         return (pair.balanceOf(LP_RECIPIENT) * poolValue) / pair.totalSupply();
     }
 
+    /// @dev Nilai yang bisa ditarik penyerang: LP-nya, ditambah saldo pair yang belum di-sync
+    ///      (bisa diambil siapa pun lewat `skim`). LP yang terlalu kecil untuk di-burn bernilai 0.
     function _attackerExitValue(uint256 targetEth, uint256 targetTokens) private returns (uint256) {
         MockV2Pair pair = _pair(HOME, address(token));
-        uint256 lp = pair.balanceOf(attacker);
+        uint256 tokensBefore = token.balanceOf(attacker);
+        uint256 wethBefore = chains[HOME].weth.balanceOf(attacker);
         vm.startPrank(attacker);
-        pair.transfer(address(pair), lp);
-        (uint256 amount0, uint256 amount1) = pair.burn(attacker);
+        pair.skim(attacker);
+        uint256 lp = pair.balanceOf(attacker);
+        uint256 supply = pair.totalSupply();
+        (uint256 reserveToken, uint256 reserveEth) = chains[HOME].router.reservesOf(address(token));
+        if (lp * reserveToken / supply != 0 && lp * reserveEth / supply != 0) {
+            pair.transfer(address(pair), lp);
+            pair.burn(attacker);
+        }
         vm.stopPrank();
-        (uint256 tokensBack, uint256 ethBack) =
-            pair.token0() == address(token) ? (amount0, amount1) : (amount1, amount0);
+        uint256 tokensBack = token.balanceOf(attacker) - tokensBefore;
+        uint256 ethBack = chains[HOME].weth.balanceOf(attacker) - wethBefore;
         return ethBack + (tokensBack * targetEth) / targetTokens;
     }
 }

@@ -3,6 +3,7 @@
 - **Tanggal:** 17 Nov 2026
 - **Branch:** `phase-3/contracts` (bercabang dari `phase-2/xofn-check`)
 - **Status:** **belum selesai.** Review independen ulang menemukan temuan HIGH di `PoolSeeder` (PRD P55, `11-poolseeder-rereview.md`). Pekerjaan berhenti sebelum kontrak diubah. Lihat bagian "Sesi penyelarasan playbook" di akhir.
+- **Pembaruan 19 Nov 2026:** P55 ditutup dan P51 diimplementasikan (opsi 1, varian "semua ETH curve masuk pool home"), dengan dua review independen. Rincian dan bukti: `proof/2026-11-19-phase3-p55-p51/notes.md`. Gerbang Phase 3 menunggu persetujuan PM.
 - **Sifat pekerjaan:** kontrak Solidity, tes Foundry, dan script deploy untuk Anvil lokal. Tidak ada deploy, transaksi, keystore, atau private key di jaringan publik. Fork test hanya membaca (fork lokal, tanpa broadcast). Tidak ada perubahan frontend (`src/` tidak disentuh).
 
 ## Pilihan yang dicatat sebelum mulai (17 Nov 2026)

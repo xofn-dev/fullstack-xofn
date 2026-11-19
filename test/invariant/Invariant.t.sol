@@ -321,9 +321,11 @@ contract XofNInvariantTest is XofNTestBase, IInvariantEnv {
             assertEq(token.balanceOf(address(curve)), 0);
         }
 
+        // Graduator hanya memegang escrow fee pemanggil (plus pengembalian yang gagal). ETH curve
+        // langsung masuk pool home; ETH pool ekspansi dari saldo Remote (PRD P51).
         uint256 escrow = graduator.expansionOf(address(token), BASE).feeEscrow
             + graduator.expansionOf(address(token), ARB).feeEscrow;
-        assertGe(address(graduator).balance, graduator.reservedPairEth() + escrow);
+        assertGe(address(graduator).balance, escrow);
 
         // Token likuiditas ekspansi tetap di Graduator sampai dikirim.
         XofNGraduator.Launch memory l = graduator.launchOf(address(token));

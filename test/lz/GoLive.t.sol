@@ -48,6 +48,8 @@ contract GoLiveTest is XofNTestBase {
         vm.deal(keeper, 100 ether);
         vm.deal(deployer, 100 ether);
 
+        // Batas value executor 0, seperti Robinhood testnet (PRD P51).
+        setExecutorValueCap(0);
         setUpEndpoints(3, LibraryType.UltraLightNode);
         // Per chain: AMM tiruan, Registry(owner = Safe sejak constructor), Safe mengisi daftar
         // putih DVN. Daftar putih harus ada SEBELUM Graduator/Remote di-deploy, karena
@@ -86,6 +88,15 @@ contract GoLiveTest is XofNTestBase {
 
         // 7. Safe membuka launchpad (saklar go-live). Tanpa redeploy.
         _openLaunchpad();
+
+        // 7b. Tim mengisi saldo Remote di tiap chain ekspansi: ETH pasangan pool ekspansi dan
+        //     fee ack dibayar dari sini (PRD P51). Transfer biasa; tidak butuh hak apa pun.
+        vm.startPrank(deployer);
+        for (uint32 eid = BASE; eid <= ARB; eid++) {
+            (bool funded,) = address(remotes[eid]).call{value: REMOTE_FUNDING}("");
+            assertTrue(funded, "remote funding");
+        }
+        vm.stopPrank();
 
         // 8. Launch terbuka; siklus penuh sampai Locked di tiga chain.
         (XofNToken token,) = _launchGraduateExpand(FORTRESS, _eids(BASE, ARB));
