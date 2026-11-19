@@ -1,11 +1,20 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { encodeErrorResult, type Abi, type AbiEvent, type AbiFunction, type AbiParameter } from 'viem';
+import {
+  decodeAbiParameters,
+  encodeErrorResult,
+  zeroAddress,
+  type Abi,
+  type AbiEvent,
+  type AbiFunction,
+  type AbiParameter,
+} from 'viem';
 import { describe, expect, it } from 'vitest';
 import localManifest from '../deployments/local.json';
 import { formatBps, formatEth, formatTokens, formatUnitsFixed, parseAmount, pricePolyline } from '@/lib/format';
 import { getTierInfo, tierDvnSummary, tierFromId, tierId } from '@/lib/tiers';
 import { xofnErrorsAbi } from '@/lib/web3/abi/errors';
-import { localRelayAbi, mockRouterAbi } from '@/lib/web3/abi/local';
+import { localRelayAbi, v4TestRouterAbi } from '@/lib/web3/abi/local';
+import { v4ErrorsAbi, v4QuoterAbi, v4StateViewAbi } from '@/lib/web3/abi/uniswap-v4';
 import { curveAbi, graduatorAbi, registryAbi, remoteAbi, tokenAbi } from '@/lib/web3/abi/xofn';
 import {
   deploymentByEid,
@@ -18,13 +27,23 @@ import {
 } from '@/lib/web3/addresses';
 import { bridgeRoute, buildBridgeSend, buildSendParam, splitDust } from '@/lib/web3/bridge-send';
 import { buildBuy, buildSell, priceAtRaised, progressBps } from '@/lib/web3/curve-trade';
-import { decodeRevertData, describeTxError } from '@/lib/web3/decode-revert';
+import { decodeRevertData, describeTxError, knownRevertMessage } from '@/lib/web3/decode-revert';
 import { buildExpandAndLock, expandValue } from '@/lib/web3/expand-and-lock';
 import { buildLaunch, validateLaunchInput, ZERO_HASH } from '@/lib/web3/launch';
 import { buildDeliverNext, RELAY_DELIVERY_GAS } from '@/lib/web3/local-relay';
-import { getAmountOut } from '@/lib/web3/pool-trade';
+import {
+  buildPoolBuy,
+  buildPoolSell,
+  encodeExactInSingle,
+  isXofnPoolKey,
+  MAX_UINT128,
+  poolIdOf,
+  priceFromSqrtX96,
+  virtualReserves,
+} from '@/lib/web3/pool-trade';
 import { buildReAck, buildRetryRemote } from '@/lib/web3/retry-remote';
 import { applySlippage } from '@/lib/web3/tx';
+import type { PoolKey } from '@/types/domain';
 
 const TOKEN = '0x00000000000000000000000000000000000000aa';
 const USER = '0x00000000000000000000000000000000000000bb';
@@ -44,6 +63,38 @@ describe('manifest deployment', () => {
     expect(deployment.localRelay).toMatch(/^0x[0-9a-f]{40}$/);
     expect(deployment.chains.robinhood.remote).toBeNull();
     expect(deployment.chains.base.graduator).toBeNull();
+  });
+
+  it('Uniswap v4 lokal: tiap chain punya PoolManager, hook, router uji, quoter, dan StateView sendiri', () => {
+    const managers = new Set<string>();
+    for (const chain of Object.values(deployment.chains)) {
+      const v4 = chain.uniswapV4;
+      expect(v4).not.toBeNull();
+      for (const value of Object.values(v4!)) expect(value).toMatch(/^0x[0-9a-f]{40}$/);
+      // Izin hook v4 ada di 14 bit terendah alamatnya: hanya `beforeInitialize` (0x2000).
+      expect(BigInt(v4!.poolGuard) & 0x3fffn).toBe(0x2000n);
+      managers.add(v4!.poolManager);
+    }
+    expect(managers.size).toBe(3);
+  });
+
+  it('router uji tidak pernah dibaca dari manifest publik', () => {
+    const asTestnet = structuredClone(localManifest) as unknown as {
+      network: string;
+      status: string;
+      chains: Record<string, { chainId: number; eid: number }>;
+    };
+    asTestnet.network = 'testnet';
+    asTestnet.status = 'deployed-dormant';
+    asTestnet.chains.robinhood!.chainId = 46630;
+    asTestnet.chains.robinhood!.eid = 40451;
+    asTestnet.chains.base!.chainId = 84532;
+    asTestnet.chains.base!.eid = 40245;
+    asTestnet.chains.arbitrum!.chainId = 421614;
+    asTestnet.chains.arbitrum!.eid = 40231;
+    const parsed = parseManifest('testnet', asTestnet);
+    expect(parsed.status).toBe('deployed-dormant');
+    expect(parsed.chains.robinhood.uniswapV4).toBeNull();
   });
 
   it('EID atau chain ID yang tidak cocok dengan registry chain ditolak', () => {
@@ -159,10 +210,109 @@ describe('builder transaksi', () => {
     expect(bridgeRoute('base', 'base', 'robinhood')).toEqual([]);
   });
 
-  it('pool: rumus v2 dengan fee 0,3%', () => {
-    expect(getAmountOut(1_000n, 100_000n, 100_000n)).toBe(987n);
-    expect(getAmountOut(0n, 1n, 1n)).toBe(0n);
-    expect(getAmountOut(1n, 0n, 1n)).toBe(0n);
+});
+
+describe('pool Uniswap v4', () => {
+  const HOOK = '0x00000000000000000000000000000000beef2000';
+  const key: PoolKey = { currency0: zeroAddress, currency1: TOKEN, fee: 3000, tickSpacing: 60, hooks: HOOK };
+  const ROUTER = '0x00000000000000000000000000000000000000cc';
+
+  it('PoolId = keccak256(abi.encode(PoolKey)); berubah bila satu komponen berubah', () => {
+    // Vektor: ETH/USDC 0,05% tanpa hook.
+    expect(
+      poolIdOf({
+        currency0: zeroAddress,
+        currency1: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        fee: 500,
+        tickSpacing: 10,
+        hooks: zeroAddress,
+      }),
+    ).toBe('0x21c67e77068de97969ba93d4aab21826d33ca12bb9f565d8496e8fda8a82ca27');
+    expect(poolIdOf(key)).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(poolIdOf({ ...key, hooks: zeroAddress })).not.toBe(poolIdOf(key));
+    expect(poolIdOf({ ...key, fee: 500 })).not.toBe(poolIdOf(key));
+    expect(isXofnPoolKey(key, TOKEN)).toBe(true);
+    expect(isXofnPoolKey({ ...key, currency1: USER }, TOKEN)).toBe(false);
+    expect(isXofnPoolKey({ ...key, currency0: USER }, TOKEN)).toBe(false);
+  });
+
+  it('harga dan cadangan virtual dari sqrtPriceX96', () => {
+    // sqrtP = 1000 * 2^96 → 1e6 token per ETH → 1e12 wei per token.
+    const sqrtPrice = 1000n * 2n ** 96n;
+    expect(priceFromSqrtX96(sqrtPrice)).toBe(10n ** 12n);
+    expect(priceFromSqrtX96(0n)).toBe(0n);
+    expect(virtualReserves(10n ** 18n, sqrtPrice)).toEqual({ eth: 10n ** 15n, token: 10n ** 21n });
+    expect(virtualReserves(0n, sqrtPrice)).toEqual({ eth: 0n, token: 0n });
+  });
+
+  // Bentuk `IV4Router.ExactInputSingleParams`, ditulis ulang di sini (bukan diimpor dari kode yang
+  // diuji) supaya perubahan urutan atau tipe field ketahuan.
+  const SWAP_PARAMS = [
+    {
+      type: 'tuple',
+      components: [
+        {
+          name: 'poolKey',
+          type: 'tuple',
+          components: [
+            { name: 'currency0', type: 'address' },
+            { name: 'currency1', type: 'address' },
+            { name: 'fee', type: 'uint24' },
+            { name: 'tickSpacing', type: 'int24' },
+            { name: 'hooks', type: 'address' },
+          ],
+        },
+        { name: 'zeroForOne', type: 'bool' },
+        { name: 'amountIn', type: 'uint128' },
+        { name: 'amountOutMinimum', type: 'uint128' },
+        { name: 'hookData', type: 'bytes' },
+      ],
+    },
+  ] as const;
+  const decodeActions = (params: `0x${string}`) => {
+    const [actions, items] = decodeAbiParameters([{ type: 'bytes' }, { type: 'bytes[]' }], params);
+    const pair = [{ type: 'address' }, { type: 'uint256' }] as const;
+    return {
+      actions,
+      swap: decodeAbiParameters(SWAP_PARAMS, items[0]!)[0],
+      settle: decodeAbiParameters(pair, items[1]!),
+      take: decodeAbiParameters(pair, items[2]!),
+    };
+  };
+
+  it('beli: ETH (currency0) masuk sebagai value, batas minimum ikut dikirim ke kontrak', () => {
+    const request = buildPoolBuy('robinhood', ROUTER, key, 10n ** 17n, 123n);
+    expect(request.functionName).toBe('executeActionsAndSweepExcessETH');
+    expect(request.value).toBe(10n ** 17n);
+    const decoded = decodeActions(request.args[0] as `0x${string}`);
+    // SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL
+    expect(decoded.actions).toBe('0x060c0f');
+    // Batas minimum ada di DUA tempat: parameter swap dan TAKE_ALL.
+    expect(decoded.swap).toMatchObject({ zeroForOne: true, amountIn: 10n ** 17n, amountOutMinimum: 123n, hookData: '0x' });
+    expect(decoded.swap.poolKey).toMatchObject({ fee: 3000, tickSpacing: 60 });
+    expect(decoded.swap.poolKey.hooks.toLowerCase()).toBe(HOOK);
+    expect(decoded.swap.poolKey.currency1.toLowerCase()).toBe(TOKEN);
+    expect(decoded.settle).toEqual([zeroAddress, 10n ** 17n]);
+    expect(decoded.take[0].toLowerCase()).toBe(TOKEN);
+    expect(decoded.take[1]).toBe(123n);
+  });
+
+  it('jual: token masuk tanpa value, ETH keluar dengan batas minimum', () => {
+    const request = buildPoolSell('robinhood', ROUTER, key, 5n * 10n ** 18n, 77n);
+    expect(request.functionName).toBe('executeActions');
+    expect(request.value).toBeUndefined();
+    const decoded = decodeActions(request.args[0] as `0x${string}`);
+    expect(decoded.actions).toBe('0x060c0f');
+    expect(decoded.swap).toMatchObject({ zeroForOne: false, amountIn: 5n * 10n ** 18n, amountOutMinimum: 77n });
+    expect(decoded.settle[0].toLowerCase()).toBe(TOKEN);
+    expect(decoded.settle[1]).toBe(5n * 10n ** 18n);
+    expect(decoded.take).toEqual([zeroAddress, 77n]);
+  });
+
+  it('jumlah di luar uint128 atau nol ditolak sebelum menjadi transaksi', () => {
+    expect(() => encodeExactInSingle(key, true, 0n, 0n)).toThrow();
+    expect(() => encodeExactInSingle(key, true, MAX_UINT128 + 1n, 0n)).toThrow();
+    expect(() => encodeExactInSingle(key, true, 1n, MAX_UINT128 + 1n)).toThrow();
   });
 });
 
@@ -179,6 +329,46 @@ describe('pesan revert', () => {
     expect(describeTxError(revert('TradingClosed'))).toMatch(/trading is closed/i);
     expect(describeTxError(revert('InvalidTier', [0]))).toMatch(/only standard and fortress/i);
     expect(describeTxError(revert('ZeroSeedAmount'))).toBe('Transaction reverted: ZeroSeedAmount.');
+  });
+
+  it('error Uniswap v4 ikut dikenali: batas minimum swap dan pool yang belum ada', () => {
+    const v4Revert = (errorName: string, args: readonly unknown[] = []) => ({
+      cause: { data: encodeErrorResult({ abi: v4ErrorsAbi as Abi, errorName, args }) },
+    });
+    expect(describeTxError(v4Revert('V4TooLittleReceived', [2n, 1n]))).toMatch(/slippage/i);
+    expect(describeTxError(v4Revert('PoolNotInitialized'))).toMatch(/does not exist/i);
+  });
+
+  it('error v4 yang datang TERBUNGKUS dibuka sampai alasan aslinya', () => {
+    const encode = (abi: Abi, errorName: string, args: readonly unknown[] = []) =>
+      encodeErrorResult({ abi, errorName, args });
+    // Hook penjaga menolak: PoolManager membungkusnya sebagai WrappedError(target, selector, reason, details).
+    const onlySeeder = encode(xofnErrorsAbi as Abi, 'OnlySeeder', [USER]);
+    const wrapped = encode(v4ErrorsAbi as Abi, 'WrappedError', [TOKEN, '0xdc98354e', onlySeeder, '0x1e048e1d']);
+    expect(decodeRevertData(wrapped)).toEqual({ name: 'OnlySeeder', args: [expect.stringMatching(/^0x/i)] });
+    expect(describeTxError({ cause: { data: wrapped } })).toMatch(/only the xofn contract/i);
+
+    // V4Quoter membungkus revert swap yang ia simulasikan.
+    const noLiquidity = encode(v4ErrorsAbi as Abi, 'NotEnoughLiquidity', [`0x${'11'.repeat(32)}`]);
+    const quoterRevert = { cause: { data: encode(v4ErrorsAbi as Abi, 'UnexpectedRevertBytes', [noLiquidity]) } };
+    expect(describeTxError(quoterRevert)).toMatch(/not have enough liquidity/i);
+    expect(knownRevertMessage(quoterRevert)).toMatch(/not have enough liquidity/i);
+
+    // Isi bungkus yang tidak dikenali: nama luarnya yang dilaporkan, tanpa alasan karangan.
+    const opaque = encode(v4ErrorsAbi as Abi, 'UnexpectedRevertBytes', ['0xdeadbeef']);
+    expect(describeTxError({ cause: { data: opaque } })).toBe('Transaction reverted: UnexpectedRevertBytes.');
+    // Kegagalan yang bukan jawaban kontrak tidak punya pesan "dikenal".
+    expect(knownRevertMessage(new Error('rpc down'))).toBeNull();
+    expect(knownRevertMessage({ cause: { data: opaque } })).toBeNull();
+  });
+
+  it('transferFrom router uji yang gagal dijelaskan, bukan ditampilkan mentah', () => {
+    const data = encodeErrorResult({
+      abi: [{ type: 'error', name: 'Error', inputs: [{ name: 'message', type: 'string' }] }] as const,
+      errorName: 'Error',
+      args: ['TRANSFER_FROM_FAILED'],
+    });
+    expect(describeTxError({ cause: { data } })).toMatch(/approve the token first/i);
   });
 
   it('panic 0x11 (jual lebih dari yang pernah terjual) dan alasan tak dikenal ditulis jujur', () => {
@@ -219,6 +409,8 @@ describe('format jumlah on-chain', () => {
 
 // ABI ditulis tangan. Selama artefak Foundry (`out/`, di-ignore git) ada, setiap fungsi, event,
 // dan error di ABI aplikasi harus persis ada di artefak kontraknya.
+const V4_CORE = 'node_modules/@uniswap/v4-core/out/';
+const V4_PERIPHERY = 'node_modules/@uniswap/v4-periphery/foundry-out/';
 const ARTIFACTS: Array<[string, Abi, string[]]> = [
   ['graduator', graduatorAbi as Abi, ['out/XofNGraduator.sol/XofNGraduator.json']],
   ['curve', curveAbi as Abi, ['out/XofNCurve.sol/XofNCurve.json']],
@@ -226,7 +418,20 @@ const ARTIFACTS: Array<[string, Abi, string[]]> = [
   ['registry', registryAbi as Abi, ['out/XofNRegistry.sol/XofNRegistry.json']],
   ['remote', remoteAbi as Abi, ['out/XofNRemote.sol/XofNRemote.json']],
   ['localRelay', localRelayAbi as Abi, ['out/LocalRelay.sol/LocalRelay.json']],
-  ['mockRouter', mockRouterAbi as Abi, ['out/MockUniswapV2.sol/MockV2Router.json']],
+  // Uniswap v4: dicocokkan dengan artefak paket resmi yang juga di-deploy script/local.
+  ['v4TestRouter', v4TestRouterAbi as Abi, [`${V4_PERIPHERY}MockV4Router.sol/MockV4Router.json`]],
+  ['v4Quoter', v4QuoterAbi as Abi, [`${V4_PERIPHERY}V4Quoter.sol/V4Quoter.json`]],
+  ['v4StateView', v4StateViewAbi as Abi, [`${V4_PERIPHERY}StateView.sol/StateView.json`]],
+  [
+    'v4Errors',
+    v4ErrorsAbi as Abi,
+    [
+      `${V4_PERIPHERY}MockV4Router.sol/MockV4Router.json`,
+      `${V4_PERIPHERY}V4Quoter.sol/V4Quoter.json`,
+      `${V4_CORE}PoolManager.sol/PoolManager.json`,
+      `${V4_CORE}CustomRevert.sol/CustomRevert.json`,
+    ],
+  ],
   [
     'errors',
     xofnErrorsAbi as Abi,
@@ -237,6 +442,7 @@ const ARTIFACTS: Array<[string, Abi, string[]]> = [
       'out/XofNRemote.sol/XofNRemote.json',
       'out/XofNToken.sol/XofNToken.json',
       'out/PoolSeeder.sol/PoolSeeder.json',
+      'out/XofNPoolGuard.sol/XofNPoolGuard.json',
       'out/TierLib.sol/TierLib.json',
       'out/XofNTokenDeployer.sol/XofNTokenDeployer.json',
       'out/LocalRelay.sol/LocalRelay.json',

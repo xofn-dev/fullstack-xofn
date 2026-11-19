@@ -36,13 +36,15 @@ import {
     SetConfigParam
 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
 
+import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
+
 import {XofNCurve} from "../../contracts/XofNCurve.sol";
 import {XofNGraduator} from "../../contracts/XofNGraduator.sol";
+import {XofNPoolGuard} from "../../contracts/XofNPoolGuard.sol";
 import {XofNRegistry} from "../../contracts/XofNRegistry.sol";
 import {XofNRemote} from "../../contracts/XofNRemote.sol";
 import {TierLib} from "../../contracts/libraries/TierLib.sol";
 import {MockDVN} from "../../test/mocks/MockDVN.sol";
-import {MockWETH, MockV2Factory, MockV2Router} from "../../test/mocks/MockUniswapV2.sol";
 import {LocalRelay} from "./LocalRelay.sol";
 
 /// @title DeployLocal
@@ -51,8 +53,15 @@ import {LocalRelay} from "./LocalRelay.sol";
 ///      (01_DeployCore dst.) termasuk Phase 6–7 yang FROZEN dan tidak ada di repo.
 ///
 ///      Tiga "chain" disimulasikan sebagai tiga endpoint LayerZero tiruan di node yang sama:
-///      EID 1 = Robinhood (home), 2 = Base, 3 = Arbitrum. DVN, executor, dan AMM semuanya tiruan;
-///      `LocalRelay` mengantar pesan antar-endpoint.
+///      EID 1 = Robinhood (home), 2 = Base, 3 = Arbitrum. DVN dan executor tiruan; `LocalRelay`
+///      mengantar pesan antar-endpoint.
+///
+///      AMM-nya Uniswap v4 ASLI: tiap "chain" mendapat PoolManager dan PositionManager sendiri,
+///      di-deploy dari artefak bawaan paket npm resmi (dikompilasi Uniswap dengan solc 0.8.26;
+///      repo ini dipin 0.8.24). Untuk aplikasi (Phase 4) ikut di-deploy V4Quoter, StateView, dan
+///      `MockV4Router` (router UJI bawaan paket periphery; BUKAN Universal Router). Hook penjaga
+///      tiap Graduator/Remote ditaruh di alamat ber-flag lewat CREATE2 dengan salt hasil tambang
+///      (lihat `_deployGuardForNextContract` untuk bedanya dengan jaringan publik).
 ///
 ///      Cara pakai (akun dev Anvil yang sudah ter-unlock; tanpa private key atau keystore):
 ///        anvil
@@ -80,14 +89,22 @@ contract DeployLocal is Script {
     // publik pengisian ini tugas tim/PM, bukan script.
     uint256 internal constant REMOTE_FUNDING = 5 ether;
 
+    string internal constant V4_CORE_OUT = "node_modules/@uniswap/v4-core/out/";
+    string internal constant V4_PERIPHERY_OUT = "node_modules/@uniswap/v4-periphery/foundry-out/";
+    /// @dev Alamat kanonik Permit2. Tidak di-deploy: jalur XofN tidak memakai Permit2.
+    address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+
     struct ChainEnv {
         address endpoint;
         address sendLib;
         address receiveLib;
         address executor;
-        address weth;
-        address factory;
-        address router;
+        address poolManager;
+        address positionManager;
+        address poolGuard; // hook penjaga Graduator (home) atau Remote (ekspansi)
+        address swapRouter; // MockV4Router: router uji untuk panel trading lokal
+        address quoter;
+        address stateView;
         address registry;
         address[] dvns;
     }
@@ -157,9 +174,7 @@ contract DeployLocal is Script {
             c.dvns.push(dvns[i]);
         }
 
-        c.weth = address(new MockWETH());
-        c.factory = address(new MockV2Factory());
-        c.router = address(new MockV2Router(c.factory, c.weth));
+        _deployUniswapV4(c);
         c.registry = address(new XofNRegistry(c.endpoint, deployer));
         for (uint256 i = 0; i < 5; i++) {
             XofNRegistry(c.registry).setDvnAllowed(dvns[i], true);
@@ -239,21 +254,77 @@ contract DeployLocal is Script {
         p.optionalDvns[1] = c.dvns[3];
     }
 
+    // ───────────────────────────── Uniswap v4 ─────────────────────────────
+
+    function _deployUniswapV4(ChainEnv storage c) private {
+        c.poolManager =
+            deployCode(string.concat(V4_CORE_OUT, "PoolManager.sol/PoolManager.json"), abi.encode(deployer));
+        c.positionManager = deployCode(
+            string.concat(V4_PERIPHERY_OUT, "PositionManager.sol/PositionManager.json"),
+            // (poolManager, permit2, unsubscribeGasLimit, tokenDescriptor, weth9). Deskriptor dan
+            // WETH9 hanya dipakai tokenURI dan aksi WRAP/UNWRAP, yang tidak dipakai XofN.
+            abi.encode(c.poolManager, PERMIT2, uint256(100_000), address(0), address(0xE770))
+        );
+        bytes memory managerArg = abi.encode(c.poolManager);
+        c.swapRouter =
+            deployCode(string.concat(V4_PERIPHERY_OUT, "MockV4Router.sol/MockV4Router.json"), managerArg);
+        c.quoter = deployCode(string.concat(V4_PERIPHERY_OUT, "V4Quoter.sol/V4Quoter.json"), managerArg);
+        c.stateView =
+            deployCode(string.concat(V4_PERIPHERY_OUT, "StateView.sol/StateView.json"), managerArg);
+    }
+
+    /// @notice Men-deploy hook penjaga untuk kontrak yang akan di-deploy `deployer` TEPAT SETELAH
+    ///         transaksi ini (nonce berikutnya + 1).
+    /// @dev Izin hook v4 ada di 14 bit terendah alamatnya, jadi salt CREATE2 ditambang sampai
+    ///      alamatnya hanya ber-flag `beforeInitialize`. `new X{salt: ..}` saat broadcast dikirim
+    ///      lewat deployer CREATE2 kanonik (0x4e59…956C).
+    ///
+    ///      HANYA UNTUK ANVIL: alamat kontrak berikutnya diprediksi dari nonce EOA, yang hanya
+    ///      benar bila hook dan kontrak itu dua transaksi berurutan dari EOA yang sama. Di
+    ///      jaringan publik cara itu rapuh (transaksi tersisip, `--resume`, Safe). Di sana alamat
+    ///      Graduator/Remote diketahui lebih dulu lewat CREATE3 (CreateX) dengan salt yang
+    ///      terikat pengirim; yang sama hanyalah penambangan salt hook-nya.
+    function _deployGuardForNextContract() private returns (address guard) {
+        address seeder = vm.computeCreateAddress(deployer, vm.getNonce(deployer) + 1);
+        bytes32 initCodeHash =
+            keccak256(abi.encodePacked(type(XofNPoolGuard).creationCode, abi.encode(seeder)));
+        bytes32 salt;
+        for (uint256 i = 0;; i++) {
+            salt = bytes32(i);
+            guard = vm.computeCreate2Address(salt, initCodeHash, CREATE2_FACTORY);
+            if (uint160(guard) & Hooks.ALL_HOOK_MASK == Hooks.BEFORE_INITIALIZE_FLAG) break;
+        }
+        // Alamat CREATE2 ditentukan initcode (termasuk `seeder`), jadi kode di alamat itu pasti
+        // hook yang sama: dipakai apa adanya. Menambang salt lain akan gagal diam-diam bila
+        // pihak lain men-deploy hook identik lebih dulu (review 19 Nov 2026, LOW-4).
+        if (guard.code.length != 0) {
+            require(XofNPoolGuard(guard).seeder() == seeder, "foreign code at guard address");
+            return guard;
+        }
+        require(address(new XofNPoolGuard{salt: salt}(seeder)) == guard, "guard address mismatch");
+    }
+
     function _deployHome() private {
         curveImplementation = address(new XofNCurve());
+        env[HOME].poolGuard = _deployGuardForNextContract();
 
         TierLib.Pathway[] memory pathways = new TierLib.Pathway[](2);
         pathways[0] = _pathway(HOME, BASE);
         pathways[1] = _pathway(HOME, ARB);
         XofNGraduator.ExpansionGas[] memory gas = new XofNGraduator.ExpansionGas[](2);
-        gas[0] = XofNGraduator.ExpansionGas(7_000_000, 5_000_000);
+        // deployGas, seedGas: ±1,6x dan ±2x pemakaian terukur (test/lz/GasMeasure.t.sol).
+        gas[0] = XofNGraduator.ExpansionGas(7_000_000, 2_500_000);
         gas[1] = gas[0];
 
         graduator = new XofNGraduator(
             env[HOME].endpoint,
             deployer,
             XofNGraduator.Infra(
-                env[HOME].registry, curveImplementation, env[HOME].router, LP_RECIPIENT
+                env[HOME].registry,
+                curveImplementation,
+                env[HOME].positionManager,
+                env[HOME].poolGuard,
+                LP_RECIPIENT
             ),
             XofNGraduator.Economics(
                 SALE_SUPPLY, START_PRICE, GRADUATION_THRESHOLD, CALLER_REWARD, EXPANSION_PAIR_ETH
@@ -265,11 +336,18 @@ contract DeployLocal is Script {
     }
 
     function _deployRemote(uint32 eid) private {
+        env[eid].poolGuard = _deployGuardForNextContract();
         XofNRemote remote = new XofNRemote(
             env[eid].endpoint,
             deployer,
             XofNRemote.Infra(
-                env[eid].registry, env[eid].router, LP_RECIPIENT, HOME, 1_500_000, 1_500_000
+                env[eid].registry,
+                env[eid].positionManager,
+                env[eid].poolGuard,
+                LP_RECIPIENT,
+                HOME,
+                1_500_000,
+                1_500_000
             ),
             _pathway(eid, HOME)
         );
@@ -315,7 +393,7 @@ contract DeployLocal is Script {
         vm.serializeString(
             "root",
             "note",
-            "Anvil only. Mock LayerZero endpoints, mock DVNs, mock AMM. Not a public deployment."
+            "Anvil only. Mock LayerZero endpoints and DVNs; a local Uniswap v4 deployment with a test swap router. Not a public deployment."
         );
         vm.serializeUint("root", "chainId", block.chainid);
         vm.serializeAddress("root", "localRelay", address(relay));
@@ -335,10 +413,16 @@ contract DeployLocal is Script {
         }
         string memory contractsJson = vm.serializeAddress(contractsKey, "XofNRegistry", c.registry);
 
+        // Uniswap v4 lokal. `swapRouter` adalah router UJI; alamat ini hanya ada di manifest lokal.
+        string memory v4Key = string.concat(key, ".uniswapV4");
+        vm.serializeAddress(v4Key, "poolManager", c.poolManager);
+        vm.serializeAddress(v4Key, "positionManager", c.positionManager);
+        vm.serializeAddress(v4Key, "poolGuard", c.poolGuard);
+        vm.serializeAddress(v4Key, "swapRouter", c.swapRouter);
+        vm.serializeAddress(v4Key, "quoter", c.quoter);
+        string memory v4Json = vm.serializeAddress(v4Key, "stateView", c.stateView);
+
         string memory mocksKey = string.concat(key, ".mocks");
-        vm.serializeAddress(mocksKey, "router", c.router);
-        vm.serializeAddress(mocksKey, "factory", c.factory);
-        vm.serializeAddress(mocksKey, "weth", c.weth);
         vm.serializeAddress(mocksKey, "sendLib", c.sendLib);
         vm.serializeAddress(mocksKey, "receiveLib", c.receiveLib);
         vm.serializeAddress(mocksKey, "executor", c.executor);
@@ -349,6 +433,7 @@ contract DeployLocal is Script {
         vm.serializeAddress(key, "endpointV2", c.endpoint);
         vm.serializeString(key, "contracts", contractsJson);
         vm.serializeString(key, "mocks", mocksJson);
+        vm.serializeString(key, "uniswapV4", v4Json);
         vm.serializeAddress(key, "owner", deployer);
         vm.serializeUint(key, "deployBlock", block.number);
         return vm.serializeBool(key, "verifiedSource", false);

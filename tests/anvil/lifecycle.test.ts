@@ -12,7 +12,8 @@ import { createTokenService, type TokenService } from '@/lib/tokens';
 import { toChainClient, type ReadContext } from '@/lib/tokens/read';
 import { expansionView } from '@/lib/tokens/steps';
 import { MemoryTokenStore } from '@/lib/tokens/store';
-import { localRelayAbi } from '@/lib/web3/abi/local';
+import { localRelayAbi, v4TestRouterAbi } from '@/lib/web3/abi/local';
+import { v4QuoterAbi, v4StateViewAbi } from '@/lib/web3/abi/uniswap-v4';
 import { curveAbi, graduatorAbi, remoteAbi, tokenAbi } from '@/lib/web3/abi/xofn';
 import { getDeployment, homeContracts } from '@/lib/web3/addresses';
 import { buildBridgeSend, buildSendParam, splitDust } from '@/lib/web3/bridge-send';
@@ -22,10 +23,11 @@ import { ANVIL_DEV_ACCOUNT } from '@/lib/web3/dev-account';
 import { buildExpandAndLock, expandValue } from '@/lib/web3/expand-and-lock';
 import { buildGraduate } from '@/lib/web3/graduate';
 import { buildLaunch, parseLaunchLogs, ZERO_HASH } from '@/lib/web3/launch';
+import { buildPoolBuy, buildPoolSell, poolIdOf } from '@/lib/web3/pool-trade';
 import { buildDeliverNext } from '@/lib/web3/local-relay';
 import { buildReAck } from '@/lib/web3/retry-remote';
 import { applySlippage, type TxRequest } from '@/lib/web3/tx';
-import type { Address } from '@/types/domain';
+import type { Address, PoolKey } from '@/types/domain';
 
 // Siklus penuh USER_FLOWS (D → E → F.1 → F.2 → G → H) terhadap Anvil lokal, memakai builder
 // transaksi dan pembaca yang SAMA dengan UI. Transaksi dikirim sebagai `eth_sendTransaction` dari
@@ -185,13 +187,82 @@ describe('siklus token XofN di Anvil lokal', () => {
     await send(buildGraduate(home, token));
     detail = await service.detail(token);
     expect(detail.status).toBe('graduated');
-    expect(detail.pool).not.toBeNull();
-    expect(detail.poolReserves).not.toBeNull();
+    // Pool Uniswap v4: PoolId 32 byte, dan state-nya terbaca dari PoolManager lokal.
+    expect(detail.pool).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(detail.poolState).not.toBeNull();
+    expect(detail.poolState!.lpFee).toBe(3000);
+    expect(BigInt(detail.poolState!.liquidity)).toBeGreaterThan(0n);
     // Graduation TIDAK mengunci: owner dan delegate tetap Graduator, verify() tetap false.
     expect(detail.verify[0]?.owner).toBe(home.graduator);
     expect(detail.verify[0]?.delegate).toBe(home.graduator);
     expect(detail.verify[0]?.locked).toBe(false);
     expect(await revertMessage(buildGraduate(home, token))).toMatch(/not in the right state/i);
+  });
+
+  it('Flow E (pool): beli dan jual di pool Uniswap v4; batas minimum dipaksakan on-chain', async () => {
+    const v4 = home.chain.uniswapV4;
+    if (!v4) throw new Error('Manifest lokal tidak memuat Uniswap v4.');
+    const detail = await service.detail(token);
+    const key: PoolKey = detail.poolState!.key;
+
+    // Pool yang dipakai adalah pool yang dicatat Graduator, ber-hook XofN, di PoolManager manifest.
+    expect(poolIdOf(key)).toBe(detail.pool);
+    expect(key.hooks).toBe(v4.poolGuard);
+    for (const [address, abi] of [
+      [v4.swapRouter, v4TestRouterAbi],
+      [v4.quoter, v4QuoterAbi],
+      [v4.stateView, v4StateViewAbi],
+    ] as const) {
+      const manager = await publicClient.readContract({ address, abi, functionName: 'poolManager' });
+      expect(manager.toLowerCase()).toBe(v4.poolManager);
+    }
+
+    const quote = async (zeroForOne: boolean, exactAmount: bigint, account: Address = ANVIL_DEV_ACCOUNT) => {
+      const { result } = await publicClient.simulateContract({
+        address: v4.quoter,
+        abi: v4QuoterAbi,
+        functionName: 'quoteExactInputSingle',
+        args: [{ poolKey: key, zeroForOne, exactAmount, hookData: '0x' }],
+        account,
+      });
+      return result[0];
+    };
+    const tokenBalance = () =>
+      publicClient.readContract({ address: token, abi: tokenAbi, functionName: 'balanceOf', args: [ANVIL_DEV_ACCOUNT] });
+
+    // Beli: hasilnya sama persis dengan quote kontrak.
+    const ethIn = 10n ** 17n;
+    const buyQuote = await quote(true, ethIn);
+    expect(buyQuote).toBeGreaterThan(0n);
+    // Quote tidak bergantung pada pemanggil: panel membacanya dari alamat nol sebelum wallet
+    // terhubung, dan hasilnya harus sama.
+    expect(await quote(true, ethIn, ZERO_ADDRESS)).toBe(buyQuote);
+    const tokensBefore = await tokenBalance();
+    await send(buildPoolBuy(homeChain, v4.swapRouter, key, ethIn, applySlippage(buyQuote, 100)));
+    const bought = (await tokenBalance()) - tokensBefore;
+    expect(bought).toBe(buyQuote);
+
+    // Batas minimum terlalu ketat: revert, tidak ada yang ditukar.
+    const tightBuy = await quote(true, ethIn);
+    expect(await revertMessage(buildPoolBuy(homeChain, v4.swapRouter, key, ethIn, tightBuy + 1n))).toMatch(/slippage/i);
+
+    // Jual butuh approve ke router uji lebih dulu.
+    const sellQuote = await quote(false, bought);
+    // `revertMessage` melempar bila simulasi TIDAK revert.
+    expect(await revertMessage(buildPoolSell(homeChain, v4.swapRouter, key, bought, 0n))).not.toMatch(/slippage/i);
+    await send(buildApprove(homeChain, token, v4.swapRouter, bought));
+    expect(await revertMessage(buildPoolSell(homeChain, v4.swapRouter, key, bought, sellQuote + 1n))).toMatch(
+      /slippage/i,
+    );
+
+    const ethBefore = await publicClient.getBalance({ address: ANVIL_DEV_ACCOUNT });
+    const receipt = await send(buildPoolSell(homeChain, v4.swapRouter, key, bought, applySlippage(sellQuote, 100)));
+    const gasPaid = receipt.gasUsed * receipt.effectiveGasPrice;
+    const ethAfter = await publicClient.getBalance({ address: ANVIL_DEV_ACCOUNT });
+    expect(ethAfter - ethBefore + gasPaid).toBe(sellQuote);
+    // Saldo token kembali seperti sebelum membeli; fee 0,30% dua kali membuat ETH berkurang.
+    expect(await tokenBalance()).toBe(tokensBefore);
+    expect(sellQuote).toBeLessThan(ethIn);
   });
 
   it('Flow F.2: expandAndLock → Expanding; Locked hanya setelah verify() true di semua chain', async () => {

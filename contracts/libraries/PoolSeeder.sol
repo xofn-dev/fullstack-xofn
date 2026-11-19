@@ -4,217 +4,192 @@ pragma solidity 0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {Actions} from "@uniswap/v4-periphery/src/libraries/Actions.sol";
 
-import {IUniswapV2Factory, IUniswapV2Pair, IWETH} from "../interfaces/IUniswapV2.sol";
+import {IV4PositionManager, IXofNPoolGuard} from "../interfaces/IUniswapV4.sol";
 
 /// @title PoolSeeder
-/// @notice Membuat DAN mengisi pool Uniswap v2 token/WETH dalam satu panggilan (PRD §5.5).
+/// @notice Membuat DAN mengisi pool Uniswap v4 ETH/token dalam satu panggilan (PRD §5.5).
 /// @dev Dipakai `XofNGraduator.graduate()` di home dan `XofNRemote.lzCompose()` di chain ekspansi.
 ///
-///      Kenapa tidak lewat router: `addLiquidity` di router revert bila pair sudah punya cadangan
-///      satu sisi (cukup dengan donasi + `sync`), sehingga siapa pun bisa memblokir pengisian.
-///      Di sini aset dikirim langsung ke pair lalu `mint` dipanggil.
+///      Bentuk pool: ETH native (currency0) / token (currency1), fee 0,30%, tickSpacing 60, satu
+///      posisi full-range, hook = `XofNPoolGuard`. Posisi full-range berperilaku seperti x·y=k,
+///      jadi batas subsidi di constructor Graduator (PRD P42) tetap berlaku.
 ///
-///      Ketahanan terhadap front-run:
-///      1. Pair sudah dibuat pihak lain tetapi kosong → dipakai apa adanya; harga ditentukan
-///         setoran pertama (setoran ini).
-///      2. Pair diberi donasi:
-///         - pair belum pernah di-mint → donasi ikut terhitung di `mint` setoran ini, jadi
-///           menjadi milik pool; pendonor tidak mendapat LP;
-///         - pair sudah berisi likuiditas → `sync` dipanggil lebih dulu, jadi donasi menjadi
-///           cadangan milik LP yang ada (termasuk pendonor bila ia LP) SEBELUM setoran ini
-///           dihitung. Tanpa `sync`, saldo yang belum tercatat ikut dihitung sebagai input
-///           swap penyeimbang, rasionya meleset, dan pendonor mengambil sebagian setoran
-///           (PRD P55, `proof/2026-11-17-phase3/11-poolseeder-rereview.md`).
-///      3. Pair sudah berisi likuiditas pihak lain → setoran ini lebih dulu ditukar sebagian di
-///         pool itu sampai RASIO ASET YANG DIPEGANG SAMA DENGAN RASIO POOL, baru seluruhnya
-///         disetor. Dengan begitu tidak ada sisi berlebih yang jatuh ke LP lama.
+///      Ketahanan terhadap front-run: PoolKey memuat alamat hook penjaga, dan hook itu hanya
+///      mengizinkan kontrak pemanggil library ini menginisialisasi pool. Pool tidak bisa ada
+///      sebelum panggilan ini, jadi tidak ada harga awal, likuiditas, atau donasi pihak lain yang
+///      perlu ditangani. Pihak lain tetap bisa membuat pool ETH/token DENGAN PoolKey LAIN (tanpa
+///      hook atau hook lain); pool itu tidak memengaruhi pool ini.
 ///
-///         Kenapa bukan "geser pool ke harga target lalu setor sisanya": setelah swap itu aset
-///         yang dipegang tidak lagi seimbang, `mint` hanya menghargai sisi yang lebih kecil, dan
-///         kelebihannya menjadi milik semua LP secara pro rata. Pool tandingan yang cukup besar
-///         bisa mengambil hampir separuh likuiditas dengan cara itu (temuan review 17 Nov 2026).
+///      Kenapa `initialize` dipanggil langsung di PoolManager, bukan lewat PositionManager: hook
+///      menerima pemanggil `initialize` sebagai `sender`. Lewat PositionManager, `sender` adalah
+///      PositionManager dan hook akan menolak.
 ///
-///         Akibat pilihan ini: bila pihak lain menaruh likuiditas besar pada harga berbeda, harga
-///         pembukaan pool adalah harga gabungan, bukan harga target. Itu modal mereka sendiri
-///         yang dipertaruhkan: swap di sini selalu searah arbitrase, jadi setiap unit yang
-///         ditukar diperoleh pada harga yang lebih baik dari target, dan pembuat harga lain
-///         itulah yang menanggung selisihnya.
-///      4. Pool tandingan dengan total LP kecil + cadangan sangat besar → bagian LP setoran ini
-///         dibulatkan ke 0; setoran dijadikan cadangan lewat `sync` alih-alih `mint` (lihat
-///         `seed`). Setoran tidak revert dan pool tetap terisi.
+///      Kenapa tanpa Permit2 dan tanpa `unlockCallback`: token dikirim ke PositionManager lalu
+///      diselesaikan dari saldonya (`SETTLE` dengan `payerIsUser = false`) dalam jumlah yang
+///      eksplisit, jadi saldo lain yang kebetulan ada di PositionManager tidak ikut terpakai.
+///      PositionManager yang memegang `unlock`; Graduator dan Remote tidak mendapat fungsi baru.
 ///
-///      Kerugian pembulatan: setoran mendapat floor(jumlah x total LP / cadangan) LP, jadi
-///      kerugiannya paling besar nilai satu unit LP pool itu (ditambah fee swap penyeimbang).
-///      Pada pool baru atau pool biasa ini sangat kecil (terukur ±1,7e-6 setoran). Pada pool
-///      tandingan dengan total LP kecil dan cadangan besar bisa mencapai ±1% atau seluruh
-///      setoran (cabang 4), tetapi penyerang selalu membayar lebih dari yang ia ambil
-///      (`test/unit/PoolSeeder.t.sol`). Batas yang tersisa ada di pair itu sendiri, mis.
-///      cadangan di atas uint112.
+///      Debu pembulatan: rentang berhenti di tick yang bisa dipakai, bukan di tak hingga, jadi
+///      sebagian sangat kecil dari satu sisi tidak terserap. Sisa sampai `jumlah / DUST_DIVISOR`
+///      dilepas di PoolManager (`clear`): tidak dibakar, total supply tetap 999M, dan pemanggil
+///      tidak menyisakan apa pun. Sisa di atas batas itu dikembalikan ke pemanggil; tidak revert,
+///      supaya `graduate()` dan `lzCompose` tidak bisa macet karena pembulatan.
 ///
-///      Asumsi: fee swap 0,3% (Uniswap v2 kanonik) dan token tanpa pajak transfer. Di AMM dengan
-///      fee lebih tinggi, swap penyeimbang bisa gagal di pemeriksaan K; fee lebih rendah aman.
+///      Asumsi: token tanpa pajak transfer, 18 desimal.
 library PoolSeeder {
     using SafeERC20 for IERC20;
+    using PoolIdLibrary for PoolKey;
 
-    uint256 private constant FEE_NUMERATOR = 997;
-    uint256 private constant FEE_DENOMINATOR = 1000;
+    /// @dev 0,30% dalam satuan pip (1e-6), sama dengan fee Uniswap v2.
+    uint24 internal constant POOL_FEE = 3000;
+    int24 internal constant TICK_SPACING = 60;
+    /// @dev Tick terjauh yang kelipatan TICK_SPACING: floor(887272 / 60) * 60.
+    int24 internal constant TICK_LOWER = -887_220;
+    int24 internal constant TICK_UPPER = 887_220;
+    uint256 internal constant DUST_DIVISOR = 1e9;
 
     error ZeroSeedAmount();
+    error SeedAmountTooLarge();
+    error InvalidPositionManager(address positionManager);
+    error InvalidPoolGuard(address poolGuard);
+    error InvalidLpRecipient(address lpRecipient);
+
+    /// @notice Menolak infrastruktur yang tidak akan pernah bisa membuat pool. Dipanggil sekali,
+    ///         di constructor kontrak pemanggil.
+    /// @dev `external`: library terhubung, dijalankan lewat delegatecall, jadi `address(this)`
+    ///      adalah kontrak pemanggil. Hook harus sudah ada dan terikat ke kontrak itu.
+    function validate(address positionManager, address poolGuard, address lpRecipient)
+        external
+        view
+    {
+        if (positionManager.code.length == 0) revert InvalidPositionManager(positionManager);
+        IV4PositionManager posm = IV4PositionManager(positionManager);
+        // `poolManager()` juga dimiliki kontrak v4 lain (quoter, StateView, router). Yang salah
+        // tempel di sini baru ketahuan saat graduation, ketika curve sudah tertutup dan tidak ada
+        // jalan keluar. Penghitung NFT posisi hanya ada di PositionManager dan mulai dari 1.
+        try posm.nextTokenId() returns (uint256 nextId) {
+            if (nextId == 0) revert InvalidPositionManager(positionManager);
+        } catch {
+            revert InvalidPositionManager(positionManager);
+        }
+        if (address(posm.poolManager()).code.length == 0) {
+            revert InvalidPositionManager(positionManager);
+        }
+        // Flag salah berarti hook tidak pernah dipanggil (siapa pun bisa menginisialisasi) atau
+        // dipanggil untuk fungsi yang tidak ada (pool tidak bisa dipakai).
+        if (
+            poolGuard.code.length == 0
+                || uint160(poolGuard) & Hooks.ALL_HOOK_MASK != Hooks.BEFORE_INITIALIZE_FLAG
+                || IXofNPoolGuard(poolGuard).seeder() != address(this)
+        ) revert InvalidPoolGuard(poolGuard);
+        // Perilakunya ikut diuji, bukan hanya alamat dan `seeder()`: kontrak ini harus lolos
+        // dengan jawaban yang diterima PoolManager, dan pihak lain harus ditolak. Hook yang
+        // meloloskan siapa pun akan membiarkan pool diinisialisasi lebih dulu pada harga
+        // sembarang, dan `seed` lalu revert selamanya.
+        PoolKey memory key = poolKey(poolGuard, address(this));
+        (bool ok, bytes memory answer) = poolGuard.staticcall(
+            abi.encodeCall(IXofNPoolGuard.beforeInitialize, (address(this), key, 1))
+        );
+        if (
+            !ok || answer.length != 32
+                || abi.decode(answer, (bytes4)) != IHooks.beforeInitialize.selector
+        ) revert InvalidPoolGuard(poolGuard);
+        (ok,) = poolGuard.staticcall(
+            abi.encodeCall(IXofNPoolGuard.beforeInitialize, (positionManager, key, 1))
+        );
+        if (ok) revert InvalidPoolGuard(poolGuard);
+        // PositionManager mengartikan address(1) sebagai pemanggil dan address(2) sebagai dirinya
+        // sendiri; address(0) ditolak saat mint NFT.
+        if (uint160(lpRecipient) <= 2) revert InvalidLpRecipient(lpRecipient);
+    }
 
     /// @dev `external`: library terhubung, dijalankan lewat delegatecall. Aset dan `address(this)`
     ///      tetap milik kontrak pemanggil.
-    /// @param factory   UniswapV2Factory chain ini.
-    /// @param weth      WETH chain ini.
-    /// @param token     Token yang dipasangkan dengan WETH.
+    /// @param positionManager PositionManager Uniswap v4 chain ini.
+    /// @param poolGuard   Hook `XofNPoolGuard` yang terikat ke kontrak pemanggil.
+    /// @param token       Token yang dipasangkan dengan ETH.
     /// @param tokenAmount Jumlah token; harus sudah dipegang kontrak pemanggil.
-    /// @param ethAmount Jumlah ETH native; harus sudah dipegang kontrak pemanggil.
-    /// @param lpRecipient Penerima token LP.
+    /// @param ethAmount   Jumlah ETH native; harus sudah dipegang kontrak pemanggil.
+    /// @param lpRecipient Penerima NFT posisi.
+    /// @return poolId     PoolId v4 (`keccak256(abi.encode(PoolKey))`).
+    /// @return positionId ID NFT posisi di PositionManager.
     function seed(
-        address factory,
-        address weth,
+        address positionManager,
+        address poolGuard,
         address token,
         uint256 tokenAmount,
         uint256 ethAmount,
         address lpRecipient
-    ) external returns (address pair, uint256 liquidity) {
+    ) external returns (bytes32 poolId, uint256 positionId) {
         if (tokenAmount == 0 || ethAmount == 0) revert ZeroSeedAmount();
-
-        pair = IUniswapV2Factory(factory).getPair(token, weth);
-        if (pair == address(0)) pair = IUniswapV2Factory(factory).createPair(token, weth);
-
-        IWETH(weth).deposit{value: ethAmount}();
-
-        // totalSupply == 0 berarti belum pernah ada mint: harga belum ditentukan siapa pun.
-        if (IUniswapV2Pair(pair).totalSupply() != 0) {
-            // Saldo yang belum di-sync dihitung pair sebagai input `swap`, sedangkan ukuran swap
-            // dihitung dari cadangan. Tanpa sync, rasio sesudah swap meleset dan penyerang
-            // mengambil sebagian setoran (PRD P55). Setelah sync, donasi menjadi cadangan milik
-            // LP yang ada, sebelum setoran ini masuk.
-            IUniswapV2Pair(pair).sync();
-            (tokenAmount, ethAmount) = _rebalance(pair, token, weth, tokenAmount, ethAmount);
+        if (tokenAmount > type(uint128).max || ethAmount > type(uint128).max) {
+            revert SeedAmountTooLarge();
         }
 
-        // Dihitung sebelum transfer: transfer tidak mengubah cadangan.
-        bool mintsNothing = _mintsNothing(pair, token, tokenAmount, ethAmount);
+        IV4PositionManager posm = IV4PositionManager(positionManager);
+        PoolKey memory key = poolKey(poolGuard, token);
+        poolId = PoolId.unwrap(key.toId());
 
-        // `mint` memakai seluruh saldo yang masuk: tidak ada yang tertinggal di pemanggil dan
-        // tidak ada yang dibakar (total supply harus tetap 999M). Setelah `_rebalance`, rasio
-        // setoran sudah sama dengan rasio pool, kecuali selisih sebesar fee swap.
-        IERC20(token).safeTransfer(pair, tokenAmount);
-        IERC20(weth).safeTransfer(pair, ethAmount);
+        // Revert bila pool sudah ada (`PoolAlreadyInitialized`). Hanya kontrak ini yang lolos hook.
+        posm.poolManager().initialize(key, sqrtPriceX96(ethAmount, tokenAmount));
 
-        // Pool tandingan dengan total LP kecil dan cadangan sangat besar membuat bagian LP
-        // setoran ini dibulatkan ke 0, dan `mint` akan revert selamanya (review 19 Nov 2026,
-        // MEDIUM #1). Setoran lalu dijadikan cadangan lewat `sync`: pool tetap terisi, langkah
-        // ekspansi tetap selesai. Nilainya jatuh ke LP yang ada, yang mayoritas terkunci permanen
-        // (MINIMUM_LIQUIDITY). Untuk memaksa cabang ini penyerang harus menaruh cadangan bernilai
-        // lebih dari setoran x total LP, dan sebagian besar ikut terkunci; bagiannya atas setoran
-        // ini jauh lebih kecil dari biayanya.
-        if (mintsNothing) {
-            IUniswapV2Pair(pair).sync();
-            return (pair, 0);
-        }
-        liquidity = IUniswapV2Pair(pair).mint(lpRecipient);
-    }
+        positionId = posm.nextTokenId();
+        IERC20(token).safeTransfer(positionManager, tokenAmount);
 
-    /// @dev True bila `mint` untuk setoran ini akan menghasilkan 0 LP. Memakai total LP sebelum
-    ///      `_mintFee`; fee protokol pair hanya menambah total LP, jadi hasil `mint` sebenarnya
-    ///      tidak pernah lebih kecil dari perkiraan ini.
-    function _mintsNothing(address pair, address token, uint256 tokenAmount, uint256 ethAmount)
-        private
-        view
-        returns (bool)
-    {
-        uint256 supply = IUniswapV2Pair(pair).totalSupply();
-        if (supply == 0) return false;
-        (uint256 reserveToken, uint256 reserveEth,) = _reserves(pair, token);
-        return Math.min(tokenAmount * supply / reserveToken, ethAmount * supply / reserveEth) == 0;
-    }
-
-    /// @dev Satu swap yang membuat rasio aset yang dipegang sama dengan rasio pool.
-    ///      Tanpa fee, kedua rasio bertemu di rasio gabungan (y + E) / (x + T), karena total token
-    ///      dan total WETH tidak berubah oleh swap. Cadangan token pool yang dituju adalah
-    ///      sqrt(k * (x + T) / (y + E)); cadangan WETH-nya sqrt(k * (y + E) / (x + T)).
-    ///      Fee 0,3% membuat hasilnya meleset sedikit; selisih sekecil itu ikut tersetor.
-    ///      Jumlah yang ditukar tidak pernah melebihi separuh setoran; batas itu dipasang juga
-    ///      secara eksplisit sebagai pengaman.
-    function _rebalance(
-        address pair,
-        address token,
-        address weth,
-        uint256 tokenAmount,
-        uint256 ethAmount
-    ) private returns (uint256, uint256) {
-        (uint256 reserveToken, uint256 reserveEth, bool tokenIsZero) = _reserves(pair, token);
-        if (reserveToken == 0 || reserveEth == 0) return (tokenAmount, ethAmount);
-
-        if (reserveEth * tokenAmount > reserveToken * ethAmount) {
-            // Token lebih mahal di pool daripada di setoran ini: jual token ke pool.
-            uint256 tokenIn = _swapSize(reserveToken, reserveEth, tokenAmount, ethAmount);
-            uint256 ethOut = _swap(pair, token, tokenIn, reserveToken, reserveEth, !tokenIsZero);
-            if (ethOut == 0) return (tokenAmount, ethAmount);
-            return (tokenAmount - tokenIn, ethAmount + ethOut);
-        }
-        if (reserveEth * tokenAmount < reserveToken * ethAmount) {
-            // Token lebih murah di pool: beli token dari pool.
-            uint256 ethIn = _swapSize(reserveEth, reserveToken, ethAmount, tokenAmount);
-            uint256 tokenOut = _swap(pair, weth, ethIn, reserveEth, reserveToken, tokenIsZero);
-            if (tokenOut == 0) return (tokenAmount, ethAmount);
-            return (tokenAmount + tokenOut, ethAmount - ethIn);
-        }
-        return (tokenAmount, ethAmount);
-    }
-
-    /// @dev Jumlah aset masuk supaya cadangan aset itu menjadi
-    ///      sqrt(k * (reserveIn + amountIn) / (reserveOut + amountOut)), paling banyak separuh
-    ///      dari yang dipegang. Hasil `mulDiv` tidak bisa overflow: nilainya paling besar
-    ///      reserveIn * (reserveIn + amountIn).
-    function _swapSize(uint256 reserveIn, uint256 reserveOut, uint256 heldIn, uint256 heldOut)
-        private
-        pure
-        returns (uint256)
-    {
-        uint256 target = Math.sqrt(
-            Math.mulDiv(reserveIn * reserveOut, reserveIn + heldIn, reserveOut + heldOut)
+        bytes[] memory params = new bytes[](5);
+        params[0] = abi.encode(key.currency0, ethAmount, false);
+        params[1] = abi.encode(key.currency1, tokenAmount, false);
+        // Likuiditas dihitung PositionManager dari kredit di atas pada harga pool saat ini.
+        params[2] = abi.encode(
+            key,
+            TICK_LOWER,
+            TICK_UPPER,
+            uint128(ethAmount),
+            uint128(tokenAmount),
+            lpRecipient,
+            bytes("")
         );
-        if (target <= reserveIn) return 0;
-        return Math.min(target - reserveIn, heldIn / 2);
+        params[3] = abi.encode(key.currency0, ethAmount / DUST_DIVISOR);
+        params[4] = abi.encode(key.currency1, tokenAmount / DUST_DIVISOR);
+
+        posm.modifyLiquidities{value: ethAmount}(
+            abi.encode(
+                abi.encodePacked(
+                    uint8(Actions.SETTLE),
+                    uint8(Actions.SETTLE),
+                    uint8(Actions.MINT_POSITION_FROM_DELTAS),
+                    uint8(Actions.CLEAR_OR_TAKE),
+                    uint8(Actions.CLEAR_OR_TAKE)
+                ),
+                params
+            ),
+            block.timestamp
+        );
     }
 
-    /// @dev Mengembalikan 0 tanpa memindahkan apa pun bila jumlahnya terlalu kecil untuk ditukar.
-    function _swap(
-        address pair,
-        address assetIn,
-        uint256 amountIn,
-        uint256 reserveIn,
-        uint256 reserveOut,
-        bool outIsToken0
-    ) private returns (uint256 amountOut) {
-        if (amountIn == 0) return 0;
-        amountOut = _amountOut(amountIn, reserveIn, reserveOut);
-        if (amountOut == 0) return 0;
-        IERC20(assetIn).safeTransfer(pair, amountIn);
-        IUniswapV2Pair(pair)
-            .swap(outIsToken0 ? amountOut : 0, outIsToken0 ? 0 : amountOut, address(this), "");
+    /// @notice PoolKey pool XofN untuk `token`. ETH native selalu currency0 (alamat 0).
+    function poolKey(address poolGuard, address token) internal pure returns (PoolKey memory) {
+        return PoolKey({
+            currency0: Currency.wrap(address(0)),
+            currency1: Currency.wrap(token),
+            fee: POOL_FEE,
+            tickSpacing: TICK_SPACING,
+            hooks: IHooks(poolGuard)
+        });
     }
 
-    function _reserves(address pair, address token)
-        private
-        view
-        returns (uint256 reserveToken, uint256 reserveEth, bool tokenIsZero)
-    {
-        (uint112 reserve0, uint112 reserve1,) = IUniswapV2Pair(pair).getReserves();
-        tokenIsZero = IUniswapV2Pair(pair).token0() == token;
-        (reserveToken, reserveEth) = tokenIsZero ? (reserve0, reserve1) : (reserve1, reserve0);
-    }
-
-    function _amountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut)
-        private
-        pure
-        returns (uint256)
-    {
-        uint256 amountInWithFee = amountIn * FEE_NUMERATOR;
-        return (amountInWithFee * reserveOut) / (reserveIn * FEE_DENOMINATOR + amountInWithFee);
+    /// @notice Akar harga pembukaan dalam Q64.96: sqrt(tokenAmount / ethAmount) * 2^96.
+    /// @dev Dihitung sebagai sqrt(token * 2^128 / eth) * 2^32. Dengan kedua jumlah <= uint128,
+    ///      hasil `mulDiv` di bawah 2^256 dan hasil akhir di bawah 2^160. `token << 192` langsung
+    ///      akan overflow.
+    function sqrtPriceX96(uint256 ethAmount, uint256 tokenAmount) internal pure returns (uint160) {
+        return uint160(Math.sqrt(Math.mulDiv(tokenAmount, 1 << 128, ethAmount)) << 32);
     }
 }

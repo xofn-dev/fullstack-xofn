@@ -21,7 +21,8 @@ import {XofNToken} from "../../contracts/XofNToken.sol";
 import {ExpansionMsg} from "../../contracts/libraries/ExpansionMsg.sol";
 import {TierLib} from "../../contracts/libraries/TierLib.sol";
 import {MockLooseOFT} from "../mocks/MockLooseOFT.sol";
-import {MockV2Pair} from "../mocks/MockUniswapV2.sol";
+import {PoolSeeder} from "../../contracts/libraries/PoolSeeder.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 
 /// @dev PRD §9.2 tahap 2, composer `XofNRemote.lzCompose` (deployguide §7.5):
 ///      hanya dari endpoint, hanya token terdaftar, pool dibuat + diisi dalam satu panggilan,
@@ -94,7 +95,7 @@ contract ComposerTest is XofNTestBase {
         vm.expectRevert(abi.encodeWithSelector(OAppReceiver.OnlyEndpoint.selector, safe));
         remote.lzCompose(from, liquidity.guid, message, safe, "");
 
-        assertEq(address(_pair(BASE, address(onBase))), address(0), "no pool");
+        assertFalse(_poolExists(BASE, address(onBase)), "no pool");
     }
 
     /// @dev OFT pihak lain mengirim token ber-compose ke Remote. Endpoint memanggil `lzCompose`,
@@ -175,14 +176,12 @@ contract ComposerTest is XofNTestBase {
             abi.encodeWithSelector(XofNRemote.UntrustedComposeSource.selector, HOME, _b32(attacker))
         );
         remote.lzCompose{value: EXPANSION_PAIR_ETH}(from, forged.guid, message, address(0), "");
-        assertEq(address(_pair(BASE, address(onBase))), address(0));
+        assertFalse(_poolExists(BASE, address(onBase)));
 
         // Likuiditas resmi tetap masuk dengan rasio yang benar.
         Delivery memory liquidity = _sendLiquidityByRetry();
         assertTrue(_compose(BASE, liquidity, address(remote)));
-        (uint256 reserveToken, uint256 reserveEth) = chains[BASE].router.reservesOf(address(onBase));
-        assertEq(reserveToken, perChain);
-        assertEq(reserveEth, EXPANSION_PAIR_ETH);
+        _assertRemotePoolAtTarget();
     }
 
     // ───────────────────────────── Satu panggilan ─────────────────────────────
@@ -190,7 +189,7 @@ contract ComposerTest is XofNTestBase {
     /// @dev Pool dibuat, diisi, dan token dikunci dalam SATU panggilan `lzCompose`.
     function test_poolIsCreatedAndFilledInOneCall() public {
         Delivery memory liquidity = _untilLiquidityDelivered();
-        assertEq(address(_pair(BASE, address(onBase))), address(0), "no pool before compose");
+        assertFalse(_poolExists(BASE, address(onBase)), "no pool before compose");
         assertEq(onBase.owner(), address(remote));
 
         vm.recordLogs();
@@ -199,17 +198,15 @@ contract ComposerTest is XofNTestBase {
         assertTrue(_hasLog(logs, address(remote), XofNRemote.PoolSeeded.selector));
         assertTrue(_hasLog(logs, address(remote), XofNRemote.RemoteLocked.selector));
 
-        MockV2Pair pair = _pair(BASE, address(onBase));
-        (uint256 reserveToken, uint256 reserveEth) = chains[BASE].router.reservesOf(address(onBase));
-        assertEq(reserveToken, perChain);
-        assertEq(reserveEth, EXPANSION_PAIR_ETH);
-        assertEq(pair.balanceOf(LP_RECIPIENT), pair.totalSupply() - pair.MINIMUM_LIQUIDITY());
-        assertEq(pair.balanceOf(address(remote)), 0);
+        _assertRemotePoolAtTarget();
+        // Seluruh setoran ada di PoolManager chain ini; Remote tidak menyisakan token.
+        assertEq(onBase.balanceOf(address(chains[BASE].poolManager)), perChain);
+        assertEq(address(chains[BASE].poolManager).balance, EXPANSION_PAIR_ETH);
+        assertEq(onBase.balanceOf(address(chains[BASE].positionManager)), 0);
         assertEq(onBase.balanceOf(address(remote)), 0);
 
         XofNRemote.Deployment memory d = remote.deploymentOf(address(token));
         assertEq(uint8(d.state), uint8(XofNRemote.State.Locked));
-        assertEq(d.pool, address(pair));
         assertEq(onBase.owner(), address(0));
         assertEq(_delegateOf(BASE, address(onBase)), address(0));
         (bool locked,,) = chains[BASE].registry.verify(address(onBase));
@@ -226,90 +223,98 @@ contract ComposerTest is XofNTestBase {
         vm.prank(attacker);
         EndpointV2(chains[BASE].endpoint)
             .lzCompose(from, address(remote), liquidity.guid, 0, message, hex"deadbeef");
-        (uint256 reserveToken, uint256 reserveEth) = chains[BASE].router.reservesOf(address(onBase));
-        assertEq(reserveToken, perChain);
-        assertEq(reserveEth, EXPANSION_PAIR_ETH, "ratio comes from composeMsg only");
+        _assertRemotePoolAtTarget();
     }
 
     /// @dev Value lebih besar dari yang diminta `composeMsg` tidak mengubah rasio pool.
     function test_extraValueDoesNotChangePoolRatio() public {
         Delivery memory liquidity = _untilLiquidityDelivered();
         assertTrue(_composeWith(BASE, liquidity, address(remote), SEED_GAS, 1 ether));
-        (uint256 reserveToken, uint256 reserveEth) = chains[BASE].router.reservesOf(address(onBase));
-        assertEq(reserveToken, perChain);
-        assertEq(reserveEth, EXPANSION_PAIR_ETH);
+        _assertRemotePoolAtTarget();
     }
 
     // ───────────────────────────── Front-run pool di chain ekspansi ─────────────────────────────
+    // Di v2 pihak lain bisa membuat pair, mendonasikan aset, atau memasang harga lebih dulu
+    // (PRD P55). Di v4 PoolKey XofN dijaga hook: pool itu tidak bisa ada sebelum lzCompose.
+    // Yang tersisa hanyalah pool di PoolKey LAIN, yang tidak boleh memblokir atau memengaruhi.
 
-    function test_frontRun_emptyPairCreatedFirst() public {
+    /// @dev v2: "pair kosong dibuat lebih dulu". v4: ditolak hook, pada harga berapa pun.
+    function test_frontRun_thirdPartyCannotInitializeRemotePool() public {
         Delivery memory liquidity = _untilLiquidityDelivered();
+        PoolKey memory key = remote.poolKeyOf(address(onBase));
+        uint160 skewed = PoolSeeder.sqrtPriceX96(1 ether, 1_000 ether);
+        uint160 target = PoolSeeder.sqrtPriceX96(EXPANSION_PAIR_ETH, perChain);
+
         vm.prank(attacker);
-        chains[BASE].factory.createPair(address(onBase), address(chains[BASE].weth));
+        _expectGuardRejects(address(key.hooks), attacker);
+        chains[BASE].poolManager.initialize(key, skewed);
+        vm.prank(attacker);
+        _expectGuardRejects(address(key.hooks), attacker);
+        chains[BASE].poolManager.initialize(key, target);
+        assertFalse(_poolExists(BASE, address(onBase)));
 
         assertTrue(_compose(BASE, liquidity, address(remote)));
-        (uint256 reserveToken, uint256 reserveEth) = chains[BASE].router.reservesOf(address(onBase));
-        assertEq(reserveToken, perChain);
-        assertEq(reserveEth, EXPANSION_PAIR_ETH);
+        _assertRemotePoolAtTarget();
     }
 
-    /// @dev Donasi WETH + `sync` sebelum compose: pool tetap terisi, pendonor tidak dapat LP.
-    function test_frontRun_donationAndSyncCannotBlockCompose() public {
-        Delivery memory liquidity = _untilLiquidityDelivered();
+    /// @dev Hook Remote terikat ke Remote chain itu saja: Graduator, Remote chain lain, dan
+    ///      PositionManager pun bukan `seeder`-nya.
+    function test_frontRun_onlyThisRemoteCanInitialize() public {
+        _untilLiquidityDelivered();
+        PoolKey memory key = remote.poolKeyOf(address(onBase));
+        uint160 target = PoolSeeder.sqrtPriceX96(EXPANSION_PAIR_ETH, perChain);
+        address[3] memory others =
+            [address(graduator), address(remotes[ARB]), address(chains[BASE].positionManager)];
+        for (uint256 i = 0; i < others.length; i++) {
+            vm.prank(others[i]);
+            _expectGuardRejects(address(key.hooks), others[i]);
+            chains[BASE].poolManager.initialize(key, target);
+        }
+    }
+
+    /// @dev v2: donasi + `sync`, dan donasi TANPA `sync` (PRD P55). v4: pool belum ada, jadi tidak
+    ///      bisa didonasikan; aset yang dikirim langsung ke PoolManager atau PositionManager
+    ///      tidak ikut terhitung dan tidak mengubah harga.
+    function test_frontRun_donationsCannotBlockOrSkewCompose() public {
+        _untilConfiguredWithAttackerTokens(1_000_000 ether);
+        PoolKey memory key = remote.poolKeyOf(address(onBase));
         vm.startPrank(attacker);
-        address pair = chains[BASE].factory.createPair(address(onBase), address(chains[BASE].weth));
-        chains[BASE].weth.deposit{value: 0.01 ether}();
-        chains[BASE].weth.transfer(pair, 0.01 ether);
-        MockV2Pair(pair).sync();
+        onBase.approve(address(chains[BASE].router), 1_000_000 ether);
+        vm.expectRevert(POOL_NOT_INITIALIZED);
+        chains[BASE].router.donate{value: 0.01 ether}(key, 0.01 ether, 100_000 ether);
+        onBase.transfer(address(chains[BASE].poolManager), 400_000 ether);
+        onBase.transfer(address(chains[BASE].positionManager), 400_000 ether);
         vm.stopPrank();
 
-        assertTrue(_compose(BASE, liquidity, address(remote)));
-        assertEq(MockV2Pair(pair).balanceOf(attacker), 0);
-        (uint256 reserveToken, uint256 reserveEth) = chains[BASE].router.reservesOf(address(onBase));
-        assertEq(reserveToken, perChain);
-        assertEq(reserveEth, EXPANSION_PAIR_ETH + 0.01 ether);
+        Delivery memory liquidity = _sendLiquidityByRetry();
+        assertTrue(_compose(BASE, liquidity, address(remote)), "compose must not be blockable");
+        _assertRemotePoolAtTarget();
         assertEq(uint8(remote.deploymentOf(address(token)).state), uint8(XofNRemote.State.Locked));
+        assertEq(onBase.balanceOf(address(remote)), 0);
     }
 
-    /// @dev Kasus terberat: penyerang sudah memegang token di chain ekspansi (dibridge di jendela
-    ///      sebelum likuiditas resmi) dan membuka pool dengan harga palsu. Compose tetap berhasil
-    ///      dan penyerang tidak untung.
-    function test_frontRun_skewedPoolWithBridgedTokensDoesNotProfit() public {
-        _assertRemoteSkewedPoolDoesNotProfit(10_000 ether, 0.01 ether, 0);
+    /// @dev Kasus terberat di v2: penyerang sudah memegang token di chain ekspansi (dibridge di
+    ///      jendela sebelum likuiditas resmi) dan membuka pool dengan harga palsu.
+    function test_frontRun_rivalPoolWithBridgedTokensHasNoEffect() public {
+        _assertRemoteRivalPoolHasNoEffect(10_000 ether, 0.01 ether);
     }
 
     /// @dev Pool tandingan 4x lebih besar dari likuiditas resmi (temuan review 17 Nov 2026).
-    function test_frontRun_largeSkewedPoolWithBridgedTokensDoesNotProfit() public {
-        _assertRemoteSkewedPoolDoesNotProfit(8_000_000 ether, 0.2 ether, 0);
+    function test_frontRun_largeRivalPoolWithBridgedTokensHasNoEffect() public {
+        _assertRemoteRivalPoolHasNoEffect(8_000_000 ether, 0.2 ether);
     }
 
-    /// @dev PRD P55 (HIGH) di chain ekspansi: pool tandingan + WETH ke pair TANPA `sync`.
-    function test_frontRun_unsyncedDonationDoesNotProfit() public {
-        _assertRemoteSkewedPoolDoesNotProfit(600_000 ether, 0.003 ether, 0.05 ether);
-    }
-
-    /// @dev PRD P55 (MEDIUM) di chain ekspansi: pair kecil + donasi besar tanpa `sync` tidak
-    ///      bisa memblokir compose.
-    function test_frontRun_unsyncedDonationCannotBlockCompose() public {
-        _assertRemoteSkewedPoolDoesNotProfit(1e12, 1e12, 50 ether);
-    }
-
-    function testFuzz_frontRun_anyRemotePoolDoesNotProfit(
-        uint256 attackTokens,
-        uint256 attackEth,
-        uint256 donation
-    ) public {
+    function testFuzz_frontRun_anyRemoteRivalPoolHasNoEffect(uint256 attackTokens, uint256 attackEth)
+        public
+    {
         attackTokens = bound(attackTokens, 1e15, 50_000_000 ether);
         attackEth = bound(attackEth, 1e12, 2 ether);
-        donation = bound(donation, 0, 2 ether);
-        _assertRemoteSkewedPoolDoesNotProfit(attackTokens, attackEth, donation);
+        _assertRemoteRivalPoolHasNoEffect(attackTokens, attackEth);
     }
 
-    function _assertRemoteSkewedPoolDoesNotProfit(
-        uint256 attackTokens,
-        uint256 attackEth,
-        uint256 donation
-    ) private {
+    /// @dev Sampai ack CONFIGURED, dengan `amount` token home dibridge penyerang ke dirinya
+    ///      sendiri di Base. Likuiditas resmi belum dikirim.
+    function _untilConfiguredWithAttackerTokens(uint256 amount) private {
         (XofNToken t, XofNCurve curve) = _launch(STANDARD, _eids(BASE));
         _buy(curve, attacker, 0.5 ether);
         _reachThreshold(curve);
@@ -324,70 +329,52 @@ contract ComposerTest is XofNTestBase {
         onBase = _remoteToken(token, BASE);
         perChain = graduator.launchOf(address(token)).tokensPerChain;
 
-        // Penyerang membridge token ke dirinya sendiri di Base, lalu membuat pool tandingan.
-        attackTokens = (attackTokens / 1e12) * 1e12; // tanpa dust, supaya jumlah yang tiba pasti
-        vm.deal(attacker, attackEth + donation + 10 ether);
-        _bridge(address(token), attacker, BASE, attacker, attackTokens, "", "");
+        vm.deal(attacker, 10 ether);
+        _bridge(address(token), attacker, BASE, attacker, amount, "", "");
         _mustDeliver(BASE, address(onBase));
-        vm.startPrank(attacker);
-        onBase.approve(address(chains[BASE].router), attackTokens);
-        chains[BASE].router.addLiquidityETHRaw{value: attackEth}(
-            address(onBase), attackTokens, attacker
-        );
-        if (donation != 0) {
-            // WETH ditransfer langsung ke pair TANPA sync (PRD P55).
-            address rival = address(_pair(BASE, address(onBase)));
-            chains[BASE].weth.deposit{value: donation}();
-            chains[BASE].weth.transfer(rival, donation);
-        }
-        vm.stopPrank();
+    }
+
+    function _assertRemoteRivalPoolHasNoEffect(uint256 attackTokens, uint256 attackEth) private {
+        attackTokens = (attackTokens / 1e12) * 1e12; // tanpa dust, supaya jumlah yang tiba pasti
+        _untilConfiguredWithAttackerTokens(attackTokens);
+        (PoolKey memory rival, uint256 rivalLiquidity) =
+            _openRivalPool(BASE, address(onBase), attacker, attackTokens, attackEth);
+        uint256 tokensAfterOpen = onBase.balanceOf(attacker);
+        uint256 ethAfterOpen = attacker.balance;
 
         Delivery memory liquidity = _sendLiquidityByRetry();
         assertTrue(_compose(BASE, liquidity, address(remote)), "compose must not be blockable");
         assertEq(uint8(remote.deploymentOf(address(token)).state), uint8(XofNRemote.State.Locked));
         assertEq(onBase.balanceOf(address(remote)), 0);
-        assertEq(chains[BASE].weth.balanceOf(address(remote)), 0);
+        _assertRemotePoolAtTarget();
 
-        // Likuiditas protokol, dinilai pada harga target (pairEth / perChain), tidak berkurang.
-        MockV2Pair pair = _pair(BASE, address(onBase));
-        {
-            (uint256 reserveToken, uint256 reserveEth) =
-                chains[BASE].router.reservesOf(address(onBase));
-            uint256 poolValue = reserveEth + (reserveToken * EXPANSION_PAIR_ETH) / perChain;
-            uint256 protocolValue = (pair.balanceOf(LP_RECIPIENT) * poolValue) / pair.totalSupply();
-            // Toleransi 1e-5 (temuan LOW review 17 Nov 2026; kerugian terukur ±1,7e-6).
-            assertGe(
-                protocolValue,
-                (2 * EXPANSION_PAIR_ETH * 99_999) / 100_000,
-                "protocol liquidity was diluted"
-            );
-        }
-
-        uint256 valueOut = _attackerExit(pair);
-        uint256 valueIn = attackEth + donation + (attackTokens * EXPANSION_PAIR_ETH) / perChain;
-        assertLe(
-            valueOut, valueIn + (2 * EXPANSION_PAIR_ETH) / 100_000, "front-runner must not profit"
-        );
+        // Penyerang menarik likuiditasnya: paling banyak yang ia setor.
+        _closeRivalPool(BASE, rival, attacker, rivalLiquidity);
+        assertLe(onBase.balanceOf(attacker) - tokensAfterOpen, attackTokens, "attacker tokens");
+        assertLe(attacker.balance - ethAfterOpen, attackEth, "attacker ETH");
     }
 
-    /// @dev LP penyerang ditambah saldo pair yang belum di-sync (bisa di-`skim` siapa pun).
-    ///      LP yang terlalu kecil untuk di-burn bernilai 0.
-    function _attackerExit(MockV2Pair pair) private returns (uint256) {
-        uint256 tokensBefore = onBase.balanceOf(attacker);
-        uint256 wethBefore = chains[BASE].weth.balanceOf(attacker);
-        vm.startPrank(attacker);
-        pair.skim(attacker);
-        uint256 lp = pair.balanceOf(attacker);
-        uint256 supply = pair.totalSupply();
-        (uint256 reserveToken, uint256 reserveEth) = chains[BASE].router.reservesOf(address(onBase));
-        if (lp * reserveToken / supply != 0 && lp * reserveEth / supply != 0) {
-            pair.transfer(address(pair), lp);
-            pair.burn(attacker);
-        }
-        vm.stopPrank();
-        uint256 tokensBack = onBase.balanceOf(attacker) - tokensBefore;
-        uint256 ethBack = chains[BASE].weth.balanceOf(attacker) - wethBefore;
-        return ethBack + (tokensBack * EXPANSION_PAIR_ETH) / perChain;
+    /// @dev Pool chain ekspansi dibuka tepat pada rasio (perChain, EXPANSION_PAIR_ETH), berisi
+    ///      seluruh setoran, dan posisinya milik penerima LP.
+    function _assertRemotePoolAtTarget() private view {
+        PoolKey memory key = remote.poolKeyOf(address(onBase));
+        XofNRemote.Deployment memory d = remote.deploymentOf(address(token));
+        assertEq(d.poolId, keccak256(abi.encode(key)), "poolId");
+        assertEq(address(key.hooks), remote.poolGuard());
+        assertEq(
+            chains[BASE].router.sqrtPriceOf(key),
+            PoolSeeder.sqrtPriceX96(EXPANSION_PAIR_ETH, perChain),
+            "pool must open at the target price"
+        );
+        (uint256 reserveToken, uint256 reserveEth) = _poolReserves(BASE, address(onBase));
+        assertApproxEqRel(reserveToken, perChain, 1e9, "protocol liquidity was diluted");
+        assertApproxEqRel(reserveEth, EXPANSION_PAIR_ETH, 1e9, "protocol liquidity was diluted");
+        assertEq(chains[BASE].positionManager.ownerOf(d.positionId), LP_RECIPIENT);
+        assertEq(
+            chains[BASE].positionManager.getPositionLiquidity(d.positionId),
+            chains[BASE].router.liquidityOf(key),
+            "all pool liquidity is the protocol position"
+        );
     }
 
     // ───────────────────────────── Compose gagal + retryCompose ─────────────────────────────
@@ -408,7 +395,7 @@ contract ComposerTest is XofNTestBase {
         // Keadaan setelah gagal.
         assertEq(onBase.balanceOf(address(remote)), perChain, "tokens stay at the composer");
         assertEq(onBase.totalSupply(), perChain);
-        assertEq(address(_pair(BASE, address(onBase))), address(0), "no pool");
+        assertFalse(_poolExists(BASE, address(onBase)), "no pool");
         assertEq(
             uint8(remote.deploymentOf(address(token)).state), uint8(XofNRemote.State.Configured)
         );
@@ -424,9 +411,7 @@ contract ComposerTest is XofNTestBase {
         // retryCompose: pihak mana pun, cukup dengan gas; ETH pasangan dari saldo Remote.
         vm.prank(bob);
         ep.lzCompose{gas: SEED_GAS}(from, address(remote), liquidity.guid, 0, message, "");
-        (uint256 reserveToken, uint256 reserveEth) = chains[BASE].router.reservesOf(address(onBase));
-        assertEq(reserveToken, perChain);
-        assertEq(reserveEth, EXPANSION_PAIR_ETH);
+        _assertRemotePoolAtTarget();
         assertEq(onBase.balanceOf(address(remote)), 0);
 
         // Tidak bisa dijalankan dua kali.
@@ -456,14 +441,12 @@ contract ComposerTest is XofNTestBase {
         );
         remote.lzCompose(from, liquidity.guid, message, address(0), "");
         assertEq(onBase.balanceOf(address(remote)), perChain);
-        assertEq(address(_pair(BASE, address(onBase))), address(0), "no pool");
+        assertFalse(_poolExists(BASE, address(onBase)), "no pool");
 
         // Tim mengisi saldo pas sebesar ETH pasangan; compose diulang tanpa value.
         vm.deal(address(remote), EXPANSION_PAIR_ETH);
         assertTrue(_composeWith(BASE, liquidity, address(remote), SEED_GAS, 0));
-        (uint256 reserveToken, uint256 reserveEth) = chains[BASE].router.reservesOf(address(onBase));
-        assertEq(reserveToken, perChain);
-        assertEq(reserveEth, EXPANSION_PAIR_ETH);
+        _assertRemotePoolAtTarget();
         assertEq(uint8(remote.deploymentOf(address(token)).state), uint8(XofNRemote.State.Locked));
 
         // Saldo habis untuk pool, jadi ack LOCKED tertunda; `reAck` menutupnya.
@@ -485,8 +468,8 @@ contract ComposerTest is XofNTestBase {
         assertFalse(_composeWith(BASE, liquidity, address(remote), SEED_GAS, 0));
 
         assertTrue(_composeWith(BASE, liquidity, address(remote), SEED_GAS, EXPANSION_PAIR_ETH));
-        (, uint256 reserveEth) = chains[BASE].router.reservesOf(address(onBase));
-        assertEq(reserveEth, EXPANSION_PAIR_ETH);
+        _assertRemotePoolAtTarget();
+        assertEq(address(chains[BASE].poolManager).balance, EXPANSION_PAIR_ETH);
     }
 
     /// @dev Setelah pool dibuat, pesan compose kedua untuk token yang sama ditolak.

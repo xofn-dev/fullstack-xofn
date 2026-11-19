@@ -16,9 +16,13 @@ optimizer_runs = 200
 via_ir = false
 gas_reports = ["*"]
 # config/: definisi tier; out/: artefak ABI untuk tes allowlist; deployments/: hanya local.json.
+# node_modules/@uniswap/*: artefak Uniswap v4 bawaan paket (PoolManager dan PositionManager
+# ber-pragma 0.8.26, tidak bisa dikompilasi dengan solc 0.8.24). Hanya untuk tes dan Anvil.
 fs_permissions = [
   { access = "read", path = "./config" },
   { access = "read", path = "./out" },
+  { access = "read", path = "./node_modules/@uniswap/v4-core/out" },
+  { access = "read", path = "./node_modules/@uniswap/v4-periphery/foundry-out" },
   { access = "read-write", path = "./deployments" },
 ]
 

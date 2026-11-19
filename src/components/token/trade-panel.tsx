@@ -1,14 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { useBalance, useConnection, useReadContract } from 'wagmi';
+import { zeroAddress } from 'viem';
+import { useBalance, useConnection, useReadContract, useSimulateContract } from 'wagmi';
 import { getChain } from '@/lib/chains';
 import { cn } from '@/lib/cn';
 import { formatEth, formatTokens, parseAmount } from '@/lib/format';
 import { publicEnv } from '@/lib/public-env';
+import { v4QuoterAbi } from '@/lib/web3/abi/uniswap-v4';
 import { curveAbi, tokenAbi } from '@/lib/web3/abi/xofn';
+import type { LocalUniswapV4 } from '@/lib/web3/addresses';
 import { buildApprove, buildBuy, buildSell } from '@/lib/web3/curve-trade';
-import { buildPoolBuy, buildPoolSell, getAmountOut } from '@/lib/web3/pool-trade';
+import { knownRevertMessage } from '@/lib/web3/decode-revert';
+import {
+  buildPoolBuy,
+  buildPoolSell,
+  isXofnPoolKey,
+  MAX_UINT128,
+  poolIdOf,
+  priceFromSqrtX96,
+} from '@/lib/web3/pool-trade';
 import { applySlippage, DEFAULT_SLIPPAGE_BPS, type TxRequest } from '@/lib/web3/tx';
 import { useTxFlow } from '@/lib/web3/use-tx-flow';
 import { TxStatus } from '@/components/ui/tx-status';
@@ -18,19 +29,42 @@ import type { ChainKey, TradeSide } from '@/types/enums';
 
 const SLIPPAGE_CHOICES = [50, 100, 300] as const;
 
+// Quote dibaca ulang seirama dengan data token (4 detik) dan tidak disimpan setelah tidak
+// dipakai. Tanpa ini harga di panel terus diperbarui sementara quote dan batas minimum di
+// sebelahnya tetap angka lama, dan mengetik ulang jumlah yang sama menampilkan quote sebelum
+// trade terakhir.
+const LIVE_QUOTE = { refetchInterval: 4_000, staleTime: 0, gcTime: 0 } as const;
+
 interface TradePanelProps {
   token: TokenDetail;
   homeChain: ChainKey;
-  /** Router AMM tiruan (hanya manifest lokal); null → trading pool belum tersedia di UI. */
-  mockRouter: Address | null;
+  /**
+   * Uniswap v4 lokal (router uji + quoter; hanya manifest Anvil). null → trading pool belum
+   * tersedia di UI untuk jaringan ini (PRD P59).
+   */
+  poolVenue: LocalUniswapV4 | null;
 }
 
-// Trading (USER_FLOWS Flow E): di bonding curve sebelum graduation, di pool home sesudahnya.
-// Quote dibaca dari kontrak; batas minimum dihitung dari slippage pilihan pengguna.
-export function TradePanel({ token, homeChain, mockRouter }: TradePanelProps) {
+// Trading (USER_FLOWS Flow E): di bonding curve sebelum graduation, di pool Uniswap v4 home
+// sesudahnya. Quote SELALU dibaca dari kontrak (curve atau V4Quoter); batas minimum dihitung dari
+// slippage pilihan pengguna dan dipaksakan on-chain di kedua tempat.
+export function TradePanel({ token, homeChain, poolVenue }: TradePanelProps) {
   const chainId = getChain(publicEnv.network, homeChain).chainId;
   const onCurve = token.graduatorStatus === 'bonding';
-  const venue: Address | null = onCurve ? token.curve : mockRouter;
+  // Alamat yang menerima transaksi (dan approve saat menjual): curve, atau router uji pool.
+  const venue: Address | null = onCurve ? token.curve : (poolVenue?.swapRouter ?? null);
+  // PoolKey datang dari respons API, yang hanya cache. Sebelum dipakai untuk mengirim dana, klien
+  // mencocokkannya sendiri: pasangan ETH/token ini, PoolId yang dicatat Graduator, dan hook
+  // penjaga dari manifest. Bila tidak cocok, pool dianggap tidak terbaca.
+  const statedKey = token.poolState?.key ?? null;
+  const poolKey =
+    statedKey &&
+    poolVenue &&
+    isXofnPoolKey(statedKey, token.address) &&
+    statedKey.hooks.toLowerCase() === poolVenue.poolGuard &&
+    poolIdOf(statedKey).toLowerCase() === token.pool?.toLowerCase()
+      ? statedKey
+      : null;
   const { address: account } = useConnection();
   const tx = useTxFlow();
   const [side, setSide] = useState<TradeSide>('buy');
@@ -63,7 +97,7 @@ export function TradePanel({ token, homeChain, mockRouter }: TradePanelProps) {
     functionName: 'quoteBuy',
     args: hasAmount ? [amount] : undefined,
     chainId,
-    query: { enabled: onCurve && side === 'buy' && hasAmount },
+    query: { enabled: onCurve && side === 'buy' && hasAmount, ...LIVE_QUOTE },
   });
   const quoteSell = useReadContract({
     address: token.curve,
@@ -71,7 +105,25 @@ export function TradePanel({ token, homeChain, mockRouter }: TradePanelProps) {
     functionName: 'quoteSell',
     args: hasAmount ? [amount] : undefined,
     chainId,
-    query: { enabled: onCurve && side === 'sell' && hasAmount },
+    query: { enabled: onCurve && side === 'sell' && hasAmount, ...LIVE_QUOTE },
+  });
+  // V4Quoter menjalankan swap sungguhan lalu revert, jadi dibaca lewat simulasi, bukan `view`.
+  const poolQuoteReady = !onCurve && !!poolVenue && !!poolKey && hasAmount && amount <= MAX_UINT128;
+  const quotePool = useSimulateContract({
+    // Hook simulasi wagmi hanya berjalan bila ada akun. Quote tidak bergantung pada pemanggil,
+    // jadi tanpa wallet disimulasikan dari alamat nol: harga tetap terbaca sebelum connect, sama
+    // seperti quote di curve.
+    account: account ?? zeroAddress,
+    address: poolVenue?.quoter,
+    abi: v4QuoterAbi,
+    functionName: 'quoteExactInputSingle',
+    // ETH adalah currency0: membeli token = zeroForOne.
+    args:
+      poolQuoteReady && poolKey
+        ? [{ poolKey, zeroForOne: side === 'buy', exactAmount: amount, hookData: '0x' }]
+        : undefined,
+    chainId,
+    query: { enabled: poolQuoteReady, ...LIVE_QUOTE },
   });
 
   if (token.curveState.thresholdReached && onCurve) {
@@ -94,7 +146,16 @@ export function TradePanel({ token, homeChain, mockRouter }: TradePanelProps) {
     );
   }
 
-  // Quote: curve membacanya dari kontrak; pool tiruan dihitung dari cadangan dengan rumus v2.
+  if (!onCurve && !poolKey) {
+    return (
+      <div className="app-panel">
+        <h2>Trade</h2>
+        <p>Pool state could not be read. No price is assumed.</p>
+      </div>
+    );
+  }
+
+  // Quote: curve dan pool sama-sama membacanya dari kontrak.
   let expectedOut: bigint | null = null;
   let ethUsed: bigint | null = null;
   let quoteFailed = false;
@@ -105,31 +166,36 @@ export function TradePanel({ token, homeChain, mockRouter }: TradePanelProps) {
     } else if (onCurve) {
       if (quoteSell.data !== undefined) expectedOut = quoteSell.data;
       quoteFailed = quoteSell.isError;
-    } else if (token.poolReserves) {
-      const reserveToken = BigInt(token.poolReserves.token);
-      const reserveEth = BigInt(token.poolReserves.eth);
-      expectedOut =
-        side === 'buy'
-          ? getAmountOut(amount, reserveEth, reserveToken)
-          : getAmountOut(amount, reserveToken, reserveEth);
     } else {
-      quoteFailed = true;
+      if (quotePool.data) expectedOut = quotePool.data.result[0];
+      quoteFailed = quotePool.isError;
     }
   }
   const minOut = expectedOut !== null ? applySlippage(expectedOut, slippageBps) : null;
+  // Di luar uint128 quote tidak pernah diminta: itu batas jumlah di Uniswap v4, bukan gagal baca.
+  const tooLarge = !onCurve && hasAmount && amount > MAX_UINT128;
+  // Jawaban kontrak (mis. likuiditas tidak cukup) dibedakan dari pembacaan yang gagal.
+  const quoteRevert = !onCurve && quotePool.error ? knownRevertMessage(quotePool.error) : null;
 
   const balance = side === 'buy' ? ethBalance.data?.value : tokenBalance.data;
   const insufficient = hasAmount && balance !== undefined && amount > balance;
+  // Allowance yang belum terbaca tidak dianggap cukup: tanpa ini tombolnya langsung "Sell" dan
+  // transaksinya gagal di transferFrom dengan pesan yang tidak menjelaskan apa-apa.
+  const allowanceUnread = side === 'sell' && hasAmount && !!account && allowance.data === undefined;
   const needsApproval =
     side === 'sell' && hasAmount && allowance.data !== undefined && allowance.data < amount;
-  // Curve menolak penjualan yang hasilnya nol; pool tiruan tidak punya batas minimum on-chain.
+  // Hasil nol tidak pernah dikirim: curve menolaknya, dan di pool itu berarti jumlahnya debu.
   const zeroOut = hasAmount && expectedOut !== null && expectedOut === 0n;
 
   let problem: string | null = null;
   if (amountText.trim() !== '' && !hasAmount) problem = 'Enter an amount greater than zero.';
+  else if (tooLarge) problem = 'This amount is too large for the pool.';
   else if (insufficient) problem = 'Balance is too low for this amount.';
-  else if (quoteFailed) problem = 'Quote could not be read. No price is assumed.';
+  else if (quoteFailed) problem = quoteRevert ?? 'Quote could not be read. No price is assumed.';
   else if (zeroOut) problem = 'This amount is too small to trade.';
+  else if (allowanceUnread) {
+    problem = allowance.isError ? 'Token allowance could not be read.' : 'Reading token allowance…';
+  }
 
   const canSubmit = hasAmount && !problem && expectedOut !== null && minOut !== null && !tx.busy;
 
@@ -141,30 +207,38 @@ export function TradePanel({ token, homeChain, mockRouter }: TradePanelProps) {
     } else if (onCurve) {
       request = side === 'buy' ? buildBuy(homeChain, venue, amount, minOut) : buildSell(homeChain, venue, amount, minOut);
     } else {
+      if (!poolKey) return;
       request =
         side === 'buy'
-          ? buildPoolBuy(homeChain, venue, token.address, account, amount)
-          : buildPoolSell(homeChain, venue, token.address, account, amount);
+          ? buildPoolBuy(homeChain, venue, poolKey, amount, minOut)
+          : buildPoolSell(homeChain, venue, poolKey, amount, minOut);
     }
     const receipt = await tx.run(request);
     if (!receipt) return;
     void allowance.refetch();
     void tokenBalance.refetch();
     void ethBalance.refetch();
+    // Harga pool berubah oleh trade ini; quote lama tidak boleh tampil lagi.
+    if (!onCurve) void quotePool.refetch();
     if (!needsApproval) setAmountText('');
   };
 
   const outUnit = side === 'buy' ? `$${token.symbol}` : 'ETH';
   const format = (value: bigint) => (side === 'buy' ? `${formatTokens(value)} ${outUnit}` : formatEth(value));
   const actionLabel = needsApproval ? `Approve $${token.symbol}` : side === 'buy' ? 'Buy' : 'Sell';
+  // Di cabang pool `poolState` pasti ada: tanpa PoolKey yang cocok panel sudah berhenti di atas.
+  const poolState = onCurve ? null : token.poolState;
+  const price = poolState ? priceFromSqrtX96(BigInt(poolState.sqrtPriceX96)) : token.curveState.currentPrice;
+  // Fee LP dalam pip (1e-6): 3000 → 0.30%. Fee protokol Uniswap (0 di node lokal) tidak termasuk.
+  const poolFee = poolState ? `${(poolState.lpFee / 10_000).toFixed(2)}% pool fee` : 'n/a';
 
   return (
     <div className="app-panel">
       <h2>{onCurve ? 'Trade on the bonding curve' : 'Trade in the pool'}</h2>
       {!onCurve && (
         <p className="guard-note">
-          SIMULATION · mock AMM. It has no on-chain slippage limit, so the minimum below is an
-          estimate only.
+          SIMULATION · Uniswap v4 pool on a local test node, traded through a test router. The
+          minimum received below is enforced on-chain.
         </p>
       )}
       <div className="trade-toggle" role="group" aria-label="Trade side">
@@ -212,7 +286,7 @@ export function TradePanel({ token, homeChain, mockRouter }: TradePanelProps) {
       <dl className="quote-list">
         <div>
           <dt>PRICE</dt>
-          <dd>{formatEth(token.curveState.currentPrice, 12)} / token{onCurve ? '' : ' (last curve price)'}</dd>
+          <dd>{formatEth(price, 12)} / token{onCurve ? '' : ' (pool)'}</dd>
         </div>
         <div>
           <dt>YOU RECEIVE (QUOTE)</dt>
@@ -242,7 +316,7 @@ export function TradePanel({ token, homeChain, mockRouter }: TradePanelProps) {
         </div>
         <div>
           <dt>FEE</dt>
-          <dd>{onCurve ? 'No curve fee' : '0.3% pool fee'}</dd>
+          <dd>{onCurve ? 'No curve fee' : poolFee}</dd>
         </div>
       </dl>
       <div id="tradeProblem" className="error-msg" aria-live="polite">

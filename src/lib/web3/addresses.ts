@@ -7,12 +7,25 @@ import { CHAIN_KEYS, type ChainKey, type Network } from '@/types/enums';
 // SATU-SATUNYA tempat alamat kontrak XofN (CLAUDE.md §6). Sumbernya `deployments/<network>.json`.
 // Saat ini hanya manifest lokal (Anvil) yang boleh ada; manifest publik FROZEN (CLAUDE.md §5.1).
 
-/** Kontrak tiruan yang hanya ada di manifest Anvil. */
+/** Kontrak LayerZero tiruan yang hanya ada di manifest Anvil. */
 export interface LocalMocks {
-  router: Address;
-  factory: Address;
-  weth: Address;
   dvns: Address[];
+}
+
+/**
+ * Uniswap v4 di Anvil: PoolManager dan PositionManager asli (artefak paket resmi) plus kontrak
+ * bantu untuk aplikasi. `swapRouter` adalah router UJI (`MockV4Router`), bukan Universal Router;
+ * karena itu bagian ini hanya ada di manifest lokal dan panel trading pool mati di jaringan lain
+ * (PRD P59).
+ */
+export interface LocalUniswapV4 {
+  poolManager: Address;
+  positionManager: Address;
+  /** Hook `XofNPoolGuard` milik Graduator (home) atau Remote (chain ekspansi). */
+  poolGuard: Address;
+  swapRouter: Address;
+  quoter: Address;
+  stateView: Address;
 }
 
 export interface ChainDeployment {
@@ -31,6 +44,7 @@ export interface ChainDeployment {
   deployBlock: bigint;
   verifiedSource: boolean;
   mocks: LocalMocks | null;
+  uniswapV4: LocalUniswapV4 | null;
 }
 
 export interface Deployment {
@@ -78,10 +92,20 @@ function parseMocks(value: unknown, field: string): LocalMocks | null {
   if (!isRecord(value)) throw new ManifestError(`${field} bukan objek.`);
   if (!Array.isArray(value.dvns)) throw new ManifestError(`${field}.dvns bukan array.`);
   return {
-    router: address(value.router, `${field}.router`),
-    factory: address(value.factory, `${field}.factory`),
-    weth: address(value.weth, `${field}.weth`),
     dvns: value.dvns.map((dvn, index) => address(dvn, `${field}.dvns[${index}]`)),
+  };
+}
+
+function parseUniswapV4(value: unknown, field: string): LocalUniswapV4 | null {
+  if (value === undefined || value === null) return null;
+  if (!isRecord(value)) throw new ManifestError(`${field} bukan objek.`);
+  return {
+    poolManager: address(value.poolManager, `${field}.poolManager`),
+    positionManager: address(value.positionManager, `${field}.positionManager`),
+    poolGuard: address(value.poolGuard, `${field}.poolGuard`),
+    swapRouter: address(value.swapRouter, `${field}.swapRouter`),
+    quoter: address(value.quoter, `${field}.quoter`),
+    stateView: address(value.stateView, `${field}.stateView`),
   };
 }
 
@@ -122,6 +146,8 @@ export function parseManifest(network: Network, raw: unknown): Deployment {
       deployBlock: BigInt(integer(entry.deployBlock, `${key}.deployBlock`)),
       verifiedSource: entry.verifiedSource === true,
       mocks: parseMocks(entry.mocks, `${key}.mocks`),
+      // Router uji tidak boleh muncul di manifest publik: di sana trading pool belum tersedia.
+      uniswapV4: network === 'local' ? parseUniswapV4(entry.uniswapV4, `${key}.uniswapV4`) : null,
     };
     if (info.role === 'home' && (!deployment.graduator || !deployment.curveImplementation)) {
       throw new ManifestError(`home chain "${key}" tanpa Graduator atau Curve implementation.`);

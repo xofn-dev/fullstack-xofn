@@ -7,9 +7,9 @@ import {IOAppComposer} from "@layerzerolabs/oapp-evm/contracts/oapp/interfaces/I
 import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 import {OFTComposeMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTComposeMsgCodec.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 
 import {IXofNRegistry} from "./interfaces/IXofNRegistry.sol";
-import {IUniswapV2Router} from "./interfaces/IUniswapV2.sol";
 import {ExpansionMsg} from "./libraries/ExpansionMsg.sol";
 import {PoolSeeder} from "./libraries/PoolSeeder.sol";
 import {TierLib} from "./libraries/TierLib.sol";
@@ -57,8 +57,9 @@ contract XofNRemote is OApp, IOAppComposer {
 
     struct Infra {
         address registry;
-        address router;
-        address lpRecipient;
+        address positionManager; // PositionManager Uniswap v4 chain ini
+        address poolGuard; // hook XofNPoolGuard yang terikat ke kontrak ini
+        address lpRecipient; // penerima NFT posisi likuiditas (PRD P41)
         uint32 homeEid;
         uint128 ackConfiguredGas; // gas lzReceive di Graduator untuk ack CONFIGURED
         uint128 ackLockedGas; // gas lzReceive di Graduator untuk ack LOCKED
@@ -68,13 +69,13 @@ contract XofNRemote is OApp, IOAppComposer {
         address remoteToken;
         State state;
         uint8 tier;
-        address pool;
+        bytes32 poolId; // PoolId Uniswap v4 pool chain ini
+        uint256 positionId; // NFT posisi di PositionManager
     }
 
     IXofNRegistry public immutable registry;
-    address public immutable router;
-    address public immutable factory;
-    address public immutable weth;
+    address public immutable positionManager;
+    address public immutable poolGuard;
     address public immutable lpRecipient;
     uint32 public immutable homeEid;
     uint128 public immutable ackConfiguredGas;
@@ -89,7 +90,8 @@ contract XofNRemote is OApp, IOAppComposer {
     event PoolSeeded(
         address indexed homeToken,
         address indexed remoteToken,
-        address pool,
+        bytes32 indexed poolId,
+        uint256 positionId,
         uint256 tokenAmount,
         uint256 ethAmount
     );
@@ -118,18 +120,19 @@ contract XofNRemote is OApp, IOAppComposer {
         TierLib.Pathway memory _pathwayToHome
     ) OApp(_endpoint, _owner) Ownable(_owner) {
         if (
-            _infra.registry == address(0) || _infra.router == address(0)
-                || _infra.lpRecipient == address(0)
+            _infra.registry == address(0) || _infra.positionManager == address(0)
+                || _infra.poolGuard == address(0) || _infra.lpRecipient == address(0)
         ) revert ZeroAddress();
+        // Infrastruktur pool yang salah ketahuan saat deploy, bukan saat likuiditas tiba.
+        PoolSeeder.validate(_infra.positionManager, _infra.poolGuard, _infra.lpRecipient);
         if (_infra.ackConfiguredGas == 0 || _infra.ackLockedGas == 0) {
             revert TierLib.ZeroConfigField();
         }
         if (_pathwayToHome.eid != _infra.homeEid) revert UnsupportedEid(_pathwayToHome.eid);
 
         registry = IXofNRegistry(_infra.registry);
-        router = _infra.router;
-        factory = IUniswapV2Router(_infra.router).factory();
-        weth = IUniswapV2Router(_infra.router).WETH();
+        positionManager = _infra.positionManager;
+        poolGuard = _infra.poolGuard;
         lpRecipient = _infra.lpRecipient;
         homeEid = _infra.homeEid;
         ackConfiguredGas = _infra.ackConfiguredGas;
@@ -246,9 +249,12 @@ contract XofNRemote is OApp, IOAppComposer {
         if (d.state != State.Configured) revert AlreadySeeded(homeToken);
         d.state = State.Locked;
 
-        (address pool,) = PoolSeeder.seed(factory, weth, token, tokenAmount, pairEth, lpRecipient);
-        d.pool = pool;
-        emit PoolSeeded(homeToken, token, pool, tokenAmount, pairEth);
+        (bytes32 poolId, uint256 positionId) = PoolSeeder.seed(
+            positionManager, poolGuard, token, tokenAmount, pairEth, lpRecipient
+        );
+        d.poolId = poolId;
+        d.positionId = positionId;
+        emit PoolSeeded(homeToken, token, poolId, positionId, tokenAmount, pairEth);
 
         // Verifikasi pra-kunci → lepas owner + delegate → catat di Registry chain ini.
         if (!registry.checkConfig(token)) revert ConfigMismatch(token);
@@ -339,6 +345,11 @@ contract XofNRemote is OApp, IOAppComposer {
 
     function deploymentOf(address homeToken) external view returns (Deployment memory) {
         return _deployments[homeToken];
+    }
+
+    /// @notice PoolKey Uniswap v4 pool chain ini untuk token `remoteToken`.
+    function poolKeyOf(address remoteToken) external view returns (PoolKey memory) {
+        return PoolSeeder.poolKey(poolGuard, remoteToken);
     }
 
     function homePathway() external view returns (TierLib.Pathway memory) {

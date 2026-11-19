@@ -39,8 +39,9 @@ export interface PendingCompose {
 }
 
 /**
- * "retryCompose": menjalankan ulang `lzCompose` di endpoint chain tujuan. `value` harus menutup
- * ETH pasangan pool yang diminta pesan compose (`XofNRemote.lzCompose`).
+ * "retryCompose": menjalankan ulang `lzCompose` di endpoint chain tujuan. ETH pasangan pool
+ * dibayar dari saldo `XofNRemote` (PRD P51), jadi `value` biasanya 0; `value` yang dikirim ikut
+ * masuk saldo itu dan hanya diperlukan untuk menutup kekurangan saldo Remote.
  */
 export function buildRetryCompose(remote: ChainDeployment, compose: PendingCompose, value: bigint): TxRequest {
   return {

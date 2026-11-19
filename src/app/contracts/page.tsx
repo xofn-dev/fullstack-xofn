@@ -25,15 +25,16 @@ export default function ContractsPage() {
             </h1>
             <p>
               {deployment?.status === 'local'
-                ? 'These addresses exist only on a local test node, next to mock LayerZero endpoints, mock DVNs and a mock AMM. Nothing is deployed to a public network, and no source is verified on an explorer.'
+                ? 'These addresses exist only on a local test node, next to mock LayerZero endpoints, mock DVNs and a local Uniswap v4 deployment with a test swap router. Nothing is deployed to a public network, and no source is verified on an explorer.'
                 : 'No XofN contract is deployed on a public network yet. Addresses appear here only after they are published in the deployment manifest.'}
             </p>
           </div>
           <div className="app-stack">
             <ContractTable network={network} deployment={deployment} />
             <p className="preview-note">
-              The three linked libraries (pool seeding, tier recipe, token deployer) are not listed:
-              whether they belong in the manifest is an open decision. Contracts are unaudited.
+              The three linked libraries (pool seeding, tier recipe, token deployer) and the pool
+              guard hook that each Graduator and Remote uses on Uniswap v4 are not listed: whether
+              they belong in the manifest is an open decision. Contracts are unaudited.
             </p>
           </div>
         </div>

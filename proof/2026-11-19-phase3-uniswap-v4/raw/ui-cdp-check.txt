@@ -1,0 +1,40 @@
+width 390: {"sw":495,"cw":390,"panel":true}
+width 768: {"sw":768,"cw":768,"panel":true}
+width 1280: {"sw":1280,"cw":1280,"panel":true}
+width 1680: {"sw":1680,"cw":1680,"panel":true}
+buy 0.1 ETH → SUPPLY ACROSS CHAINS = 999,000,000 of 999,000,000 | CHECKED AT = 2026-11-19 12:36:43 UTC | PRICE = 0.000000020373 ETH / token (pool) | YOU RECEIVE (QUOTE) = n/a | MINIMUM RECEIVED = n/a | YOUR BALANCE = Wallet not connected | FEE = 0.30% pool fee | MESSAGES WAITING = 0 || problem: 
+sell 1,000,000 → SUPPLY ACROSS CHAINS = 999,000,000 of 999,000,000 | CHECKED AT = 2026-11-19 12:36:51 UTC || problem: 
+BUY 0.1 ETH  → PRICE = 0.000000020373 ETH / token (pool) | YOU RECEIVE (QUOTE) = n/a | MINIMUM RECEIVED = n/a | YOUR BALANCE = Wallet not connected | FEE = 0.30% pool fee || problem: 
+SELL 1,000,000 → PRICE = 0.000000020373 ETH / token (pool) | YOU RECEIVE (QUOTE) = n/a | MINIMUM RECEIVED = n/a | YOUR BALANCE = Wallet not connected | FEE = 0.30% pool fee || problem: 
+390px /contracts: scrollWidth 642
+390px /launch: scrollWidth 390
+slippage before click: ["false","true","false"]
+slippage after click:  ["false","true","false"]
+input value: 
+rows: PRICE = 0.000000020373 ETH / token (pool) | YOU RECEIVE (QUOTE) = n/a | MINIMUM RECEIVED = n/a | YOUR BALANCE = Wallet not connected | FEE = 0.30% pool fee || problem: 
+
+## Build produksi (next start), 1280px, tanpa wallet terhubung, setelah perbaikan quote
+t=3s YOU RECEIVE (QUOTE) = 4,774,357.38 $FLOW | MINIMUM RECEIVED = 4,726,613.81 $FLOW
+RPC: 1 eth_call ke V4Quoter (quoteExactInputSingle), 0.1 ETH
+390px /contracts dan /launch (build produksi): scrollWidth 390 = clientWidth
+Catatan: angka overflow di atas (495, 642) berasal dari server DEV dan tidak muncul di build produksi.
+token page 360px: scrollWidth 360, clientWidth 360, panel "TRADE IN THE POOL"
+token page 390px: scrollWidth 390, clientWidth 390, panel "TRADE IN THE POOL"
+token page 768px: scrollWidth 768, clientWidth 768, panel "TRADE IN THE POOL"
+token page 1280px: scrollWidth 1280, clientWidth 1280, panel "TRADE IN THE POOL"
+token page 1680px: scrollWidth 1680, clientWidth 1680, panel "TRADE IN THE POOL"
+
+## Setelah perbaikan review (build produksi, tanpa wallet)
+t=3s YOU RECEIVE (QUOTE) = 4,822,442.3 $RETRY | MINIMUM RECEIVED = 4,774,217.87 $RETRY || problem: 
+t=10s YOU RECEIVE (QUOTE) = 4,822,442.3 $RETRY | MINIMUM RECEIVED = 4,774,217.87 $RETRY || problem: 
+t=25s YOU RECEIVE (QUOTE) = 4,822,442.3 $RETRY | MINIMUM RECEIVED = 4,774,217.87 $RETRY || problem: 
+RPC calls after typing: 7
+ → http://127.0.0.1:8545/ | {"jsonrpc":"2.0","id":0,"method":"eth_call","params":[{"data":"0xaa9d21cb0000000000000000000000000000000000000 | resp: {"jsonrpc":"2.0","id":0,"result":"0x00000000000000000000000000000000000000000003fd311efbe12a55ef6ef90000000000000
+ → http://127.0.0.1:8545/ | {"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{"data":"0xaa9d21cb0000000000000000000000000000000000000 | resp: {"jsonrpc":"2.0","id":1,"result":"0x00000000000000000000000000000000000000000003fd311efbe12a55ef6ef90000000000000
+ → http://127.0.0.1:8545/ | {"jsonrpc":"2.0","id":2,"method":"eth_call","params":[{"data":"0xaa9d21cb0000000000000000000000000000000000000 | resp: {"jsonrpc":"2.0","id":2,"result":"0x00000000000000000000000000000000000000000003fd311efbe12a55ef6ef90000000000000
+console errors: []
+token page 360px: scrollWidth 360, clientWidth 360, panel "TRADE IN THE POOL"
+token page 390px: scrollWidth 390, clientWidth 390, panel "TRADE IN THE POOL"
+token page 768px: scrollWidth 768, clientWidth 768, panel "TRADE IN THE POOL"
+token page 1280px: scrollWidth 1280, clientWidth 1280, panel "TRADE IN THE POOL"
+token page 1680px: scrollWidth 1680, clientWidth 1680, panel "TRADE IN THE POOL"

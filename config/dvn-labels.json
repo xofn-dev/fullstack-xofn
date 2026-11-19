@@ -7,7 +7,10 @@
     "googlecloud": "google-cloud",
     "polyhedra": "polyhedra-network",
     "dtmms": "deutsche-telekom",
-    "fcat": "fidelity"
+    "fcat": "fidelity",
+    "horizen": "horizen-labs",
+    "paxos": "paxos",
+    "twinstake": "nethermind"
   },
   "mainnet": {
     "robinhood": [

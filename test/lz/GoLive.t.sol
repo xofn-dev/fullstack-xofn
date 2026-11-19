@@ -235,7 +235,9 @@ contract GoLiveTest is XofNTestBase {
     function test_graduatorDeployNeedsSafeAllowlistFirst() public {
         XofNRegistry fresh = new XofNRegistry(chains[HOME].endpoint, safe);
         curveImpl = new XofNCurve();
-        XofNGraduator.Infra memory infra = _graduatorInfra();
+        // Hook penjaga untuk alamat Graduator berikutnya milik deployer (alamat itu diketahui
+        // sebelum deploy; di jaringan publik lewat CREATE3).
+        XofNGraduator.Infra memory infra = _graduatorInfraFor(deployer);
         infra.registry = address(fresh);
         // Dihitung lebih dulu: `_homePathways()` memanggil kontrak lain, dan panggilan itu tidak
         // boleh menjadi target `prank`/`expectPartialRevert`.
@@ -251,6 +253,9 @@ contract GoLiveTest is XofNTestBase {
                 address(fresh), abi.encodeCall(fresh.setDvnAllowed, (chains[HOME].dvns[i], true))
             );
         }
+        // Percobaan pertama memakai nonce deployer, jadi alamat berikutnya (dan hook-nya) berbeda.
+        infra = _graduatorInfraFor(deployer);
+        infra.registry = address(fresh);
         vm.prank(deployer);
         XofNGraduator g =
             new XofNGraduator(endpoint, deployer, infra, _economics(), pathways, _gasList());
@@ -285,11 +290,12 @@ contract GoLiveTest is XofNTestBase {
     ///      tetap bisa mengubah pathway infrastruktur sampai Safe memanggil `setDelegate`.
     function test_wrongOrder_leavesEoaDelegate() public {
         curveImpl = new XofNCurve();
+        XofNGraduator.Infra memory infra = _graduatorInfraFor(deployer);
         vm.startPrank(deployer);
         graduator = new XofNGraduator(
             chains[HOME].endpoint,
             deployer,
-            _graduatorInfra(),
+            infra,
             _economics(),
             _homePathways(),
             _gasList()
@@ -319,7 +325,8 @@ contract GoLiveTest is XofNTestBase {
     }
 
     /// @dev Urutan deploy publik (ARCHITECTURE §5.6) setelah Registry + daftar putih:
-    ///      Curve impl → Graduator → Remote → peer + pathway infrastruktur (oleh EOA deployer,
+    ///      hook penjaga → Curve impl → Graduator → Remote → peer + pathway infrastruktur (oleh EOA
+    ///      deployer; hook tiap kontrak ditaruh untuk alamat yang diprediksi lebih dulu,
     ///      selama launch masih tertutup) → setDelegate(Safe) → transferOwnership(Safe).
     function _deployDormant() private {
         vm.startPrank(deployer);
@@ -327,14 +334,14 @@ contract GoLiveTest is XofNTestBase {
         graduator = new XofNGraduator(
             chains[HOME].endpoint,
             deployer,
-            _graduatorInfra(),
+            _graduatorInfraFor(deployer),
             _economics(),
             _homePathways(),
             _gasList()
         );
         for (uint32 eid = BASE; eid <= ARB; eid++) {
             remotes[eid] = new XofNRemote(
-                chains[eid].endpoint, deployer, _remoteInfra(eid), _pathway(eid, HOME)
+                chains[eid].endpoint, deployer, _remoteInfraFor(eid, deployer), _pathway(eid, HOME)
             );
         }
         for (uint32 eid = BASE; eid <= ARB; eid++) {

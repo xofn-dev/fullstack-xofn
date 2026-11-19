@@ -1,0 +1,67 @@
+## chain
+chainId: 46630 
+block:   155393392 
+## endpoint 0x3acaaf60502791d199a5a5f0b173d78229ebfe32
+code: 24005 bytes, keccak 0xd80c03fcc5b6614fcaf0d68c257214a14131c03a47432f86c02930c83777478c
+eid(): 40451 [4.045e4] 
+## lib 0x45841dd1ca50265Da7614fC43A361e526c0e6160
+code: 22995 bytes, keccak 0xf02898adb418971b0085d2a4a9ff532e71583581b77020005c8bc5eee19e5011
+isRegisteredLibrary: true 
+messageLibType: 0 
+version: 3 0 2 
+## lib 0xd682ECF100f6F4284138AA925348633B0611Ae21
+code: 11010 bytes, keccak 0xb5dedcb09700109f92660c6fc8a2cec7a6d09eecc74b66608c2ab89b53ffaedb
+isRegisteredLibrary: true 
+messageLibType: 1 
+version: 3 0 2 
+## executor 0x701f3927871EfcEa1235dB722f9E608aE120d243
+code: 2304 bytes, keccak 0x1b4468bdad20f4aa7b0274e54280a8b7880d79380814141838df0c89bd691478
+## pathway eid 40245
+endpoint.isSupportedEid:      true 
+endpoint.defaultSendLibrary:  0x45841dd1ca50265Da7614fC43A361e526c0e6160 
+endpoint.defaultReceiveLibrary: 0xd682ECF100f6F4284138AA925348633B0611Ae21 
+send.isSupportedEid:          true 
+recv.isSupportedEid:          true 
+send default UlnConfig:       (1, 1, 0, 0, [0xa78A78a13074eD93aD447a26Ec57121f29E8feC2], []) 
+recv default UlnConfig:       (2, 1, 0, 0, [0xa78A78a13074eD93aD447a26Ec57121f29E8feC2], []) 
+send default ExecutorConfig (maxMessageSize, executor): (10000 [1e4], 0x701f3927871EfcEa1235dB722f9E608aE120d243) 
+executor.dstConfig (lzReceiveBaseGas,multBps,floorUSD,nativeCap,lzComposeBaseGas): 85000 [8.5e4] 12000 [1.2e4] 20000000000000000000 [2e19] 0 85000 [8.5e4] 
+## pathway eid 40231
+endpoint.isSupportedEid:      true 
+endpoint.defaultSendLibrary:  0x45841dd1ca50265Da7614fC43A361e526c0e6160 
+endpoint.defaultReceiveLibrary: 0xd682ECF100f6F4284138AA925348633B0611Ae21 
+send.isSupportedEid:          true 
+recv.isSupportedEid:          true 
+send default UlnConfig:       (1, 1, 0, 0, [0xa78A78a13074eD93aD447a26Ec57121f29E8feC2], []) 
+recv default UlnConfig:       (5, 1, 0, 0, [0xa78A78a13074eD93aD447a26Ec57121f29E8feC2], []) 
+send default ExecutorConfig (maxMessageSize, executor): (10000 [1e4], 0x701f3927871EfcEa1235dB722f9E608aE120d243) 
+executor.dstConfig (lzReceiveBaseGas,multBps,floorUSD,nativeCap,lzComposeBaseGas): 85000 [8.5e4] 12000 [1.2e4] 20000000000000000000 [2e19] 0 85000 [8.5e4] 
+## DVN (Robinhood testnet)
+labs 0xa78a78a13074ed93ad447a26ec57121f29e8fec2 code: 20004 bytes, keccak 0xf7a724de222408a4556d641a57a2841816e0a57db372647d399a88022ddba029
+  dstConfig(40245) (gas,multBps,floorUSD): 90000 [9e4] 12000 [1.2e4] 1000000000000000000 [1e18] 
+  dstConfig(40231) (gas,multBps,floorUSD): 90000 [9e4] 12000 [1.2e4] 1000000000000000000 [1e18] 
+horizen 0x52f615ecbcbf40e47a315c2d84d14fa2851e55b7 code: 20004 bytes, keccak 0xf7a724de222408a4556d641a57a2841816e0a57db372647d399a88022ddba029
+  dstConfig(40245) (gas,multBps,floorUSD): 90000 [9e4] 12000 [1.2e4] 1000000000000000000 [1e18] 
+  dstConfig(40231) (gas,multBps,floorUSD): 90000 [9e4] 12000 [1.2e4] 1000000000000000000 [1e18] 
+paxos 0x771d83e953ca8f113f02f18206ecf8bb93da3f0a code: 20004 bytes, keccak 0xf7a724de222408a4556d641a57a2841816e0a57db372647d399a88022ddba029
+  dstConfig(40245) (gas,multBps,floorUSD): 90000 [9e4] 12000 [1.2e4] 1000000000000000000 [1e18] 
+  dstConfig(40231) (gas,multBps,floorUSD): 90000 [9e4] 12000 [1.2e4] 1000000000000000000 [1e18] 
+twinstake 0xcde82f74624525e24853b1f59c8b20a162a3d297 code: 20004 bytes, keccak 0xf7a724de222408a4556d641a57a2841816e0a57db372647d399a88022ddba029
+  dstConfig(40245) (gas,multBps,floorUSD): 90000 [9e4] 12000 [1.2e4] 1000000000000000000 [1e18] 
+  dstConfig(40231) (gas,multBps,floorUSD): 90000 [9e4] 12000 [1.2e4] 1000000000000000000 [1e18] 
+## infrastruktur deploy
+CreateX 0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed: 11838 bytes, keccak 0xbd8a7ea8cfca7b4e5f5041d7d4b17bc317c5ce42cfbc42066a00cf26b43eb53f
+CREATE2 deployer 0x4e59b44847b379578588920cA78FbF26c0B4956C: 69 bytes, keccak 0x2fa86add0aed31f33a762c9d88e807c475bd51d0f52bd0955754b2608f7e4989
+SafeL2 singleton 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762: 24421 bytes, keccak 0xb1f926978a0f44a2c0ec8fe822418ae969bd8c3f18d61e5103100339894f81ff
+SafeL2 VERSION(): "1.4.1" 
+SafeProxyFactory 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67: 3054 bytes, keccak 0x50c3cdc4074750a7a974204a716c999edd37482f907608d960b2b025ee0b3317
+CompatibilityFallbackHandler 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99: 5637 bytes, keccak 0x7c6007a5d711cea8dfd5d91f5940ec29c7f200fe511eb1fc1397b367af3c42f9
+## Uniswap v2 (kandidat alamat)
+router-alamat-RH-mainnet 0x89e5DB8B5aA49aA85AC63f691524311AEB649eba: 0 bytes, keccak 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+factory-alamat-RH-mainnet 0x8bceaa40b9acdfaedf85adf4ff01f5ad6517937f: 0 bytes, keccak 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+weth-alamat-RH-mainnet 0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73: 0 bytes, keccak 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+router-alamat-Base/Arb 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24: 0 bytes, keccak 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+factory-alamat-Base 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6: 0 bytes, keccak 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+router-alamat-Ethereum 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D: 0 bytes, keccak 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+factory-alamat-Ethereum 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f: 0 bytes, keccak 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+weth-predeploy-OP-style 0x4200000000000000000000000000000000000006: 0 bytes, keccak 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470

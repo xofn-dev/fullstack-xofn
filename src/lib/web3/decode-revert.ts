@@ -1,5 +1,6 @@
 import { BaseError, decodeErrorResult, type Hex } from 'viem';
 import { xofnErrorsAbi } from '@/lib/web3/abi/errors';
+import { v4ErrorsAbi } from '@/lib/web3/abi/uniswap-v4';
 
 // Mengubah error transaksi menjadi pesan yang bisa dibaca pengguna (USER_FLOWS Flow D/E:
 // "pesan dari reason"). Bila alasannya tidak dikenali, pesannya berkata jujur demikian.
@@ -8,6 +9,9 @@ export interface DecodedRevert {
   name: string;
   args: readonly unknown[];
 }
+
+// Swap di pool melewati kontrak Uniswap v4, jadi error-nya ikut didekode.
+const KNOWN_ERRORS = [...xofnErrorsAbi, ...v4ErrorsAbi] as const;
 
 const PANIC_SELECTOR = '0x4e487b71';
 const ERROR_STRING_SELECTOR = '0x08c379a0';
@@ -33,7 +37,7 @@ export function findRevertData(error: unknown): Hex | null {
   return null;
 }
 
-export function decodeRevertData(data: Hex): DecodedRevert | null {
+export function decodeRevertData(data: Hex, depth = 0): DecodedRevert | null {
   const selector = data.slice(0, 10).toLowerCase();
   if (selector === PANIC_SELECTOR) {
     return { name: 'Panic', args: [BigInt(`0x${data.slice(10)}`)] };
@@ -43,8 +47,18 @@ export function decodeRevertData(data: Hex): DecodedRevert | null {
       const decoded = decodeErrorResult({ data });
       return { name: 'Error', args: decoded.args ?? [] };
     }
-    const decoded = decodeErrorResult({ abi: xofnErrorsAbi, data });
-    return { name: decoded.errorName, args: decoded.args ?? [] };
+    const decoded = decodeErrorResult({ abi: KNOWN_ERRORS, data });
+    const args: readonly unknown[] = decoded.args ?? [];
+    // Uniswap v4 membungkus error: PoolManager membungkus revert dari hook (`WrappedError`,
+    // alasan aslinya di argumen ke-3), dan V4Quoter membungkus revert swap yang ia simulasikan
+    // (`UnexpectedRevertBytes`). Yang berarti bagi pengguna adalah alasan di dalamnya.
+    const inner =
+      decoded.errorName === 'WrappedError' ? args[2] : decoded.errorName === 'UnexpectedRevertBytes' ? args[0] : null;
+    if (depth < 3 && isHex(inner) && inner.length >= 10) {
+      const unwrapped = decodeRevertData(inner, depth + 1);
+      if (unwrapped) return unwrapped;
+    }
+    return { name: decoded.errorName, args };
   } catch {
     return null;
   }
@@ -75,6 +89,14 @@ const MESSAGES: Record<string, string> = {
   NotDeployed: 'The token has not been deployed on this chain yet.',
   AlreadySeeded: 'The pool on this chain was already created.',
   InsufficientPairAsset: 'Not enough pair asset was sent to create the pool.',
+  // Router uji (solmate) menyembunyikan alasan transferFrom yang gagal di balik string ini.
+  TRANSFER_FROM_FAILED: 'The token transfer failed. Check your balance and approve the token first.',
+  OnlySeeder: 'Only the XofN contract for this chain can create this pool.',
+  V4TooLittleReceived: 'Price moved beyond your slippage limit. Nothing was traded.',
+  V4TooMuchRequested: 'Price moved beyond your slippage limit. Nothing was traded.',
+  PoolNotInitialized: 'This pool does not exist on the pool manager.',
+  SwapAmountCannotBeZero: 'Enter an amount greater than zero.',
+  NotEnoughLiquidity: 'The pool does not have enough liquidity for this amount.',
   NothingPending: 'No cross-chain message is waiting in the local relay.',
   EthTransferFailed: 'An ETH transfer inside the transaction failed.',
   ERC20InsufficientBalance: 'Token balance is too low for this amount.',
@@ -90,6 +112,16 @@ function isUserRejection(error: unknown): boolean {
   return rejected !== null && rejected !== undefined;
 }
 
+/**
+ * Pesan untuk revert yang DIKENALI saja; null bila error itu bukan jawaban kontrak yang dikenal
+ * (mis. RPC gagal). Dipakai untuk membedakan "kontrak menolak" dari "tidak terbaca".
+ */
+export function knownRevertMessage(error: unknown): string | null {
+  const data = findRevertData(error);
+  const decoded = data ? decodeRevertData(data) : null;
+  return decoded ? (MESSAGES[decoded.name] ?? null) : null;
+}
+
 /** Pesan satu kalimat untuk UI. Tidak pernah mengarang alasan. */
 export function describeTxError(error: unknown): string {
   if (isUserRejection(error)) return 'Transaction rejected in wallet. Nothing was sent.';
@@ -102,7 +134,10 @@ export function describeTxError(error: unknown): string {
         ? 'Amount is larger than what the curve can take back.'
         : `Transaction reverted (panic 0x${(decoded.args[0] as bigint).toString(16)}).`;
     }
-    if (decoded.name === 'Error') return `Transaction reverted: ${String(decoded.args[0])}`;
+    if (decoded.name === 'Error') {
+      const reason = String(decoded.args[0]);
+      return MESSAGES[reason] ?? `Transaction reverted: ${reason}`;
+    }
     return MESSAGES[decoded.name] ?? `Transaction reverted: ${decoded.name}.`;
   }
   if (error instanceof BaseError) return error.shortMessage;

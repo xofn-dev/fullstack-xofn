@@ -1,0 +1,45 @@
+Ran 6 tests for test/fork/ForkUniV4.t.sol:ForkUniV4Test
+[PASS] test_fork_arbitrumSepolia_univ4() (gas: 85595858)
+Logs:
+  chainId: 421614
+  PoolManager.owner: 0x5b73C5498c1E3b4dbA84de0F1833c4a029d90519
+  PoolManager.protocolFeeController: 0x0000000000000000000000000000000000000000
+  seed gas (home size): 467505
+  seed gas (remote size): 467493
+[PASS] test_fork_arbitrum_univ4() (gas: 85598073)
+Logs:
+  chainId: 42161
+  PoolManager.owner: 0x2BAD8182C09F50c8318d769245beA52C32Be46CD
+  PoolManager.protocolFeeController: 0x6b3C04567CC62fc5D6AB8D50f1bc1Dee161eb2Cc
+  seed gas (home size): 467505
+  seed gas (remote size): 467493
+[PASS] test_fork_baseSepolia_univ4() (gas: 85595439)
+Logs:
+  chainId: 84532
+  PoolManager.owner: 0x5b73C5498c1E3b4dbA84de0F1833c4a029d90519
+  PoolManager.protocolFeeController: 0x0000000000000000000000000000000000000000
+  seed gas (home size): 467505
+  seed gas (remote size): 467493
+[PASS] test_fork_base_univ4() (gas: 85598039)
+Logs:
+  chainId: 8453
+  PoolManager.owner: 0x31FAfd4889FA1269F7a13A66eE0fB458f27D72A9
+  PoolManager.protocolFeeController: 0xc53DD825dedBE7814562528A1A30e8e5BCbB4b55
+  seed gas (home size): 467505
+  seed gas (remote size): 467493
+[PASS] test_fork_robinhoodTestnet_univ4() (gas: 85595869)
+Logs:
+  chainId: 46630
+  PoolManager.owner: 0x9701fb0aDe1E269c8f64Ec0C7b3cfADB31A13A52
+  PoolManager.protocolFeeController: 0x0000000000000000000000000000000000000000
+  seed gas (home size): 467505
+  seed gas (remote size): 467493
+[PASS] test_fork_robinhood_univ4() (gas: 85595941)
+Logs:
+  chainId: 4663
+  PoolManager.owner: 0x2BAD8182C09F50c8318d769245beA52C32Be46CD
+  PoolManager.protocolFeeController: 0x6d0009504D129CF5002Dba61D9Ae8575AA79314c
+  seed gas (home size): 467505
+  seed gas (remote size): 467493
+Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 87.18s (158.03s CPU time)
+Ran 1 test suite in 87.22s (87.18s CPU time): 6 tests passed, 0 failed, 0 skipped (6 total tests)

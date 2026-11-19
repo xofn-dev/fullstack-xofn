@@ -1,0 +1,65 @@
+## Uniswap v3/v4: alamat mainnet Robinhood (4663) dicek di testnet 46630
+PoolManager v4 (alamat RH mainnet) 0x8366a39cc670b4001a1121b8f6a443a643e40951: 24009 bytes
+PositionManager v4 (alamat RH mainnet) 0x58daec3116aae6d93017baaea7749052e8a04fa7: 23877 bytes
+UniswapV3Factory (alamat RH mainnet) 0x1f7d7550b1b028f7571e69a784071f0205fd2efa: 0 bytes
+NonfungiblePositionManager v3 (alamat RH mainnet) 0x73991a25c818bf1f1128deaab1492d45638de0d3: 0 bytes
+Permit2 0x000000000022D473030F116dDEE9F6B43aC78BA3: 9152 bytes
+## pencarian explorer testnet (nama = klaim pihak yang memverifikasi)
+PoolManager: 50 kontrak cocok, 50 bernama persis
+    0xcb003A2904b52daf7D78cEa9Bd78fa4167203A91 verified= True
+    0x59aAFB2746e4CC388BD8c3925D3C7463c6A6e7FE verified= True
+    0xC67F74FA6f2b7A1e3d446aFd33Db6B5FdEB98015 verified= True
+    0x89a50DAF54d1Cc97eFBe03F98dFd8b6c688A10f6 verified= True
+    0x193f1d315900abe886Aa7eD9FD9Fb1eB64Dd2be5 verified= True
+    0x58083b53ca90456849363844533159998dc6B487 verified= True
+    0x4Ee2318400D3bDc469dBd9edf4077004AAe16f3D verified= True
+    0xFe59926cb64d8d3E922f2d6CA515aF43FD3ddf49 verified= True
+PositionManager: 26 kontrak cocok, 26 bernama persis
+    0x27C2976ddfa6c47DfA7e739C94DAD66469a4ccA6 verified= True
+    0x8D4dF89cfc0Ee6D2CcD53a992f37bA7493D4fd49 verified= True
+    0xB26a97bf3c171d85549daab25d4EAae3173CE7c6 verified= True
+    0xeCC560509f30815Ca9EcFCbC3384301DA2C1Ed19 verified= True
+    0x8cE789eBd36dC53000255d210b5983bA36e2A3D2 verified= True
+    0x76a987bcC9b42C7373C562b8133664b5a90Cffda verified= True
+    0xED6bb54f0aA711859F2EcD108f59f97d667aADF2 verified= True
+    0xdc84959802dfFE1600D9EBF3E319692188620F88 verified= True
+UniswapV3Factory: 25 kontrak cocok, 25 bernama persis
+    0x89d32476023C4432568d41BEbb9A8591b7935A49 verified= True
+    0x32cA13763c8DEE5DeA2298272b60505b58263C28 verified= True
+    0xB394fda3477FEBE0c0c6E4eC33C76DdfFF040016 verified= True
+    0x70e6DdC16cFbB38F44875AD6fb0b6aF36454ed5D verified= True
+    0x9ba00a3A6A0AB96Ca5775248c0233ec9e36b86B7 verified= True
+    0x47665B39A6b3Bd6754D1Bd8993F1373be8d4a76a verified= True
+    0x6F72dD1C961Bc7883921d6D6aE914264AB4CE363 verified= True
+    0x8f40dE3919711753551FE6ca8FcB97D272f697E3 verified= True
+NonfungiblePositionManager: 22 kontrak cocok, 22 bernama persis
+    0x94F8D2992Da94Dd502f06e7a86e958BE0Bc7C78c verified= True
+    0x105e2d8713Ca822356cc60dC36e161d610f7cC6E verified= True
+    0x2804D93975bC293E3835630cdE9244684627AF3d verified= True
+    0x9c38b0049fa7CB16C1D832965f63cc724296F851 verified= True
+    0x58dDA8495756598aE0E854f16a96541B30671d35 verified= True
+    0x3D313A35901eEf0c2aD5C16b4685DbA5CCfbCA86 verified= True
+    0x71F2154B4E64298fAcCef6951b2bE781aA7aC46A verified= True
+    0x637DfC995E8cDdEf5de530553B25cf1D0F09D142 verified= True
+UniversalRouter: 15 kontrak cocok, 11 bernama persis
+    0x897147Ce275EE8E4684dD0eDE13315fE0f8DA78A verified= True
+    0x9caAc2e67205E63C1AF5D655a85A250F191e4797 verified= True
+    0x69DcB1b7436EBA5c6C9CaB2064763810F36923De verified= True
+    0xb58db3A6E0c4075E0967Dc94C8FE475b19eFDf3E verified= True
+    0xE113DcBCc6586B890Ddbf47C2D007949B1335f5e verified= True
+    0x930F0A50CDa81c74B14913f5b2fc44004f35Cb06 verified= True
+    0xBFa7A87F509e1F7281E20Fc71409dE21E7033558 verified= True
+    0xE54b5841C9d9336cEAa5a2DAE1654B7c847354Ba verified= True
+## perbandingan bytecode v4: testnet 46630 vs mainnet 4663 (alamat sama)
+PoolManager 0x8366a39cc670b4001a1121b8f6a443a643e40951
+  testnet: 24009b 0xbd3881180b547f5fe817545743cfb4343e96b1bc6640dcd70c106b0066e95626
+  mainnet: 24009b 0xbd3881180b547f5fe817545743cfb4343e96b1bc6640dcd70c106b0066e95626
+PositionManager 0x58daec3116aae6d93017baaea7749052e8a04fa7
+  testnet: 23877b 0xf3a0edb689229fa4bf135a728f2ec2eb4a2fbee2e41e3e74ffadb7b4c56e8a6d
+  mainnet: 23877b 0xc873e135dc9aaec88489cfbad146b4cb49d6a32e0d80326377784b7ba17670b2
+Permit2 0x000000000022D473030F116dDEE9F6B43aC78BA3
+  testnet: 9152b 0x0117e0ed818bc3f2a8729ffc336c837e63e965f04b473047b39b35ad86aac259
+  mainnet: 9152b 0x5208783f52488f7d3493e5e38311ab707c1d75457fe472a19b0b4d57d66a7fca
+PoolManager.owner() testnet: 0x9701fb0aDe1E269c8f64Ec0C7b3cfADB31A13A52
+PoolManager.owner() mainnet: 0x2BAD8182C09F50c8318d769245beA52C32Be46CD
+PositionManager.poolManager() testnet: 0x8366a39CC670B4001A1121B8F6A443A643e40951

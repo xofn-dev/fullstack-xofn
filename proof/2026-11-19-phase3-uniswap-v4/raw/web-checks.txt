@@ -1,0 +1,30 @@
+## typecheck
+> tsc --noEmit
+
+## lint
+> eslint .
+
+## test
+ Test Files  6 passed (6)
+      Tests  130 passed (130)
+## test:anvil
+     × Flow E: buy dan sell di curve dengan batas slippage dari quote 4125ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/anvil/lifecycle.test.ts > siklus token XofN di Anvil lokal > Flow E: buy dan sell di curve dengan batas slippage dari quote
+AssertionError: expected [ 'buy' ] to deeply equal [ 'buy', 'sell' ]
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 passed (8)
+## build (local)
+✓ Compiled successfully in 52s
+  Generating static pages using 7 workers (0/8) ...
+  Generating static pages using 7 workers (2/8) 
+  Generating static pages using 7 workers (4/8) 
+  Generating static pages using 7 workers (6/8) 
+✓ Generating static pages using 7 workers (8/8) in 3.7s
+
+## test:anvil diulang setelah uji profil CI selesai (mesin tidak terbebani)
+run 1: 8 passed (8) | run 2: 8 passed (8) | run 3: 8 passed (8)
+Catatan: kegagalan di atas ("Flow E: buy dan sell di curve", indexer baru melihat 'buy') terjadi
+1 kali dari 6 run hari ini, saat `forge test --profile ci` berjalan bersamaan. Tes dan kode curve
+itu tidak diubah di pekerjaan ini. Dugaan penyebab (belum diverifikasi): nomor blok di-cache.
+## build (testnet/preview), kode final: lulus
