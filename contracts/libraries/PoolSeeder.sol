@@ -18,8 +18,14 @@ import {IUniswapV2Factory, IUniswapV2Pair, IWETH} from "../interfaces/IUniswapV2
 ///      Ketahanan terhadap front-run:
 ///      1. Pair sudah dibuat pihak lain tetapi kosong → dipakai apa adanya; harga ditentukan
 ///         setoran pertama (setoran ini).
-///      2. Pair diberi donasi (dengan atau tanpa `sync`) → donasi menjadi milik pool; tidak ada LP
-///         untuk pendonor.
+///      2. Pair diberi donasi:
+///         - pair belum pernah di-mint → donasi ikut terhitung di `mint` setoran ini, jadi
+///           menjadi milik pool; pendonor tidak mendapat LP;
+///         - pair sudah berisi likuiditas → `sync` dipanggil lebih dulu, jadi donasi menjadi
+///           cadangan milik LP yang ada (termasuk pendonor bila ia LP) SEBELUM setoran ini
+///           dihitung. Tanpa `sync`, saldo yang belum tercatat ikut dihitung sebagai input
+///           swap penyeimbang, rasionya meleset, dan pendonor mengambil sebagian setoran
+///           (PRD P55, `proof/2026-11-17-phase3/11-poolseeder-rereview.md`).
 ///      3. Pair sudah berisi likuiditas pihak lain → setoran ini lebih dulu ditukar sebagian di
 ///         pool itu sampai RASIO ASET YANG DIPEGANG SAMA DENGAN RASIO POOL, baru seluruhnya
 ///         disetor. Dengan begitu tidak ada sisi berlebih yang jatuh ke LP lama.
@@ -34,8 +40,17 @@ import {IUniswapV2Factory, IUniswapV2Pair, IWETH} from "../interfaces/IUniswapV2
 ///         yang dipertaruhkan: swap di sini selalu searah arbitrase, jadi setiap unit yang
 ///         ditukar diperoleh pada harga yang lebih baik dari target, dan pembuat harga lain
 ///         itulah yang menanggung selisihnya.
-///      Tidak ada cabang yang revert karena tindakan pihak ketiga, jadi tidak ada kegagalan
-///      permanen yang butuh campur tangan manual.
+///      4. Pool tandingan dengan total LP kecil + cadangan sangat besar → bagian LP setoran ini
+///         dibulatkan ke 0; setoran dijadikan cadangan lewat `sync` alih-alih `mint` (lihat
+///         `seed`). Setoran tidak revert dan pool tetap terisi.
+///
+///      Kerugian pembulatan: setoran mendapat floor(jumlah x total LP / cadangan) LP, jadi
+///      kerugiannya paling besar nilai satu unit LP pool itu (ditambah fee swap penyeimbang).
+///      Pada pool baru atau pool biasa ini sangat kecil (terukur ±1,7e-6 setoran). Pada pool
+///      tandingan dengan total LP kecil dan cadangan besar bisa mencapai ±1% atau seluruh
+///      setoran (cabang 4), tetapi penyerang selalu membayar lebih dari yang ia ambil
+///      (`test/unit/PoolSeeder.t.sol`). Batas yang tersisa ada di pair itu sendiri, mis.
+///      cadangan di atas uint112.
 ///
 ///      Asumsi: fee swap 0,3% (Uniswap v2 kanonik) dan token tanpa pajak transfer. Di AMM dengan
 ///      fee lebih tinggi, swap penyeimbang bisa gagal di pemeriksaan K; fee lebih rendah aman.
@@ -72,15 +87,49 @@ library PoolSeeder {
 
         // totalSupply == 0 berarti belum pernah ada mint: harga belum ditentukan siapa pun.
         if (IUniswapV2Pair(pair).totalSupply() != 0) {
+            // Saldo yang belum di-sync dihitung pair sebagai input `swap`, sedangkan ukuran swap
+            // dihitung dari cadangan. Tanpa sync, rasio sesudah swap meleset dan penyerang
+            // mengambil sebagian setoran (PRD P55). Setelah sync, donasi menjadi cadangan milik
+            // LP yang ada, sebelum setoran ini masuk.
+            IUniswapV2Pair(pair).sync();
             (tokenAmount, ethAmount) = _rebalance(pair, token, weth, tokenAmount, ethAmount);
         }
+
+        // Dihitung sebelum transfer: transfer tidak mengubah cadangan.
+        bool mintsNothing = _mintsNothing(pair, token, tokenAmount, ethAmount);
 
         // `mint` memakai seluruh saldo yang masuk: tidak ada yang tertinggal di pemanggil dan
         // tidak ada yang dibakar (total supply harus tetap 999M). Setelah `_rebalance`, rasio
         // setoran sudah sama dengan rasio pool, kecuali selisih sebesar fee swap.
         IERC20(token).safeTransfer(pair, tokenAmount);
         IERC20(weth).safeTransfer(pair, ethAmount);
+
+        // Pool tandingan dengan total LP kecil dan cadangan sangat besar membuat bagian LP
+        // setoran ini dibulatkan ke 0, dan `mint` akan revert selamanya (review 19 Nov 2026,
+        // MEDIUM #1). Setoran lalu dijadikan cadangan lewat `sync`: pool tetap terisi, langkah
+        // ekspansi tetap selesai. Nilainya jatuh ke LP yang ada, yang mayoritas terkunci permanen
+        // (MINIMUM_LIQUIDITY). Untuk memaksa cabang ini penyerang harus menaruh cadangan bernilai
+        // lebih dari setoran x total LP, dan sebagian besar ikut terkunci; bagiannya atas setoran
+        // ini jauh lebih kecil dari biayanya.
+        if (mintsNothing) {
+            IUniswapV2Pair(pair).sync();
+            return (pair, 0);
+        }
         liquidity = IUniswapV2Pair(pair).mint(lpRecipient);
+    }
+
+    /// @dev True bila `mint` untuk setoran ini akan menghasilkan 0 LP. Memakai total LP sebelum
+    ///      `_mintFee`; fee protokol pair hanya menambah total LP, jadi hasil `mint` sebenarnya
+    ///      tidak pernah lebih kecil dari perkiraan ini.
+    function _mintsNothing(address pair, address token, uint256 tokenAmount, uint256 ethAmount)
+        private
+        view
+        returns (bool)
+    {
+        uint256 supply = IUniswapV2Pair(pair).totalSupply();
+        if (supply == 0) return false;
+        (uint256 reserveToken, uint256 reserveEth,) = _reserves(pair, token);
+        return Math.min(tokenAmount * supply / reserveToken, ethAmount * supply / reserveEth) == 0;
     }
 
     /// @dev Satu swap yang membuat rasio aset yang dipegang sama dengan rasio pool.

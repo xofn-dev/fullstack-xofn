@@ -77,21 +77,23 @@ contract XofNGraduator is OApp, ReentrancyGuard {
         address lpRecipient;
     }
 
-    /// @dev Ekonomi curve dan pool. Semua nilai milik owner (PRD P8, P15, P16).
+    /// @dev Ekonomi curve dan pool. Semua nilai milik owner (PRD P8, P15, P16, P42).
     struct Economics {
         uint256 saleSupply; // token yang dijual curve
         uint256 startPrice; // wei per 1 token utuh
         uint256 graduationThreshold; // ETH yang harus terkumpul
         uint256 callerReward; // insentif tetap pemanggil graduate()
-        uint256 expansionPairEth; // ETH pasangan per chain ekspansi
+        // ETH pasangan tiap pool ekspansi. Dibayar dari saldo XofNRemote di chain itu (diisi
+        // tim), bukan dari dana curve dan bukan lewat value executor (PRD P51).
+        uint256 expansionPairEth;
     }
 
-    /// @dev Gas dan value untuk pesan ekspansi ke satu chain. Diukur di tes (PRD P4).
+    /// @dev Gas untuk pesan ekspansi ke satu chain. Diukur di tes (PRD P4). Tidak ada value
+    ///      executor: `nativeCap` LayerZero (0 di Robinhood testnet, 0,05 ETH ke Base di mainnet)
+    ///      tidak lagi membatasi ekspansi. Remote membayar ack dari saldonya sendiri (PRD P51).
     struct ExpansionGas {
         uint128 deployGas; // lzReceive di Remote: deploy token + resep
-        uint128 deployAckValue; // value di lzReceive Remote untuk membayar ack CONFIGURED
         uint128 seedGas; // tambahan gas lzCompose di Remote: buat + isi pool + kunci
-        uint128 seedAckValue; // tambahan value di lzCompose untuk membayar ack LOCKED
     }
 
     struct Launch {
@@ -137,8 +139,6 @@ contract XofNGraduator is OApp, ReentrancyGuard {
     uint256 public immutable expansionPairEth;
 
     uint256 public launchCount;
-    /// @notice ETH pasangan yang disisihkan untuk chain ekspansi dan belum dikirim.
-    uint256 public reservedPairEth;
 
     uint32[] private _expansionEids;
     address[] private _tokens;
@@ -209,12 +209,35 @@ contract XofNGraduator is OApp, ReentrancyGuard {
         lpRecipient = _infra.lpRecipient;
         homeEid = endpoint.eid();
 
-        // Likuiditas pool home harus tersisa setelah insentif dan porsi setiap chain ekspansi.
+        // Likuiditas pool home harus tersisa setelah insentif. ETH pool ekspansi tidak diambil
+        // dari dana curve (PRD P51), jadi tidak ikut dikurangkan.
         if (
             _economics.saleSupply == 0 || _economics.saleSupply >= TOTAL_SUPPLY
                 || _economics.startPrice == 0 || _economics.expansionPairEth == 0
-                || _economics.graduationThreshold
-                    <= _economics.callerReward + n * _economics.expansionPairEth
+                || _economics.graduationThreshold <= _economics.callerReward
+        ) revert InvalidEconomics();
+        // ETH pool ekspansi berasal dari saldo Remote (subsidi tim), jadi tidak boleh cukup besar
+        // untuk diperah (review 19 Nov 2026, MEDIUM #2). Pembeli tunggal membayar ambang,
+        // menerima insentif, lalu menjual `saleSupply` token ke pool yang total ETH-nya
+        // (ambang - insentif) + n * expansionPairEth. Hasil jual ke AMM selalu di bawah nilai
+        // linearnya, jadi ia tidak untung bila
+        //   n * expansionPairEth * saleSupply < (ambang - insentif) * (TOTAL - saleSupply).
+        // Dekat batas itu ia hampir tidak rugi, sehingga bisa menguras saldo Remote dengan murah
+        // (review kedua 19 Nov 2026, MEDIUM-2). Karena itu dipakai SEPARUH batas: kerugian
+        // penyerang minimal ±(saleSupply / TOTAL) x subsidi yang ia picu (±0,8x dengan konstanta
+        // tes). n = jumlah chain ekspansi terbanyak yang bisa dipilih creator.
+        //
+        // Yang TIDAK dicakup batas ini (diterima PM 19 Nov 2026, MEDIUM-1): pool ekspansi dibuka
+        // pada harga saat graduate. Bila harga home sudah berubah saat ekspansi (lifecycle dua
+        // tahap), arbitrase mengambil sebagian subsidi; paling banyak expansionPairEth per chain
+        // per token (test/lz/SubsidyFarm.t.sol).
+        if (
+            _economics.expansionPairEth
+                >= Math.mulDiv(
+                    _economics.graduationThreshold - _economics.callerReward,
+                    TOTAL_SUPPLY - _economics.saleSupply,
+                    2 * n * _economics.saleSupply
+                )
         ) revert InvalidEconomics();
         saleSupply = _economics.saleSupply;
         startPrice = _economics.startPrice;
@@ -313,9 +336,12 @@ contract XofNGraduator is OApp, ReentrancyGuard {
     /// @dev Gagal sebelum ambang tercapai dan hanya bisa sekali (dijaga curve dan status).
     ///      Owner dan delegate token TETAP kontrak ini. Tidak ada renounce di tahap 1.
     ///
-    ///      Pembagian: setiap pool (home dan tiap chain ekspansi) dibuka pada harga yang sama,
-    ///      `(eth - insentif) / token`. Tiap chain ekspansi mendapat `expansionPairEth` dan token
-    ///      sebanding; sisanya masuk pool home sekarang.
+    ///      Pembagian (PRD P51): SEMUA ETH curve (dikurangi insentif) masuk pool home. Tiap chain
+    ///      ekspansi mendapat `tokensPerChain` token, dipasangkan nanti dengan `expansionPairEth`
+    ///      dari saldo Remote di chain itu. Jumlah token dipilih supaya semua pool dibuka pada
+    ///      harga yang sama:
+    ///        liquidityEth / (tokenAmount - n * T) = expansionPairEth / T
+    ///        → T = tokenAmount * expansionPairEth / (liquidityEth + n * expansionPairEth)
     function graduate(address token) external nonReentrant {
         Launch storage l = _launches[token];
         if (l.status != Status.Bonding) revert InvalidStatus(token, l.status);
@@ -324,15 +350,14 @@ contract XofNGraduator is OApp, ReentrancyGuard {
         (uint256 ethAmount, uint256 tokenAmount) = IXofNCurve(l.curve).graduate();
 
         uint256 n = l.eids.length;
-        uint256 liquidityEth = ethAmount - callerReward;
+        uint256 poolEth = ethAmount - callerReward;
         // Dibulatkan ke kelipatan dust supaya tidak ada sisa pembulatan saat dikirim lintas chain.
         uint256 tokensPerChain =
-            (Math.mulDiv(tokenAmount, expansionPairEth, liquidityEth) / DUST) * DUST;
-        uint256 poolEth = liquidityEth - n * expansionPairEth;
+            (Math.mulDiv(tokenAmount, expansionPairEth, poolEth + n * expansionPairEth) / DUST)
+                * DUST;
         uint256 poolTokens = tokenAmount - n * tokensPerChain;
 
         l.tokensPerChain = tokensPerChain;
-        reservedPairEth += n * expansionPairEth;
 
         (address pool,) = PoolSeeder.seed(factory, weth, token, poolTokens, poolEth, lpRecipient);
         l.pool = pool;
@@ -379,8 +404,10 @@ contract XofNGraduator is OApp, ReentrancyGuard {
 
     /// @notice Mengulang langkah terakhir yang belum selesai untuk satu chain, dengan parameter
     ///         yang sama. Siapa pun boleh memanggil dan membayar fee-nya (PRD P14).
-    /// @dev - `DeploySent`: mengirim ulang pesan DEPLOY (Remote idempoten: kalau token sudah ada,
-    ///        ia hanya mengirim ack lagi).
+    /// @dev - `DeploySent`: mengirim ulang pesan DEPLOY. Berguna bila DEPLOY sebelumnya belum
+    ///        diproses Remote. Bila token remote sudah ada, Remote tidak mengirim ack lagi dari
+    ///        saldonya (supaya DEPLOY berulang tidak bisa menguras saldo itu); ack yang tertunda
+    ///        dikirim ulang lewat `XofNRemote.reAck`, dibayar pemanggilnya.
     ///      - `Configured`: mengirim likuiditas; `msg.value` ditambahkan ke escrow.
     ///      - `LiquiditySent`: tidak ada yang bisa diulang dari home. Token sudah dalam perjalanan;
     ///        pengulangan terjadi di chain tujuan (`endpoint.lzReceive` / `endpoint.lzCompose`,
@@ -473,11 +500,11 @@ contract XofNGraduator is OApp, ReentrancyGuard {
         emit ExpansionStep(token, eid, Step.DeploySent, guid);
     }
 
-    /// @dev ETH pasangan berasal dari dana curve yang disisihkan saat graduation; pemanggil hanya
-    ///      menanggung selisih fee di atasnya. Quote dan kirim terjadi di transaksi yang sama.
-    ///      Selisih itu diambil dari escrow pemanggil `expandAndLock` lebih dulu, lalu dari
-    ///      `extra` (value pemanggil `retryRemote`). Sisa masing-masing kembali ke pemiliknya:
-    ///      pemanggil retry tidak bisa mengambil escrow orang lain.
+    /// @dev Fee LayerZero dibayar pemanggil: dari escrow pemanggil `expandAndLock` lebih dulu,
+    ///      lalu dari `extra` (value pemanggil `retryRemote`). Sisa masing-masing kembali ke
+    ///      pemiliknya: pemanggil retry tidak bisa mengambil escrow orang lain. ETH pasangan
+    ///      tidak ikut dikirim; Remote memakai saldonya sendiri (PRD P51). Quote dan kirim
+    ///      terjadi di transaksi yang sama.
     function _sendLiquidity(address token, uint32 eid, uint256 extra, address extraPayer) private {
         Launch storage l = _launches[token];
         Expansion storage x = _expansions[token][eid];
@@ -485,21 +512,19 @@ contract XofNGraduator is OApp, ReentrancyGuard {
 
         SendParam memory param = _liquidityParam(l, eid);
         uint256 fee = IOFT(token).quoteSend(param, false).nativeFee;
-        uint256 fromCaller = fee > expansionPairEth ? fee - expansionPairEth : 0;
         uint256 escrow = x.feeEscrow;
-        if (escrow + extra < fromCaller) revert InsufficientFee(fromCaller, escrow + extra);
-        uint256 fromEscrow = escrow < fromCaller ? escrow : fromCaller;
+        if (escrow + extra < fee) revert InsufficientFee(fee, escrow + extra);
+        uint256 fromEscrow = escrow < fee ? escrow : fee;
 
         x.step = Step.LiquiditySent;
         x.feeEscrow = 0;
-        reservedPairEth -= expansionPairEth;
 
         (MessagingReceipt memory receipt,) =
             IOFT(token).send{value: fee}(param, MessagingFee(fee, 0), address(this));
         emit ExpansionStep(token, eid, Step.LiquiditySent, receipt.guid);
 
         if (escrow > fromEscrow) _refund(l.payer, escrow - fromEscrow);
-        uint256 extraUsed = fromCaller - fromEscrow;
+        uint256 extraUsed = fee - fromEscrow;
         if (extra > extraUsed) _refund(extraPayer, extra - extraUsed);
     }
 
@@ -509,24 +534,22 @@ contract XofNGraduator is OApp, ReentrancyGuard {
         );
     }
 
+    /// @dev Tanpa value executor (PRD P51): Remote membayar ack dari saldonya sendiri.
     function _deployOptions(uint32 eid) private view returns (bytes memory) {
-        ExpansionGas memory g = _gas[eid];
-        return OptionsBuilder.newOptions().addExecutorLzReceiveOption(g.deployGas, g.deployAckValue);
+        return OptionsBuilder.newOptions().addExecutorLzReceiveOption(_gas[eid].deployGas, 0);
     }
 
-    /// @dev Token dikreditkan ke Remote, lalu Remote membuat pool di `lzCompose`.
-    ///      Value compose = ETH pasangan + anggaran ack LOCKED.
+    /// @dev Token dikreditkan ke Remote, lalu Remote membuat pool di `lzCompose`. Compose tanpa
+    ///      value executor: ETH pasangan (`composeMsg`) dan fee ack LOCKED diambil dari saldo
+    ///      Remote (PRD P51).
     function _liquidityParam(Launch storage l, uint32 eid) private view returns (SendParam memory) {
-        ExpansionGas memory g = _gas[eid];
         return SendParam({
             dstEid: eid,
             to: peers[eid],
             amountLD: l.tokensPerChain,
             minAmountLD: l.tokensPerChain,
             extraOptions: OptionsBuilder.newOptions()
-                .addExecutorLzComposeOption(
-                    0, g.seedGas, uint128(expansionPairEth) + g.seedAckValue
-                ),
+                .addExecutorLzComposeOption(0, _gas[eid].seedGas, 0),
             composeMsg: abi.encode(expansionPairEth),
             oftCmd: ""
         });
@@ -556,9 +579,10 @@ contract XofNGraduator is OApp, ReentrancyGuard {
 
     /// @notice Perkiraan `msg.value` untuk `expandAndLock`.
     /// @return deployFees Fee pasti pesan DEPLOY ke semua chain (minimum yang harus dibayar).
-    /// @return liquidityFees Perkiraan bagian pemanggil untuk pengiriman likuiditas. Dihitung
-    ///         dengan konfigurasi pathway infrastruktur, karena resep token baru terpasang di
-    ///         dalam `expandAndLock`; nilai pastinya ada di `quoteRetry` setelah ack CONFIGURED.
+    /// @return liquidityFees Perkiraan fee pengiriman likuiditas (seluruhnya dibayar pemanggil).
+    ///         Dihitung dengan konfigurasi pathway infrastruktur, karena resep token baru
+    ///         terpasang di dalam `expandAndLock`; nilai pastinya ada di `quoteRetry` setelah ack
+    ///         CONFIGURED.
     function quoteExpandAndLock(address token)
         external
         view
@@ -571,26 +595,24 @@ contract XofNGraduator is OApp, ReentrancyGuard {
             deployFees += _quote(eid, _deployMessage(token, l), _deployOptions(eid), false)
             .nativeFee;
 
-            TierLib.Pathway memory p = _pathways[eid];
-            ExpansionGas memory g = _gas[eid];
-            bytes memory options = TierLib.sendAndCallOptions(p)
-                .addExecutorLzComposeOption(
-                    0, g.seedGas, uint128(expansionPairEth) + g.seedAckValue
-                );
-            uint256 fee =
-                endpoint.quote(
+            bytes memory options = TierLib.sendAndCallOptions(_pathways[eid])
+                .addExecutorLzComposeOption(0, _gas[eid].seedGas, 0);
+            liquidityFees += endpoint.quote(
                 MessagingParams(
                     eid, _getPeerOrRevert(eid), new bytes(LIQUIDITY_MESSAGE_LENGTH), options, false
                 ),
                 address(this)
             )
             .nativeFee;
-            if (fee > expansionPairEth) liquidityFees += fee - expansionPairEth;
         }
     }
 
     /// @notice `msg.value` yang dibutuhkan `retryRemote(token, eid)` saat ini (0 bila tidak ada
     ///         yang bisa diulang dari home).
+    /// @dev Pada langkah `DeploySent`, kontrak ini tidak tahu apakah DEPLOY sudah diproses
+    ///      Remote. Bila `XofNRemote.deploymentOf(token).remoteToken` di chain tujuan sudah ada,
+    ///      yang tertunda adalah ack: pakai `XofNRemote.reAck`. Membayar DEPLOY ulang dalam
+    ///      keadaan itu tidak menghasilkan apa pun.
     function quoteRetry(address token, uint32 eid) external view returns (uint256) {
         Launch storage l = _launches[token];
         Expansion storage x = _expansions[token][eid];
@@ -600,8 +622,7 @@ contract XofNGraduator is OApp, ReentrancyGuard {
         }
         if (x.step == Step.Configured) {
             uint256 fee = IOFT(token).quoteSend(_liquidityParam(l, eid), false).nativeFee;
-            uint256 fromCaller = fee > expansionPairEth ? fee - expansionPairEth : 0;
-            return fromCaller > x.feeEscrow ? fromCaller - x.feeEscrow : 0;
+            return fee > x.feeEscrow ? fee - x.feeEscrow : 0;
         }
         return 0;
     }

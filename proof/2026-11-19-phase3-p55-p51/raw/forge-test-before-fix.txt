@@ -1,0 +1,78 @@
+# PoolSeeder.sol versi main (sebelum perbaikan P55), tes baru dijalankan terhadapnya
+Compiling 7 files with Solc 0.8.24
+Solc 0.8.24 finished in 20.94s
+Compiler run successful with warnings:
+Warning (2018): Function state mutability can be restricted to pure
+   --> contracts/libraries/TierLib.sol:235:5:
+    |
+235 |     function configHashOf(Pathway storage p, uint8 tier) external view returns (bytes32) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+
+Ran 2 tests for test/unit/Graduate.t.sol:GraduateTest
+[FAIL: UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED] test_frontRun_unsyncedDonationCannotBlockGraduation() (gas: 2566887)
+[FAIL: protocol liquidity was diluted: 5796518063614661347 < 7979920200000000000] test_frontRun_unsyncedDonationDoesNotProfit() (gas: 2696190)
+Suite result: FAILED. 0 passed; 2 failed; 0 skipped; finished in 68.73ms (7.14ms CPU time)
+
+Ran 7 tests for test/unit/PoolSeeder.t.sol:PoolSeederTest
+[FAIL: protocol liquidity diluted: 6104397000509669762 < 7819921800000000000; counterexample: calldata=0x252e2c250000000000000000000001ffb0b2c29151b08f42e062859dbd09e2e81c0d004e00000004e39bef9fda97dc856e572e005fb0b18f57d125f4d183367060a27cc40000000000000000000000000000000000014f5c8ea527398138312d90d2e99b000000000000000000000000000000000000000000000000000000043a9699450000000000000000000000000000000000000000000000000000000000000000 args=[747836105533634723591879858957004373480676552147022 [7.478e50], 131809825240572880998376061229358750152315958578193384306572236324036 [1.318e68], 6801940354704009846984926938982811 [6.801e33], 18162817349 [1.816e10], false]] testFuzz_anyRivalPool_home(uint256,uint256,uint256,uint256,bool) (runs: 3, μ: 2654470, ~: 2641019)
+[FAIL: protocol liquidity diluted: 69472356024989139 < 79999200000000000; counterexample: calldata=0xebaed230000000000000000000000000000000000000000000033b3336f84a7e8ca43581017981eae9ce82fd0ae9f52707a8cf091a9e8284d524fd8e76a35ee7b938cd61fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc0019137b4ba0947d3ece41927648574c1302f4f59667547db939eda0f7ac6f0e0000000000000000000000000000000000000000000000000000000000000000 args=[3906341826278735437116801 [3.906e24], 666998001950424922027161501997165917971202611290054073337063302949009673569 [6.669e74], 115792089237316195423570985008687907853269984665640564039457584007913129639932 [1.157e77], 44305633837969358923133929918106935581120201699815765572580206442290376462 [4.43e73], false]] testFuzz_anyRivalPool_remote(uint256,uint256,uint256,uint256,bool) (runs: 8, μ: 2656226, ~: 2640609)
+[FAIL: front-runner must not profit: 10832505321270437772 > 9737969274222103971; counterexample: calldata=0xba5daf190000000000000000000001ffb0b2c29151b08f42e062859dbd09e2e81c0d004e00000004e39bef9fda97dc856e572e005fb0b18f57d125f4d183367060a27cc40000000000000000000000000000000000014f5c8ea527398138312d90d2e99b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 args=[747836105533634723591879858957004373480676552147022 [7.478e50], 131809825240572880998376061229358750152315958578193384306572236324036 [1.318e68], 6801940354704009846984926938982811 [6.801e33], false, false]] testFuzz_tinyLpTwoSidedDonation_neverBlocksNorProfits(uint256,uint256,uint256,bool,bool) (runs: 6, μ: 2625423, ~: 2632267)
+[FAIL: UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED] test_lpRoundingToZero_doesNotBlockSeed() (gas: 2358357)
+[FAIL: UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED] test_unsyncedDonationCannotBlockSeed_home() (gas: 2261681)
+[FAIL: UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED] test_unsyncedDonationCannotBlockSeed_remote() (gas: 2261665)
+[PASS] test_unsyncedDonationIntoEmptyPairGoesToProtocol() (gas: 2103924)
+Suite result: FAILED. 1 passed; 6 failed; 0 skipped; finished in 78.09ms (137.18ms CPU time)
+
+Ran 2 tests for test/lz/Composer.t.sol:ComposerTest
+[FAIL: protocol liquidity was diluted: 40032975069185262 < 79999200000000000] test_frontRun_unsyncedDonationCannotBlockCompose() (gas: 17763455)
+[FAIL: protocol liquidity was diluted: 58549619013086008 < 79999200000000000] test_frontRun_unsyncedDonationDoesNotProfit() (gas: 17763655)
+Suite result: FAILED. 0 passed; 2 failed; 0 skipped; finished in 81.96ms (22.92ms CPU time)
+
+Ran 3 test suites in 99.66ms (228.77ms CPU time): 1 tests passed, 10 failed, 0 skipped (11 total tests)
+
+Failing tests:
+Encountered 2 failing tests in test/lz/Composer.t.sol:ComposerTest
+[FAIL: protocol liquidity was diluted: 40032975069185262 < 79999200000000000] test_frontRun_unsyncedDonationCannotBlockCompose() (gas: 17763455)
+[FAIL: protocol liquidity was diluted: 58549619013086008 < 79999200000000000] test_frontRun_unsyncedDonationDoesNotProfit() (gas: 17763655)
+
+Encountered 2 failing tests in test/unit/Graduate.t.sol:GraduateTest
+[FAIL: UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED] test_frontRun_unsyncedDonationCannotBlockGraduation() (gas: 2566887)
+[FAIL: protocol liquidity was diluted: 5796518063614661347 < 7979920200000000000] test_frontRun_unsyncedDonationDoesNotProfit() (gas: 2696190)
+
+Encountered 6 failing tests in test/unit/PoolSeeder.t.sol:PoolSeederTest
+[FAIL: protocol liquidity diluted: 6104397000509669762 < 7819921800000000000; counterexample: calldata=0x252e2c250000000000000000000001ffb0b2c29151b08f42e062859dbd09e2e81c0d004e00000004e39bef9fda97dc856e572e005fb0b18f57d125f4d183367060a27cc40000000000000000000000000000000000014f5c8ea527398138312d90d2e99b000000000000000000000000000000000000000000000000000000043a9699450000000000000000000000000000000000000000000000000000000000000000 args=[747836105533634723591879858957004373480676552147022 [7.478e50], 131809825240572880998376061229358750152315958578193384306572236324036 [1.318e68], 6801940354704009846984926938982811 [6.801e33], 18162817349 [1.816e10], false]] testFuzz_anyRivalPool_home(uint256,uint256,uint256,uint256,bool) (runs: 3, μ: 2654470, ~: 2641019)
+[FAIL: protocol liquidity diluted: 69472356024989139 < 79999200000000000; counterexample: calldata=0xebaed230000000000000000000000000000000000000000000033b3336f84a7e8ca43581017981eae9ce82fd0ae9f52707a8cf091a9e8284d524fd8e76a35ee7b938cd61fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc0019137b4ba0947d3ece41927648574c1302f4f59667547db939eda0f7ac6f0e0000000000000000000000000000000000000000000000000000000000000000 args=[3906341826278735437116801 [3.906e24], 666998001950424922027161501997165917971202611290054073337063302949009673569 [6.669e74], 115792089237316195423570985008687907853269984665640564039457584007913129639932 [1.157e77], 44305633837969358923133929918106935581120201699815765572580206442290376462 [4.43e73], false]] testFuzz_anyRivalPool_remote(uint256,uint256,uint256,uint256,bool) (runs: 8, μ: 2656226, ~: 2640609)
+[FAIL: front-runner must not profit: 10832505321270437772 > 9737969274222103971; counterexample: calldata=0xba5daf190000000000000000000001ffb0b2c29151b08f42e062859dbd09e2e81c0d004e00000004e39bef9fda97dc856e572e005fb0b18f57d125f4d183367060a27cc40000000000000000000000000000000000014f5c8ea527398138312d90d2e99b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 args=[747836105533634723591879858957004373480676552147022 [7.478e50], 131809825240572880998376061229358750152315958578193384306572236324036 [1.318e68], 6801940354704009846984926938982811 [6.801e33], false, false]] testFuzz_tinyLpTwoSidedDonation_neverBlocksNorProfits(uint256,uint256,uint256,bool,bool) (runs: 6, μ: 2625423, ~: 2632267)
+[FAIL: UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED] test_lpRoundingToZero_doesNotBlockSeed() (gas: 2358357)
+[FAIL: UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED] test_unsyncedDonationCannotBlockSeed_home() (gas: 2261681)
+[FAIL: UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED] test_unsyncedDonationCannotBlockSeed_remote() (gas: 2261665)
+
+Encountered a total of 10 failing tests, 1 tests succeeded
+
+Tip: Run `forge test --rerun` to retry only the 10 failed tests
+Tip: Run `forge test --debug --match-test <TEST_NAME>` to inspect one failing test in the debugger
+
+Fuzz seed: 0x2d810de079172a4dc4be329593aa790eb79bcd15cfc7d0dce04dce146b39740e (use `--fuzz-seed` to reproduce)
+Compiling 1 files with Solc 0.8.24
+Solc 0.8.24 finished in 1.58s
+Compiler run successful!
+
+Ran 3 tests for test/fork/ForkUniV2.t.sol:ForkUniV2Test
+[FAIL: protocol liquidity diluted: 5660507659283880278 < 7819921800000000000] test_fork_arbitrum_univ2() (block: 525452554) (gas: 35100168)
+[FAIL: protocol liquidity diluted: 5660507659283880278 < 7819921800000000000] test_fork_base_univ2() (block: 59263127) (gas: 34467181)
+[FAIL: protocol liquidity diluted: 5660507659283880278 < 7819921800000000000] test_fork_robinhood_univ2() (block: 117764824) (gas: 35082723)
+Suite result: FAILED. 0 passed; 3 failed; 0 skipped; finished in 9.87s (26.53s CPU time)
+
+Ran 1 test suite in 9.89s (9.87s CPU time): 0 tests passed, 3 failed, 0 skipped (3 total tests)
+
+Failing tests:
+Encountered 3 failing tests in test/fork/ForkUniV2.t.sol:ForkUniV2Test
+[FAIL: protocol liquidity diluted: 5660507659283880278 < 7819921800000000000] test_fork_arbitrum_univ2() (block: 525452554) (gas: 35100168)
+[FAIL: protocol liquidity diluted: 5660507659283880278 < 7819921800000000000] test_fork_base_univ2() (block: 59263127) (gas: 34467181)
+[FAIL: protocol liquidity diluted: 5660507659283880278 < 7819921800000000000] test_fork_robinhood_univ2() (block: 117764824) (gas: 35082723)
+
+Encountered a total of 3 failing tests, 0 tests succeeded
+
+Tip: Run `forge test --rerun` to retry only the 3 failed tests
+Tip: Run `forge test --debug --match-test <TEST_NAME>` to inspect one failing test in the debugger

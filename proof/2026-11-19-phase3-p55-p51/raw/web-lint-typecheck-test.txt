@@ -1,0 +1,21 @@
+
+> fullstack-xofn@0.1.0 lint
+> eslint .
+
+
+> fullstack-xofn@0.1.0 typecheck
+> tsc --noEmit
+
+
+> fullstack-xofn@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.12 /Applications/MAMP/htdocs/project-wp-id/fullstack-xofn
+
+
+ Test Files  6 passed (6)
+      Tests  117 passed (117)
+   Start at  05:57:06
+   Duration  636ms (transform 638ms, setup 0ms, import 1.78s, tests 256ms, environment 0ms)
+

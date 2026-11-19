@@ -99,10 +99,10 @@ contract ExpansionTest is XofNTestBase {
         assertEq(onBase.balanceOf(address(_pair(BASE, address(onBase)))), perChain);
         assertEq(onArb.balanceOf(address(_pair(ARB, address(onArb)))), perChain);
 
-        // Graduator dan Remote tidak menyimpan sisa token atau ETH pasangan.
+        // Graduator dan Remote tidak menyimpan sisa token; Graduator tidak menyimpan ETH.
         assertEq(token.balanceOf(address(graduator)), 0);
         assertEq(onBase.balanceOf(address(remotes[BASE])), 0);
-        assertEq(graduator.reservedPairEth(), 0);
+        assertEq(address(graduator).balance, 0);
     }
 
     /// @dev Padanan perintah `cast call` di deployguide §7.4 untuk satu pathway.
@@ -260,11 +260,14 @@ contract ExpansionTest is XofNTestBase {
             uint8(graduator.launchOf(address(token)).status), uint8(XofNGraduator.Status.Locked)
         );
 
-        // Pesan asli yang terlambat dijalankan tidak mengubah apa pun.
+        // Pesan asli yang terlambat dijalankan tidak mengubah apa pun, tidak mengirim ack, dan
+        // tidak memakai saldo Remote (PRD P51).
         address remoteToken = remote.deploymentOf(address(token)).remoteToken;
+        uint256 remoteBalance = address(remote).balance;
         assertTrue(_execute(original, 0));
         assertEq(remote.deploymentOf(address(token)).remoteToken, remoteToken);
-        _mustDeliver(HOME, address(graduator));
+        assertEq(_pending(HOME, address(graduator)), 0, "no ack for a stale DEPLOY");
+        assertEq(address(remote).balance, remoteBalance, "remote balance untouched");
         (locked,,) = chains[HOME].registry.verify(address(token));
         assertTrue(locked);
     }
@@ -294,7 +297,8 @@ contract ExpansionTest is XofNTestBase {
     }
 
     /// @dev Jalur lain untuk kegagalan gas: `retryRemote` mengirim ulang. Pesan lama yang
-    ///      kemudian dijalankan juga tidak merusak apa pun (Remote idempoten, ack ganda diabaikan).
+    ///      kemudian dijalankan juga tidak merusak apa pun: Remote idempoten dan tidak mengirim
+    ///      ack kedua dari saldonya (PRD P51).
     function test_gasFailure_thenRetryRemote_andStaleMessageIsHarmless() public {
         (XofNToken token,) = _launchAndGraduate(STANDARD, _eids(ARB));
         _expand(token);
@@ -308,13 +312,15 @@ contract ExpansionTest is XofNTestBase {
         _mustDeliver(ARB, address(remotes[ARB]));
         address remoteToken = remotes[ARB].deploymentOf(address(token)).remoteToken;
 
-        // Pesan lama akhirnya dijalankan: token tidak di-deploy dua kali, hanya ack kedua.
+        // Pesan lama akhirnya dijalankan: token tidak di-deploy dua kali, tidak ada ack kedua,
+        // dan saldo Remote tidak terpakai.
+        uint256 remoteBalance = address(remotes[ARB]).balance;
         assertTrue(_execute(failed, 0));
         assertEq(remotes[ARB].deploymentOf(address(token)).remoteToken, remoteToken);
-        assertEq(_pending(HOME, address(graduator)), 2);
+        assertEq(_pending(HOME, address(graduator)), 1);
+        assertEq(address(remotes[ARB]).balance, remoteBalance, "stale DEPLOY spends nothing");
 
-        _mustDeliver(HOME, address(graduator)); // ack pertama → likuiditas
-        _mustDeliver(HOME, address(graduator)); // ack ganda → diabaikan
+        _mustDeliver(HOME, address(graduator)); // ack → likuiditas
         assertEq(uint8(_step(token, ARB)), uint8(XofNGraduator.Step.LiquiditySent));
         assertEq(_pending(ARB, remoteToken), 1, "liquidity sent exactly once");
 
@@ -417,18 +423,19 @@ contract ExpansionTest is XofNTestBase {
             keeper.balance - keeperBefore, surplus, "unused escrow returns to the original payer"
         );
         assertEq(graduator.expansionOf(address(token), BASE).feeEscrow, 0);
-        assertEq(address(graduator).balance, graduator.reservedPairEth());
+        assertEq(address(graduator).balance, 0);
     }
 
-    /// @dev Executor tidak membawa value (mis. batas native 0 di testnet): ack tidak terkirim
-    ///      otomatis. Siapa pun memanggil `reAck` di chain tujuan dan alur lanjut.
-    function test_ackDeferredWithoutExecutorValue_thenReAck() public {
+    /// @dev Saldo Remote kosong (tim belum mengisi): deploy tetap berhasil, tetapi ack tidak
+    ///      terkirim otomatis. Siapa pun memanggil `reAck` di chain tujuan dan alur lanjut.
+    function test_ackDeferredWhenRemoteUnfunded_thenReAck() public {
         (XofNToken token,) = _launchAndGraduate(STANDARD, _eids(BASE));
         _expand(token);
         XofNRemote remote = remotes[BASE];
+        vm.deal(address(remote), 0);
 
         Delivery memory d = _take(BASE, address(remote));
-        assertTrue(_executeWith(d, DEPLOY_GAS, 0), "deploy still succeeds without value");
+        assertTrue(_executeWith(d, DEPLOY_GAS, 0), "deploy still succeeds without funds");
         assertTrue(remote.deploymentOf(address(token)).remoteToken != address(0));
         assertEq(_pending(HOME, address(graduator)), 0, "ack could not be paid");
 
@@ -580,21 +587,50 @@ contract ExpansionTest is XofNTestBase {
         graduator.retryRemote{value: 1 ether}(address(token), ARB);
     }
 
-    /// @dev ETH di Graduator selalu cukup untuk ETH pasangan yang disisihkan + escrow fee.
+    /// @dev Graduator hanya memegang escrow fee pemanggil. ETH curve langsung masuk pool home;
+    ///      ETH pool ekspansi berasal dari saldo Remote (PRD P51).
     function test_graduatorEthAccounting() public {
         (XofNToken token,) = _launchAndGraduate(STANDARD, _eids(BASE, ARB));
-        assertEq(address(graduator).balance, 2 * EXPANSION_PAIR_ETH);
+        assertEq(address(graduator).balance, 0);
 
         _expand(token);
         uint256 escrow = graduator.expansionOf(address(token), BASE).feeEscrow
             + graduator.expansionOf(address(token), ARB).feeEscrow;
-        assertGe(address(graduator).balance, graduator.reservedPairEth() + escrow);
+        assertEq(address(graduator).balance, escrow);
 
         _runChain(token, BASE);
         _runChain(token, ARB);
-        assertEq(graduator.reservedPairEth(), 0);
         assertEq(graduator.expansionOf(address(token), BASE).feeEscrow, 0);
         assertEq(graduator.expansionOf(address(token), ARB).feeEscrow, 0);
+        assertEq(address(graduator).balance, 0);
+    }
+
+    /// @dev PRD P51: tidak ada pesan ekspansi yang membawa value executor, jadi `nativeCap`
+    ///      (0 di Robinhood testnet; seluruh suite ini berjalan dengan cap 0) tidak berpengaruh.
+    function test_expansionMessagesCarryNoExecutorValue() public {
+        (XofNToken token,) = _launchAndGraduate(STANDARD, _eids(BASE));
+        _expand(token);
+        XofNRemote remote = remotes[BASE];
+
+        Delivery memory deploy = _mustDeliver(BASE, address(remote));
+        (, uint256 deployValue) = _parseExecutorLzReceiveOption(deploy.options);
+        assertEq(deployValue, 0, "DEPLOY carries no value");
+
+        _mustDeliver(HOME, address(graduator));
+        address remoteToken = remote.deploymentOf(address(token)).remoteToken;
+        Delivery memory liquidity = _mustDeliver(BASE, remoteToken);
+        (, uint256 receiveValue) = _parseExecutorLzReceiveOption(liquidity.options);
+        (,, uint256 composeValue) = _parseExecutorLzComposeOption(liquidity.options);
+        assertEq(receiveValue, 0, "liquidity lzReceive carries no value");
+        assertEq(composeValue, 0, "compose carries no value");
+
+        // ETH pasangan + fee ack LOCKED dibayar dari saldo Remote.
+        uint256 before = address(remote).balance;
+        assertTrue(_compose(BASE, liquidity, address(remote)));
+        uint256 ackFee = remote.quoteAck(address(token));
+        assertEq(before - address(remote).balance, EXPANSION_PAIR_ETH + ackFee);
+        (, uint256 reserveEth) = chains[BASE].router.reservesOf(remoteToken);
+        assertEq(reserveEth, EXPANSION_PAIR_ETH);
     }
 
     // ───────────────────────────── Helper ─────────────────────────────

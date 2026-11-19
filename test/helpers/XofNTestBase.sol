@@ -74,11 +74,12 @@ abstract contract XofNTestBase is TestHelperOz5 {
     uint256 internal constant CALLER_REWARD = 0.01 ether;
     uint256 internal constant EXPANSION_PAIR_ETH = 0.04 ether;
 
+    // Saldo awal tiap XofNRemote: ETH pasangan + fee ack dibayar dari sini, diisi tim (PRD P51).
+    uint256 internal constant REMOTE_FUNDING = 10 ether;
+
     // Gas pesan ekspansi. Angka terukur ada di test/lz/GasMeasure.t.sol (PRD P4).
     uint128 internal constant DEPLOY_GAS = 7_000_000;
-    uint128 internal constant DEPLOY_ACK_VALUE = 0.01 ether;
     uint128 internal constant SEED_GAS = 5_000_000;
-    uint128 internal constant SEED_ACK_VALUE = 0.01 ether;
     uint128 internal constant ACK_CONFIGURED_GAS = 1_500_000;
     uint128 internal constant ACK_LOCKED_GAS = 1_500_000;
     uint128 internal constant TOKEN_RECEIVE_GAS = 300_000;
@@ -128,6 +129,9 @@ abstract contract XofNTestBase is TestHelperOz5 {
         vm.deal(attacker, 100 ether);
         vm.deal(keeper, 100 ether);
 
+        // Batas value executor 0, seperti Robinhood testnet → Base/Arbitrum Sepolia (PRD P51).
+        // Seluruh suite membuktikan ekspansi tidak membutuhkan value lewat executor.
+        setExecutorValueCap(0);
         setUpEndpoints(3, LibraryType.UltraLightNode);
         for (uint32 eid = HOME; eid <= ARB; eid++) {
             _setUpChain(eid);
@@ -141,6 +145,7 @@ abstract contract XofNTestBase is TestHelperOz5 {
         for (uint32 eid = BASE; eid <= ARB; eid++) {
             XofNRemote remote = _deployRemote(eid);
             remotes[eid] = remote;
+            vm.deal(address(remote), REMOTE_FUNDING);
             vm.startPrank(safe);
             chains[eid].registry.setRegistrar(address(remote));
             graduator.setPeer(eid, _b32(address(remote)));
@@ -212,7 +217,8 @@ abstract contract XofNTestBase is TestHelperOz5 {
         list[1] = _pathway(HOME, ARB);
     }
 
-    function _economics() internal pure returns (XofNGraduator.Economics memory) {
+    /// @dev Virtual: tes ekonomi (mis. test/lz/SubsidyFarm.t.sol) memakai nilai lain.
+    function _economics() internal pure virtual returns (XofNGraduator.Economics memory) {
         return XofNGraduator.Economics({
             saleSupply: SALE_SUPPLY,
             startPrice: START_PRICE,
@@ -223,12 +229,7 @@ abstract contract XofNTestBase is TestHelperOz5 {
     }
 
     function _expansionGas() internal pure returns (XofNGraduator.ExpansionGas memory) {
-        return XofNGraduator.ExpansionGas({
-            deployGas: DEPLOY_GAS,
-            deployAckValue: DEPLOY_ACK_VALUE,
-            seedGas: SEED_GAS,
-            seedAckValue: SEED_ACK_VALUE
-        });
+        return XofNGraduator.ExpansionGas({deployGas: DEPLOY_GAS, seedGas: SEED_GAS});
     }
 
     function _graduatorInfra() internal view returns (XofNGraduator.Infra memory) {

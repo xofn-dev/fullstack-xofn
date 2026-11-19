@@ -1,0 +1,279 @@
+No files changed, compilation skipped
+
+Ran 2 tests for test/lz/GasMeasure.t.sol:GasMeasureTest
+[PASS] test_gas_fortress() (gas: 28011829)
+[PASS] test_gas_standard() (gas: 27648864)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 104.22ms (38.28ms CPU time)
+
+Ran 3 tests for test/lz/SubsidyFarm.t.sol:SubsidyNearLimitTest
+[PASS] test_soleBuyerFarmingCostsMostOfTheSubsidy() (gas: 28641069)
+[PASS] test_stalePrice_allSold_leakBoundedBySubsidy() (gas: 28963409)
+[PASS] test_stalePrice_quarterSold_leakBoundedBySubsidy() (gas: 28963382)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 124.97ms (58.12ms CPU time)
+
+Ran 3 tests for test/unit/TiersConfig.t.sol:TiersConfigTest
+[PASS] test_fortressMatchesContract() (gas: 101482)
+[PASS] test_onlyTwoTiersExist() (gas: 83243)
+[PASS] test_standardMatchesContract() (gas: 100921)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 1.05ms (458.33µs CPU time)
+
+Ran 3 tests for test/lz/SubsidyFarm.t.sol:SubsidyDefaultEconomicsTest
+[PASS] test_soleBuyerFarmingLoses() (gas: 28634833)
+[PASS] test_stalePrice_allSold_leakBoundedBySubsidy() (gas: 28963411)
+[PASS] test_stalePrice_quarterSold_leakBoundedBySubsidy() (gas: 28963366)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 129.57ms (63.62ms CPU time)
+
+Ran 11 tests for test/unit/Token.t.sol:TokenTest
+[PASS] test_abiHasNoForbiddenFunctions() (gas: 2642856)
+[PASS] test_isOftFromStageOne() (gas: 27506)
+[PASS] test_lzReceiveRejectsNonEndpoint() (gas: 36467)
+[PASS] test_lzReceiveRejectsUnknownPathway() (gas: 40886)
+[PASS] test_lzReceiveRejectsWrongPeerAfterExpansion() (gas: 26259769)
+[PASS] test_ownerAndDelegateAreGraduator() (gas: 27814)
+[PASS] test_remoteInstanceStartsWithZeroSupply() (gas: 13026)
+[PASS] test_renounceOwnershipNullsDelegateFirst() (gas: 139157)
+[PASS] test_renounceOwnershipOnlyOwner() (gas: 34837)
+[PASS] test_supplyIs999MAndHeldByCurve() (gas: 56144)
+[PASS] test_transferOwnershipIsDisabledEvenForOwner() (gas: 27886)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 42.75ms (30.73ms CPU time)
+
+Ran 21 tests for test/unit/Factory.t.sol:FactoryTest
+[PASS] test_fortressUnavailablePathwayIsRejectedNotDowngraded() (gas: 6049568)
+[PASS] test_launchRegistersTierAndChains() (gas: 3581648)
+[PASS] test_launchRejectsBadNameOrSymbol() (gas: 139188)
+[PASS] test_launchRejectsInvalidChains() (gas: 11523232)
+[PASS] test_launchRejectsInvalidTier() (gas: 5728271)
+[PASS] test_onlyOwnerManagesWhitelist() (gas: 63008)
+[PASS] test_rejectsDvnInBothRequiredAndOptional() (gas: 85792)
+[PASS] test_rejectsDvnOutsideWhitelist() (gas: 450115)
+[PASS] test_rejectsFarmableExpansionSubsidy() (gas: 84536)
+[PASS] test_rejectsFewerThanTwoRequiredDvns() (gas: 84682)
+[PASS] test_rejectsInvalidEconomics() (gas: 84209)
+[PASS] test_rejectsInvalidOrDuplicatePathwayEid() (gas: 84306)
+[PASS] test_rejectsOneOfOne() (gas: 84118)
+[PASS] test_rejectsUnregisteredLibraryOrUnsupportedEid() (gas: 86620)
+[PASS] test_rejectsUnsortedOrDuplicateDvns() (gas: 84538)
+[PASS] test_rejectsWrongFortressOrOptionalCount() (gas: 85245)
+[PASS] test_rejectsZeroConfigFields() (gas: 84248)
+[PASS] test_remoteConstructorAppliesSameRules() (gas: 46800)
+[PASS] test_subsidyLimitScalesWithChainCount() (gas: 131752)
+[PASS] test_tierCannotBeChangedAfterLaunch() (gas: 3397632)
+[PASS] test_whitelistChangeAffectsOnlyNewTokens() (gas: 19084082)
+Suite result: ok. 21 passed; 0 failed; 0 skipped; finished in 37.08ms (18.76ms CPU time)
+
+Ran 3 tests for test/fork/ForkRecipe.t.sol:ForkRecipeTest
+[SKIP] test_fork_arbitrum_recipeToRobinhood() (gas: 0)
+[SKIP] test_fork_base_recipeToRobinhood() (gas: 0)
+[SKIP] test_fork_robinhood_recipeToBase() (gas: 0)
+Suite result: ok. 0 passed; 0 failed; 3 skipped; finished in 1.22ms (800.58µs CPU time)
+
+Ran 3 tests for test/fork/ForkUniV2.t.sol:ForkUniV2Test
+[SKIP] test_fork_arbitrum_univ2() (gas: 0)
+[SKIP] test_fork_base_univ2() (gas: 0)
+[SKIP] test_fork_robinhood_univ2() (gas: 0)
+Suite result: ok. 0 passed; 0 failed; 3 skipped; finished in 467.67µs (33.71µs CPU time)
+
+Ran 17 tests for test/unit/Registry.t.sol:RegistryTest
+[PASS] test_recordLockOnlyRegistrar() (gas: 61676)
+[PASS] test_recordLockRequiresVerify() (gas: 2252848)
+[PASS] test_registerValidation() (gas: 242390)
+[PASS] test_registrarIsSetOnceByOwner() (gas: 146647)
+[PASS] test_registryOwnerSurface() (gas: 18259002)
+[PASS] test_verifyFalseWhenDelegateNotZero() (gas: 5079719)
+[PASS] test_verifyFalseWhenEnforcedOptionsDiffer() (gas: 2423675)
+[PASS] test_verifyFalseWhenLibraryIsDefault() (gas: 1579701)
+[PASS] test_verifyFalseWhenOnePathwayHasDifferentDvns() (gas: 2605177)
+[PASS] test_verifyFalseWhenOwnerNotZero() (gas: 1954400)
+[PASS] test_verifyFalseWhenPathwayIsOneOfOne() (gas: 2740288)
+[PASS] test_verifyFalseWhenPeerMissing() (gas: 2206760)
+[PASS] test_verifyFalseWhenReceiveLibraryTimeoutIsSet() (gas: 2290743)
+[PASS] test_verifyFalseWhenTierIsLowerThanRegistered() (gas: 2446240)
+[PASS] test_verifyIsFalseForUnregisteredToken() (gas: 42633)
+[PASS] test_verifyIsFalseUntilLocked() (gas: 27081810)
+[PASS] test_verifyTrueOnlyAfterOwnerAndDelegateAreZero() (gas: 2643403)
+Suite result: ok. 17 passed; 0 failed; 0 skipped; finished in 218.80ms (195.96ms CPU time)
+
+Ran 5 tests for test/unit/Create3.t.sol:Create3Test
+[PASS] test_addressIsIndependentOfBytecode() (gas: 565805)
+[PASS] test_eachLaunchGetsDistinctSaltAndAddress() (gas: 6676720)
+[PASS] test_failedConstructorReverts() (gas: 1024196885)
+[PASS] test_sameSaltCannotBeUsedTwice() (gas: 1040459746)
+[PASS] test_tokenAddressesFollowDeployerAndSalt() (gas: 26322181)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 33.80ms (14.66ms CPU time)
+
+Ran 13 tests for test/unit/Curve.t.sol:CurveTest
+[PASS] test_buyPastThresholdRefundsExcessAndSellsExactSaleSupply() (gas: 305834)
+[PASS] test_buyTransfersTokensAndRaisesPrice() (gas: 264124)
+[PASS] test_cloneCannotBeInitializedTwice() (gas: 40096)
+[PASS] test_curveMutableSurface() (gas: 10509146)
+[PASS] test_eachLaunchGetsItsOwnClone() (gas: 3330953)
+[PASS] test_implementationCannotBeInitialized() (gas: 34912)
+[PASS] test_initialState() (gas: 130013)
+[PASS] test_initializeRejectsInvalidParams() (gas: 215232)
+[PASS] test_onlyGraduatorCanGraduateCurve() (gas: 200385)
+[PASS] test_sellReturnsEthAndNeverMoreThanPaid() (gas: 307606)
+[PASS] test_slippageProtection() (gas: 353701)
+[PASS] test_tradingClosesAtThreshold() (gas: 327012)
+[PASS] test_zeroAmountsRejected() (gas: 107030)
+Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 97.23ms (76.10ms CPU time)
+
+Ran 10 tests for test/lz/Bridge.t.sol:BridgeTest
+[PASS] testFuzz_dustStaysWithSenderAndSupplyIsConserved(uint256,bool) (runs: 256, μ: 921804, ~: 922048)
+[PASS] test_baseToArbitrumGoesThroughHub() (gas: 2700367)
+[PASS] test_bridgeRobinhoodToArbitrumAndBack() (gas: 1798296)
+[PASS] test_bridgeRobinhoodToBaseAndBack() (gas: 1947034)
+[PASS] test_dustStaysWithSender() (gas: 917266)
+[PASS] test_fortressNeedsAllThreeRequired() (gas: 27031608)
+[PASS] test_pureDustAmountSendsNothing() (gas: 576124)
+[PASS] test_quoteSendWorksWithoutExtraOptions() (gas: 134575)
+[PASS] test_singleDvnIsNeverEnough() (gas: 1707911)
+[PASS] test_standardNeedsBothRequiredAndOneOptional() (gas: 1192466)
+Suite result: ok. 10 passed; 0 failed; 0 skipped; finished in 416.28ms (361.14ms CPU time)
+
+Ran 18 tests for test/unit/Graduate.t.sol:GraduateTest
+[PASS] testFuzz_frontRun_anyPoolDoesNotProfit(uint256,uint256,uint256) (runs: 256, μ: 2987853, ~: 2989002)
+[PASS] test_afterGraduateOwnerAndDelegateAreStillGraduator() (gas: 2221601)
+[PASS] test_allPoolsOpenAtTheSamePrice() (gas: 2188347)
+[PASS] test_anyoneCanGraduateAndReceivesFixedReward() (gas: 2144398)
+[PASS] test_frontRun_donationAndSyncCannotBlockGraduation() (gas: 2355827)
+[PASS] test_frontRun_emptyPairCreatedFirst() (gas: 2208215)
+[PASS] test_frontRun_largeOverpricedPoolDoesNotProfit() (gas: 2867518)
+[PASS] test_frontRun_largeUnderpricedPoolDoesNotProfit() (gas: 2867666)
+[PASS] test_frontRun_overpricedPoolDoesNotProfit() (gas: 2890094)
+[PASS] test_frontRun_underpricedPoolDoesNotProfit() (gas: 2890275)
+[PASS] test_frontRun_unsyncedDonationCannotBlockGraduation() (gas: 3003772)
+[PASS] test_frontRun_unsyncedDonationDoesNotProfit() (gas: 2977030)
+[PASS] test_graduateCreatesAndFillsHomePool() (gas: 2290621)
+[PASS] test_graduateFailsBeforeThreshold() (gas: 315733)
+[PASS] test_graduateOnlyOnce() (gas: 2212213)
+[PASS] test_graduateUnknownTokenReverts() (gas: 40663)
+[PASS] test_singleChainLaunchReservesOneShare() (gas: 5487719)
+[PASS] test_tradingMovesToPoolAfterGraduation() (gas: 2277707)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 297.58ms (285.61ms CPU time)
+
+Ran 5 tests for test/fuzz/CurveFuzz.t.sol:CurveFuzzTest
+[PASS] testFuzz_buy(uint256) (runs: 256, μ: 305461, ~: 304422)
+[PASS] testFuzz_buyThenSellNeverProfits(uint256) (runs: 256, μ: 321688, ~: 321843)
+[PASS] testFuzz_randomTradesKeepInvariants(uint256[12],uint16) (runs: 256, μ: 2102950, ~: 2271519)
+[PASS] testFuzz_splitBuyEqualsSingleBuy(uint256,uint256) (runs: 256, μ: 391906, ~: 392143)
+[PASS] testFuzz_thresholdAlwaysSellsExactSaleSupply(uint256[6]) (runs: 256, μ: 2746118, ~: 2738599)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 655.57ms (589.55ms CPU time)
+
+Ran 18 tests for test/lz/Expansion.t.sol:ExpansionTest
+[PASS] test_ackDeferredWhenRemoteUnfunded_thenReAck() (gas: 12900658)
+[PASS] test_anyoneCanExpand() (gas: 16137345)
+[PASS] test_dvnFailureOnOneChain_thenRetryRemoteSucceeds() (gas: 28734310)
+[PASS] test_expandAndLockRequiresDeployFees() (gas: 8085073)
+[PASS] test_expandAndLockRequiresGraduated() (gas: 7251747)
+[PASS] test_expandRevertsWhileInfrastructureIsNotWired() (gas: 6165934)
+[PASS] test_expansionMessagesCarryNoExecutorValue() (gas: 15838730)
+[PASS] test_gasFailureOnOneChain_thenEndpointRetrySucceeds() (gas: 26929345)
+[PASS] test_gasFailure_thenRetryRemote_andStaleMessageIsHarmless() (gas: 17681331)
+[PASS] test_graduatorEthAccounting() (gas: 26338265)
+[PASS] test_liquidityDeferredWhenEscrowIsShort_thenRetryRemote() (gas: 16707098)
+[PASS] test_postExpansionState_fortress() (gas: 28741220)
+[PASS] test_postExpansionState_standard() (gas: 28371361)
+[PASS] test_recipeIsInstalledBeforeLiquidityIsSent() (gas: 12934955)
+[PASS] test_retryCallerCannotTakeOriginalPayersEscrow() (gas: 12995344)
+[PASS] test_retryRemoteRequiresRetryableStep() (gas: 12691231)
+[PASS] test_singleChainExpansion() (gas: 16536345)
+[PASS] test_sourceDvnDown_expandRevertsAtomically() (gas: 27324730)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 232.69ms (218.13ms CPU time)
+
+Ran 10 tests for test/unit/Authority.t.sol:AuthorityTest
+[PASS] test_ackOutOfOrderIsIgnored() (gas: 5259459)
+[PASS] test_afterLockEvenGraduatorIsLockedOut() (gas: 23552990)
+[PASS] test_graduatorLzReceiveRejectsNonEndpoint() (gas: 41120)
+[PASS] test_graduatorLzReceiveRejectsNonPeer() (gas: 43849)
+[PASS] test_graduatorMutableSurfaceIsExactlyTheAllowlist() (gas: 154567657)
+[PASS] test_infraPeerIsSetOnce() (gas: 96315)
+[PASS] test_nobodyButGraduatorControlsToken_bonding() (gas: 1376306)
+[PASS] test_nobodyButGraduatorControlsToken_expanding() (gas: 15270202)
+[PASS] test_nobodyButGraduatorControlsToken_graduated() (gas: 3515109)
+[PASS] test_sendLiquidityFromSelfIsNotCallableFromOutside() (gas: 34889)
+Suite result: ok. 10 passed; 0 failed; 0 skipped; finished in 1.27s (1.23s CPU time)
+
+Ran 12 tests for test/unit/PoolSeeder.t.sol:PoolSeederTest
+[PASS] testFuzz_anyRivalPool_home(uint256,uint256,uint256,uint256,bool) (runs: 256, μ: 2663939, ~: 2647652)
+[PASS] testFuzz_anyRivalPool_remote(uint256,uint256,uint256,uint256,bool) (runs: 256, μ: 2662651, ~: 2647618)
+[PASS] testFuzz_rivalPoolNearMinimumLiquidity(uint256,uint256,uint256,bool) (runs: 256, μ: 2585395, ~: 2607935)
+[PASS] testFuzz_tinyLpTwoSidedDonation_neverBlocksNorProfits(uint256,uint256,uint256,bool,bool) (runs: 256, μ: 2612317, ~: 2596673)
+[PASS] test_lpRoundingToZero_doesNotBlockSeed() (gas: 2642870)
+[PASS] test_syncedWethDonation_home_doesNotProfit() (gas: 2639937)
+[PASS] test_unsyncedDonationCannotBlockSeed_home() (gas: 2595284)
+[PASS] test_unsyncedDonationCannotBlockSeed_remote() (gas: 2595292)
+[PASS] test_unsyncedDonationIntoEmptyPairGoesToProtocol() (gas: 2104705)
+[PASS] test_unsyncedTokenDonation_home_doesNotProfit() (gas: 2595848)
+[PASS] test_unsyncedWethDonation_home_doesNotProfit() (gas: 2595661)
+[PASS] test_unsyncedWethDonation_remote_doesNotProfit() (gas: 2595546)
+Suite result: ok. 12 passed; 0 failed; 0 skipped; finished in 890.43ms (894.22ms CPU time)
+
+Ran 9 tests for test/lz/GoLive.t.sol:GoLiveTest
+[PASS] testFuzz_launchClosedForAnyCallerAndTier(address,uint8,bool) (runs: 256, μ: 6428388, ~: 6406282)
+[PASS] testFuzz_onlySafeCanOpen(address) (runs: 256, μ: 3364355, ~: 3364422)
+[PASS] test_afterGoLive_launchOpenAndRegistrarImmutable() (gas: 10383589)
+[PASS] test_deploySequence_dormantThenSafeOpens() (gas: 36954662)
+[PASS] test_graduatorDeployNeedsSafeAllowlistFirst() (gas: 112640)
+[PASS] test_launchRevertsUntilRegistrarSet() (gas: 9622329)
+[PASS] test_registryOwnedBySafeFromConstructor() (gas: 138179)
+[PASS] test_setDelegateBeforeTransferOwnership() (gas: 3659654)
+[PASS] test_wrongOrder_leavesEoaDelegate() (gas: 335697)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 1.74s (2.75s CPU time)
+
+Ran 22 tests for test/lz/Composer.t.sol:ComposerTest
+[PASS] testFuzz_frontRun_anyRemotePoolDoesNotProfit(uint256,uint256,uint256) (runs: 256, μ: 17613561, ~: 17614655)
+[PASS] test_composeDoesNotDependOnCallerOrExtraData() (gas: 15644377)
+[PASS] test_composeFromRegisteredTokenButNotFromGraduatorIsRejected() (gas: 17275913)
+[PASS] test_composeFromUnregisteredTokenIsRejected() (gas: 20062175)
+[PASS] test_composeOutOfGas_tokensStayAtRemote_thenRetryComposeSucceeds() (gas: 16494717)
+[PASS] test_composeRetryValueCountsTowardPairEth() (gas: 15361114)
+[PASS] test_composeWithUnfundedRemoteReverts_thenSucceedsAfterFunding() (gas: 16713849)
+[PASS] test_extraValueDoesNotChangePoolRatio() (gas: 15652993)
+[PASS] test_frontRun_donationAndSyncCannotBlockCompose() (gas: 15889463)
+[PASS] test_frontRun_emptyPairCreatedFirst() (gas: 15727610)
+[PASS] test_frontRun_largeSkewedPoolWithBridgedTokensDoesNotProfit() (gas: 17499618)
+[PASS] test_frontRun_skewedPoolWithBridgedTokensDoesNotProfit() (gas: 17499645)
+[PASS] test_frontRun_unsyncedDonationCannotBlockCompose() (gas: 17602346)
+[PASS] test_frontRun_unsyncedDonationDoesNotProfit() (gas: 17602569)
+[PASS] test_lzComposeRejectsCallerOtherThanEndpoint() (gas: 13161993)
+[PASS] test_poolCanOnlyBeSeededOnce() (gas: 15717452)
+[PASS] test_poolIsCreatedAndFilledInOneCall() (gas: 15972366)
+[PASS] test_remoteLzReceiveRejectsNonEndpointAndNonPeer() (gas: 107120)
+[PASS] test_remoteMutableSurfaceIsExactlyTheAllowlist() (gas: 79112560)
+[PASS] test_remoteNeverDowngradesTier() (gas: 158496)
+[PASS] test_remoteRejectsUnknownMessageKind() (gas: 45975)
+[PASS] test_remoteSelfCallAndPeerGuards() (gas: 115064)
+Suite result: ok. 22 passed; 0 failed; 0 skipped; finished in 1.84s (2.59s CPU time)
+
+Ran 2 tests for test/invariant/Invariant.t.sol:XofNInvariantTest
+[PASS]
+XofNInvariantTest invariants:
+[PASS] invariant_accountingIsSolvent
+[PASS] invariant_remoteSupplyNeverExceedsHomeBurn
+[PASS] invariant_remoteTokenOwnerIsRemoteOrZero
+[PASS] invariant_totalSupplyAcrossChainsIs999M
+[PASS] invariant_verifyAndOwnershipFollowLockState
+ XofNInvariantTest invariants (runs: 256, calls: 16384, reverts: 0)
+
+╭------------------+----------+-------+---------+----------╮
+| Contract         | Selector | Calls | Reverts | Discards |
++==========================================================+
+| LifecycleHandler | bridge   | 2295  | 0       | 0        |
+|------------------+----------+-------+---------+----------|
+| LifecycleHandler | buy      | 2319  | 0       | 0        |
+|------------------+----------+-------+---------+----------|
+| LifecycleHandler | expand   | 2323  | 0       | 0        |
+|------------------+----------+-------+---------+----------|
+| LifecycleHandler | graduate | 2346  | 0       | 0        |
+|------------------+----------+-------+---------+----------|
+| LifecycleHandler | relay    | 2369  | 0       | 0        |
+|------------------+----------+-------+---------+----------|
+| LifecycleHandler | retry    | 2377  | 0       | 0        |
+|------------------+----------+-------+---------+----------|
+| LifecycleHandler | sell     | 2355  | 0       | 0        |
+╰------------------+----------+-------+---------+----------╯
+
+[PASS] test_handlerReachesLockedState() (gas: 26726061)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 9.25s (9.25s CPU time)
+
+Ran 20 test suites in 9.49s (17.38s CPU time): 184 tests passed, 0 failed, 6 skipped (190 total tests)

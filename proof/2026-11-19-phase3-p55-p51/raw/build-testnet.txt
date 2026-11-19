@@ -1,0 +1,43 @@
+
+> fullstack-xofn@0.1.0 build
+> next build
+
+▲ Next.js 16.4.6 (Turbopack)
+✓ Running next.config.ts took 38ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1879ms
+  Running TypeScript ...
+  Finished TypeScript in 3.5s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/8) ...
+(node:67430) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  Generating static pages using 7 workers (2/8) 
+  Generating static pages using 7 workers (4/8) 
+  Generating static pages using 7 workers (6/8) 
+✓ Generating static pages using 7 workers (8/8) in 577ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/check/[chain]/[address]
+├ ƒ /api/cron/index-events
+├ ƒ /api/cron/recheck
+├ ƒ /api/tokens
+├ ƒ /api/tokens/[address]
+├ ○ /bridge
+├ ○ /check
+├ ƒ /check/[chain]/[address]
+├ ƒ /check/[chain]/[address]/opengraph-image
+├ ○ /contracts
+├ ○ /icon.png
+├ ƒ /launch
+├ ○ /proof
+└ ƒ /t/[address]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

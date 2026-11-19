@@ -379,10 +379,49 @@ contract FactoryTest is XofNTestBase {
         e.expansionPairEth = 0;
         _expectEconomicsRevert(e, invalid);
 
-        // Ambang habis untuk insentif + porsi ekspansi: pool home tidak akan punya ETH.
+        // Ambang habis untuk insentif: pool home tidak akan punya ETH.
         e = _economics();
-        e.graduationThreshold = e.callerReward + 2 * e.expansionPairEth;
+        e.graduationThreshold = e.callerReward;
         _expectEconomicsRevert(e, invalid);
+    }
+
+    /// @dev Review 19 Nov 2026 (MEDIUM #2, lalu MEDIUM-2 review kedua): subsidi ETH pool
+    ///      ekspansi (dari saldo Remote) dibatasi SEPARUH titik impas pembeli tunggal:
+    ///      2 * n * pe * saleSupply < (ambang - insentif) * (TOTAL - saleSupply).
+    function test_rejectsFarmableExpansionSubsidy() public {
+        bytes memory invalid = abi.encodeWithSelector(XofNGraduator.InvalidEconomics.selector);
+        XofNGraduator.Economics memory e = _economics();
+        // n = 2 chain ekspansi di resep; faktor keamanan 2.
+        uint256 limit = ((e.graduationThreshold - e.callerReward) * (TOTAL_SUPPLY - e.saleSupply))
+            / (4 * e.saleSupply);
+
+        e.expansionPairEth = limit;
+        _expectEconomicsRevert(e, invalid);
+        e.expansionPairEth = 100 ether;
+        _expectEconomicsRevert(e, invalid);
+
+        // Tepat di bawah batas: sah.
+        e.expansionPairEth = limit - 1;
+        XofNGraduator g = _deployGraduator(_homePathways(), e);
+        assertEq(g.expansionPairEth(), limit - 1);
+
+        // Konstanta tes (0,04 ETH) jauh di bawah batas (±0,249 ETH).
+        assertLt(EXPANSION_PAIR_ETH * 6, limit);
+    }
+
+    /// @dev Batas subsidi memakai jumlah chain di resep: resep satu chain mengizinkan pe dua
+    ///      kali lebih besar daripada resep dua chain.
+    function test_subsidyLimitScalesWithChainCount() public {
+        XofNGraduator.Economics memory e = _economics();
+        uint256 limitOne = ((e.graduationThreshold - e.callerReward)
+                * (TOTAL_SUPPLY - e.saleSupply)) / (2 * e.saleSupply);
+        TierLib.Pathway[] memory one = new TierLib.Pathway[](1);
+        one[0] = _pathway(HOME, BASE);
+
+        e.expansionPairEth = limitOne - 1;
+        _deployGraduator(one, e);
+        // Batas untuk dua chain = separuhnya: nilai yang sama ditolak.
+        _expectEconomicsRevert(e, abi.encodeWithSelector(XofNGraduator.InvalidEconomics.selector));
     }
 
     /// @dev Remote memakai aturan yang sama untuk resep pathway ke home.

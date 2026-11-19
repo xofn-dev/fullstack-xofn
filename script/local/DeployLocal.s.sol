@@ -76,6 +76,9 @@ contract DeployLocal is Script {
     uint256 internal constant CALLER_REWARD = 0.01 ether;
     uint256 internal constant EXPANSION_PAIR_ETH = 0.04 ether;
     address internal constant LP_RECIPIENT = address(0xdead);
+    // Saldo awal tiap XofNRemote: ETH pasangan + fee ack dibayar dari sini (PRD P51). Di jaringan
+    // publik pengisian ini tugas tim/PM, bukan script.
+    uint256 internal constant REMOTE_FUNDING = 5 ether;
 
     struct ChainEnv {
         address endpoint;
@@ -243,7 +246,7 @@ contract DeployLocal is Script {
         pathways[0] = _pathway(HOME, BASE);
         pathways[1] = _pathway(HOME, ARB);
         XofNGraduator.ExpansionGas[] memory gas = new XofNGraduator.ExpansionGas[](2);
-        gas[0] = XofNGraduator.ExpansionGas(7_000_000, 0.01 ether, 5_000_000, 0.01 ether);
+        gas[0] = XofNGraduator.ExpansionGas(7_000_000, 5_000_000);
         gas[1] = gas[0];
 
         graduator = new XofNGraduator(
@@ -272,6 +275,8 @@ contract DeployLocal is Script {
         );
         remotes[eid] = address(remote);
         XofNRegistry(env[eid].registry).setRegistrar(address(remote));
+        (bool funded,) = address(remote).call{value: REMOTE_FUNDING}("");
+        require(funded, "remote funding failed");
 
         graduator.setPeer(eid, bytes32(uint256(uint160(address(remote)))));
         remote.setPeer(HOME, bytes32(uint256(uint160(address(graduator)))));
