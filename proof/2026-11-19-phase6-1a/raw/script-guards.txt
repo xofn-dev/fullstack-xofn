@@ -1,0 +1,9 @@
+## Script 01 terhadap chain yang SALAH (Base Sepolia 84532): harus menolak
+    └─ ← [Revert] WrongChain(84532 [8.453e4])
+Error: script failed: WrongChain(84532 [8.453e4])
+## Script 01 di Robinhood testnet dengan alamat Safe yang bukan Safe: harus menolak
+    └─ ← [Revert] SafeNotAccepted(0x2222222222222222222222222222222222222222, "not a Safe proxy")
+Error: script failed: SafeNotAccepted(0x2222222222222222222222222222222222222222, "not a Safe proxy")
+## Script 03 tanpa --libraries: harus menolak (setelah preflight; di sini berhenti di Safe)
+    └─ ← [Revert] SafeNotAccepted(0x2222222222222222222222222222222222222222, "not a Safe proxy")
+Error: script failed: SafeNotAccepted(0x2222222222222222222222222222222222222222, "not a Safe proxy")

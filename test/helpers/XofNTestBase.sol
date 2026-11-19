@@ -37,9 +37,16 @@ import {XofNGraduator} from "../../contracts/XofNGraduator.sol";
 import {XofNRegistry} from "../../contracts/XofNRegistry.sol";
 import {XofNRemote} from "../../contracts/XofNRemote.sol";
 import {XofNToken} from "../../contracts/XofNToken.sol";
+import {PoolSeeder} from "../../contracts/libraries/PoolSeeder.sol";
 import {TierLib} from "../../contracts/libraries/TierLib.sol";
 import {MockDVN} from "../mocks/MockDVN.sol";
-import {MockWETH, MockV2Factory, MockV2Router, MockV2Pair} from "../mocks/MockUniswapV2.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {IV4PositionManager} from "../../contracts/interfaces/IUniswapV4.sol";
+import {V4Env} from "./V4Env.sol";
+import {V4TestRouter} from "./V4TestRouter.sol";
 
 interface IDelegates {
     function delegates(address oapp) external view returns (address);
@@ -47,13 +54,14 @@ interface IDelegates {
 
 /// @dev Fondasi tes multi-endpoint (TestHelperOz5): tiga endpoint tiruan dalam satu EVM.
 ///      EID 1 = Robinhood (home), 2 = Base, 3 = Arbitrum. Tiap "chain" punya lima DVN tiruan
-///      (pengganti operator yang belum diputuskan, PRD P1), AMM v2 tiruan, dan Registry sendiri.
+///      (pengganti operator yang belum diputuskan, PRD P1), Uniswap v4 ASLI (PoolManager dan
+///      PositionManager dari artefak paket resmi, lihat V4Env), dan Registry sendiri.
 ///
 ///      `verifyPackets` bawaan helper hanya memakai satu DVN bertanda tangan, jadi tidak bisa
 ///      memenuhi konfigurasi 2+1/2. Pengiriman pesan di sini memakai `_deliver`: setiap DVN di
 ///      konfigurasi penerima memverifikasi (kecuali yang ditandai mati), lalu commit, lalu
 ///      `lzReceive` dengan gas dan value dari opsi pesan.
-abstract contract XofNTestBase is TestHelperOz5 {
+abstract contract XofNTestBase is TestHelperOz5, V4Env {
     using PacketV1Codec for bytes;
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
 
@@ -79,7 +87,9 @@ abstract contract XofNTestBase is TestHelperOz5 {
 
     // Gas pesan ekspansi. Angka terukur ada di test/lz/GasMeasure.t.sol (PRD P4).
     uint128 internal constant DEPLOY_GAS = 7_000_000;
-    uint128 internal constant SEED_GAS = 5_000_000;
+    // lzCompose di Remote terukur ±1,27 juta gas dengan Uniswap v4 (test/lz/GasMeasure.t.sol;
+    // membuat + mengisi pool ±0,47 juta di v4 asli, test/fork/ForkUniV4.t.sol). 2,5 juta = ±2x.
+    uint128 internal constant SEED_GAS = 2_500_000;
     uint128 internal constant ACK_CONFIGURED_GAS = 1_500_000;
     uint128 internal constant ACK_LOCKED_GAS = 1_500_000;
     uint128 internal constant TOKEN_RECEIVE_GAS = 300_000;
@@ -91,9 +101,9 @@ abstract contract XofNTestBase is TestHelperOz5 {
         address endpoint;
         address sendLib;
         address receiveLib;
-        MockWETH weth;
-        MockV2Factory factory;
-        MockV2Router router;
+        IPoolManager poolManager;
+        IV4PositionManager positionManager;
+        V4TestRouter router; // router tes: swap dan likuiditas oleh aktor tes
         XofNRegistry registry;
         address[] dvns; // lima alamat, terurut naik
     }
@@ -164,9 +174,10 @@ abstract contract XofNTestBase is TestHelperOz5 {
         c.endpoint = endpoints[eid];
         c.sendLib = endpointSetup.sendLibs[eid - 1];
         c.receiveLib = endpointSetup.receiveLibs[eid - 1];
-        c.weth = new MockWETH();
-        c.factory = new MockV2Factory();
-        c.router = new MockV2Router(address(c.factory), address(c.weth));
+        V4 memory v = _deployV4(safe);
+        c.poolManager = v.poolManager;
+        c.positionManager = v.positionManager;
+        c.router = v.router;
         c.registry = new XofNRegistry(c.endpoint, safe);
 
         address[] memory dvns = new address[](5);
@@ -232,13 +243,34 @@ abstract contract XofNTestBase is TestHelperOz5 {
         return XofNGraduator.ExpansionGas({deployGas: DEPLOY_GAS, seedGas: SEED_GAS});
     }
 
-    function _graduatorInfra() internal view returns (XofNGraduator.Infra memory) {
+    /// @dev Infra untuk Graduator yang akan di-deploy KONTRAK TES INI pada `new` berikutnya.
+    function _graduatorInfra() internal returns (XofNGraduator.Infra memory) {
+        return _graduatorInfraFor(address(this));
+    }
+
+    /// @dev Hook penjaga harus ada dan terikat ke alamat Graduator SEBELUM constructor berjalan
+    ///      (di jaringan publik alamat itu diketahui lebih dulu lewat CREATE3). Di sini alamat
+    ///      CREATE berikutnya milik `deployer` diprediksi dan hook ditaruh untuknya dengan cheat.
+    ///      Jalur tanpa cheat (salt CREATE2 ditambang, hook lebih dulu, lalu seeder) diuji di
+    ///      test/unit/PoolGuard.t.sol::test_minedCreate2GuardBindsToSeederDeployedAfterIt.
+    ///      Panggil SEBELUM `vm.prank` / `vm.expectRevert`: penempatan hook memakai panggilan
+    ///      biasa yang akan memakan cheat sekali-pakai itu.
+    function _graduatorInfraFor(address deployer) internal returns (XofNGraduator.Infra memory) {
         return XofNGraduator.Infra({
             registry: address(chains[HOME].registry),
             curveImplementation: address(curveImpl),
-            router: address(chains[HOME].router),
+            positionManager: address(chains[HOME].positionManager),
+            poolGuard: _guardForNextContractOf(deployer),
             lpRecipient: LP_RECIPIENT
         });
+    }
+
+    function _guardForNextContractOf(address deployer) internal returns (address guard) {
+        uint64 nonce = vm.getNonce(deployer);
+        guard = _deployGuard(vm.computeCreateAddress(deployer, nonce));
+        // `deployCodeTo` (cheat penempatan hook) menaikkan nonce pemanggilnya di forge. Nonce
+        // dikembalikan supaya `new` berikutnya benar-benar jatuh di alamat yang diprediksi.
+        vm.setNonceUnsafe(deployer, nonce);
     }
 
     function _deployGraduator(
@@ -249,16 +281,23 @@ abstract contract XofNTestBase is TestHelperOz5 {
         for (uint256 i = 0; i < gas.length; i++) {
             gas[i] = _expansionGas();
         }
-        return
-            new XofNGraduator(
-                chains[HOME].endpoint, safe, _graduatorInfra(), economics, pathways, gas
-            );
+        XofNGraduator.Infra memory infra = _graduatorInfra();
+        return new XofNGraduator(chains[HOME].endpoint, safe, infra, economics, pathways, gas);
     }
 
-    function _remoteInfra(uint32 eid) internal view returns (XofNRemote.Infra memory) {
+    function _remoteInfra(uint32 eid) internal returns (XofNRemote.Infra memory) {
+        return _remoteInfraFor(eid, address(this));
+    }
+
+    /// @dev Sama seperti `_graduatorInfraFor`, untuk Remote di chain `eid`.
+    function _remoteInfraFor(uint32 eid, address deployer)
+        internal
+        returns (XofNRemote.Infra memory)
+    {
         return XofNRemote.Infra({
             registry: address(chains[eid].registry),
-            router: address(chains[eid].router),
+            positionManager: address(chains[eid].positionManager),
+            poolGuard: _guardForNextContractOf(deployer),
             lpRecipient: LP_RECIPIENT,
             homeEid: HOME,
             ackConfiguredGas: ACK_CONFIGURED_GAS,
@@ -267,7 +306,8 @@ abstract contract XofNTestBase is TestHelperOz5 {
     }
 
     function _deployRemote(uint32 eid) internal returns (XofNRemote) {
-        return new XofNRemote(chains[eid].endpoint, safe, _remoteInfra(eid), _pathway(eid, HOME));
+        XofNRemote.Infra memory infra = _remoteInfra(eid);
+        return new XofNRemote(chains[eid].endpoint, safe, infra, _pathway(eid, HOME));
     }
 
     /// @dev Konfigurasi pathway infrastruktur sebuah OApp, dipasang delegate-nya (Safe).
@@ -554,8 +594,85 @@ abstract contract XofNTestBase is TestHelperOz5 {
         return IDelegates(chains[eid].endpoint).delegates(oapp);
     }
 
-    function _pair(uint32 eid, address token) internal view returns (MockV2Pair) {
-        return MockV2Pair(chains[eid].factory.getPair(token, address(chains[eid].weth)));
+    // ───────────────────────────── Pool Uniswap v4 ─────────────────────────────
+
+    /// @dev PoolKey pool XofN di chain `eid` untuk token chain itu (`token` = token home di HOME,
+    ///      token remote di chain ekspansi).
+    function _poolKey(uint32 eid, address token) internal view returns (PoolKey memory) {
+        return eid == HOME ? graduator.poolKeyOf(token) : remotes[eid].poolKeyOf(token);
+    }
+
+    function _poolExists(uint32 eid, address token) internal view returns (bool) {
+        return chains[eid].router.sqrtPriceOf(_poolKey(eid, token)) != 0;
+    }
+
+    /// @dev Cadangan virtual pool (seluruh likuiditas berasal dari posisi full-range).
+    function _poolReserves(uint32 eid, address token)
+        internal
+        view
+        returns (uint256 reserveToken, uint256 reserveEth)
+    {
+        (reserveEth, reserveToken) = chains[eid].router.reservesOf(_poolKey(eid, token));
+    }
+
+    /// @dev Pool TANDINGAN milik `who`: PoolKey tanpa hook untuk token yang sama, dibuka pada harga
+    ///      `eth / tokens` dan diisi likuiditas full-range sebesar anggaran itu. Hanya ini yang
+    ///      bisa dibuat pihak lain di v4; PoolKey ber-hook XofN ditolak hook penjaga.
+    function _openRivalPool(uint32 eid, address token, address who, uint256 tokens, uint256 eth)
+        internal
+        returns (PoolKey memory rival, uint256 liquidity)
+    {
+        rival = _poolKey(eid, token);
+        rival.hooks = IHooks(address(0));
+        uint160 sqrtPrice = PoolSeeder.sqrtPriceX96(eth, tokens);
+        V4TestRouter router = chains[eid].router;
+        liquidity = Math.min(
+            eth * uint256(sqrtPrice) / (1 << 96), tokens * (1 << 96) / uint256(sqrtPrice)
+        );
+        vm.deal(who, who.balance + eth);
+        vm.startPrank(who);
+        chains[eid].poolManager.initialize(rival, sqrtPrice);
+        if (liquidity != 0) {
+            XofNToken(token).approve(address(router), tokens);
+            router.modifyLiquidity{value: eth}(
+                rival, PoolSeeder.TICK_LOWER, PoolSeeder.TICK_UPPER, int256(liquidity)
+            );
+        }
+        vm.stopPrank();
+    }
+
+    /// @dev `who` menarik seluruh likuiditasnya dari pool tandingan.
+    function _closeRivalPool(uint32 eid, PoolKey memory rival, address who, uint256 liquidity)
+        internal
+    {
+        if (liquidity == 0) return;
+        vm.prank(who);
+        chains[eid].router.modifyLiquidity(
+            rival, PoolSeeder.TICK_LOWER, PoolSeeder.TICK_UPPER, -int256(liquidity)
+        );
+    }
+
+    /// @dev Beli di pool sebagai `who` (ETH dari saldo `who`).
+    function _poolBuy(uint32 eid, address token, address who, uint256 ethIn)
+        internal
+        returns (uint256 tokensOut)
+    {
+        PoolKey memory key = _poolKey(eid, token);
+        vm.prank(who);
+        tokensOut = chains[eid].router.buy{value: ethIn}(key, who);
+    }
+
+    /// @dev Jual di pool sebagai `who` (approve router lebih dulu).
+    function _poolSell(uint32 eid, address token, address who, uint256 tokensIn)
+        internal
+        returns (uint256 ethOut)
+    {
+        PoolKey memory key = _poolKey(eid, token);
+        V4TestRouter router = chains[eid].router;
+        vm.startPrank(who);
+        XofNToken(token).approve(address(router), tokensIn);
+        ethOut = router.sell(key, tokensIn, who);
+        vm.stopPrank();
     }
 
     function _sort(address[] memory list) internal pure {

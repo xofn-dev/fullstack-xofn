@@ -58,8 +58,15 @@ export const xofnErrorsAbi = parseAbi([
   'error LibraryNotRegistered(address lib)',
   'error WrongLibraryType(address lib)',
   'error EidNotSupported(uint32 eid)',
-  // PoolSeeder, Create3 (lewat XofNTokenDeployer), XofNToken
+  // PoolSeeder (Uniswap v4) dan hook XofNPoolGuard
   'error ZeroSeedAmount()',
+  'error SeedAmountTooLarge()',
+  'error InvalidPositionManager(address positionManager)',
+  'error InvalidPoolGuard(address poolGuard)',
+  'error InvalidLpRecipient(address lpRecipient)',
+  'error InvalidHookAddress(address hook)',
+  'error OnlySeeder(address sender)',
+  // Create3 (lewat XofNTokenDeployer), XofNToken
   'error Create3ProxyFailed()',
   'error Create3DeployFailed()',
   'error OwnershipTransferDisabled()',

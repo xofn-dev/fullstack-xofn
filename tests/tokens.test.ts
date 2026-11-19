@@ -5,7 +5,8 @@ import { deriveStatus, isStatusFilter, matchesFilter } from '@/lib/tokens/status
 import { expansionView } from '@/lib/tokens/steps';
 import { MemoryTokenStore } from '@/lib/tokens/store';
 import { getDeployment, homeContracts } from '@/lib/web3/addresses';
-import type { Address, ExpansionChainState, VerifyReading } from '@/types/domain';
+import { poolIdOf } from '@/lib/web3/pool-trade';
+import type { Address, ExpansionChainState, Hex, PoolKey, VerifyReading } from '@/types/domain';
 import type { ChainKey } from '@/types/enums';
 
 const deployment = getDeployment('local')!;
@@ -14,6 +15,14 @@ const ZERO = '0x0000000000000000000000000000000000000000';
 const TOKEN: Address = '0x00000000000000000000000000000000000000a1';
 const CURVE: Address = '0x00000000000000000000000000000000000000c1';
 const REMOTE_TOKEN: Address = '0x00000000000000000000000000000000000000b2';
+const ZERO_HASH: Hex = `0x${'0'.repeat(64)}`;
+const POOL_KEY: PoolKey = {
+  currency0: ZERO,
+  currency1: TOKEN,
+  fee: 3000,
+  tickSpacing: 60,
+  hooks: home.chain.uniswapV4!.poolGuard,
+};
 
 const reading = (chain: ChainKey, patch: Partial<VerifyReading> = {}): VerifyReading => ({
   chain,
@@ -127,7 +136,18 @@ describe('langkah ekspansi per chain', () => {
 });
 
 // Chain palsu: satu Graduator dengan satu token. Menjawab menurut nama fungsi, tanpa jaringan.
-function fakeChain(options: { status: number; remoteLocked?: boolean; failRemote?: boolean; tokens?: number }) {
+function fakeChain(options: {
+  status: number;
+  remoteLocked?: boolean;
+  failRemote?: boolean;
+  tokens?: number;
+  poolId?: Hex;
+  failPoolState?: boolean;
+  poolKey?: PoolKey;
+  positionManager?: Address;
+  sqrtPriceX96?: bigint;
+  failLiquidity?: boolean;
+}) {
   const calls: string[] = [];
   let block = 10n;
   const trades: EventLog[] = [
@@ -151,7 +171,18 @@ function fakeChain(options: { status: number; remoteLocked?: boolean; failRemote
         case 'tokenAt':
           return TOKEN;
         case 'launchOf':
-          return { curve: CURVE, creator: home.chain.owner, tier: 1, status: options.status, remotesLocked: 0, pool: ZERO, tokensPerChain: 0n, eids: [2] };
+          return { curve: CURVE, creator: home.chain.owner, tier: 1, status: options.status, remotesLocked: 0, poolId: options.poolId ?? ZERO_HASH, positionId: 0n, tokensPerChain: 0n, eids: [2] };
+        case 'poolKeyOf':
+          return options.poolKey ?? POOL_KEY;
+        case 'positionManager':
+          return options.positionManager ?? home.chain.uniswapV4!.positionManager;
+        case 'getSlot0':
+          if (options.failPoolState) throw new Error('rpc down');
+          // sqrtP = 1000 * 2^96, tick, protocolFee, lpFee
+          return [options.sqrtPriceX96 ?? 1000n * 2n ** 96n, 138162, 0, 3000];
+        case 'getLiquidity':
+          if (options.failLiquidity) throw new Error('rpc down');
+          return 10n ** 21n;
         case 'name':
           return 'Fake';
         case 'symbol':
@@ -175,7 +206,7 @@ function fakeChain(options: { status: number; remoteLocked?: boolean; failRemote
         case 'expansionOf':
           return { step: options.status >= 3 ? 4 : 0, remoteToken: options.status >= 3 ? REMOTE_TOKEN : ZERO, feeEscrow: 0n };
         case 'deploymentOf':
-          return { remoteToken: options.status >= 3 ? REMOTE_TOKEN : ZERO, state: options.status >= 3 ? 2 : 0, tier: 1, pool: ZERO };
+          return { remoteToken: options.status >= 3 ? REMOTE_TOKEN : ZERO, state: options.status >= 3 ? 2 : 0, tier: 1, poolId: ZERO_HASH, positionId: 0n };
         case 'quoteRetry':
           return 0n;
         case 'pathwayOf':
@@ -224,6 +255,44 @@ describe('layanan token', () => {
     expect(detail.trades).toHaveLength(1);
     expect(detail.verify.map((item) => item.status)).toEqual(['read', 'absent']);
     expect(detail.pathways[0]?.required).toHaveLength(2);
+  });
+
+  it('pool home: state hanya dibaca bila PoolKey dari Graduator cocok dengan PoolId tercatat', async () => {
+    const poolId = poolIdOf(POOL_KEY);
+    const matching = await fakeChain({ status: 2, poolId }).service.detail(TOKEN);
+    expect(matching.pool).toBe(poolId);
+    expect(matching.poolState).toMatchObject({ key: POOL_KEY, lpFee: 3000, protocolFee: 0, liquidity: (10n ** 21n).toString() });
+
+    // PoolId tercatat bukan milik PoolKey itu: pool lain untuk token yang sama tidak dibaca.
+    const other = poolIdOf({ ...POOL_KEY, hooks: ZERO });
+    const mismatched = await fakeChain({ status: 2, poolId: other }).service.detail(TOKEN);
+    expect(mismatched.pool).toBe(other);
+    expect(mismatched.poolState).toBeNull();
+
+    // Pembacaan gagal → not read, tanpa harga karangan.
+    const unread = await fakeChain({ status: 2, poolId, failPoolState: true }).service.detail(TOKEN);
+    expect(unread.poolState).toBeNull();
+
+    // Setiap pemeriksaan silang yang gagal → not read. Pool yang "benar" menurut satu sumber saja
+    // tidak cukup.
+    const detailWith = async (patch: Parameters<typeof fakeChain>[0]) => (await fakeChain(patch).service.detail(TOKEN)).poolState;
+    // PoolId tercatat dengan huruf besar tetap cocok.
+    expect(await detailWith({ status: 2, poolId: poolId.toUpperCase().replace('0X', '0x') as Hex })).not.toBeNull();
+    // Graduator menunjuk PositionManager lain daripada manifest.
+    expect(await detailWith({ status: 2, poolId, positionManager: CURVE })).toBeNull();
+    // PoolKey untuk token lain, atau hook yang bukan hook penjaga di manifest.
+    const foreignToken = { ...POOL_KEY, currency1: CURVE };
+    expect(await detailWith({ status: 2, poolId: poolIdOf(foreignToken), poolKey: foreignToken })).toBeNull();
+    const foreignHook = { ...POOL_KEY, hooks: CURVE };
+    expect(await detailWith({ status: 2, poolId: poolIdOf(foreignHook), poolKey: foreignHook })).toBeNull();
+    // Pool belum diinisialisasi (harga 0) atau likuiditas tidak terbaca.
+    expect(await detailWith({ status: 2, poolId, sqrtPriceX96: 0n })).toBeNull();
+    expect(await detailWith({ status: 2, poolId, failLiquidity: true })).toBeNull();
+
+    // Sebelum graduation tidak ada pool sama sekali.
+    const bonding = await fakeChain({ status: 1 }).service.detail(TOKEN);
+    expect(bonding.pool).toBeNull();
+    expect(bonding.poolState).toBeNull();
   });
 
   it('Graduator Locked + verify() true di semua chain → Locked', async () => {

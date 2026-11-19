@@ -96,8 +96,11 @@ contract ExpansionTest is XofNTestBase {
         uint256 perChain = graduator.launchOf(address(token)).tokensPerChain;
         assertEq(onBase.totalSupply(), perChain);
         assertEq(onArb.totalSupply(), perChain);
-        assertEq(onBase.balanceOf(address(_pair(BASE, address(onBase)))), perChain);
-        assertEq(onArb.balanceOf(address(_pair(ARB, address(onArb)))), perChain);
+        assertEq(onBase.balanceOf(address(chains[BASE].poolManager)), perChain);
+        assertEq(onArb.balanceOf(address(chains[ARB].poolManager)), perChain);
+        assertTrue(_poolExists(HOME, address(token)), "home pool");
+        assertTrue(_poolExists(BASE, address(onBase)), "base pool");
+        assertTrue(_poolExists(ARB, address(onArb)), "arbitrum pool");
 
         // Graduator dan Remote tidak menyimpan sisa token; Graduator tidak menyimpan ETH.
         assertEq(token.balanceOf(address(graduator)), 0);
@@ -629,8 +632,7 @@ contract ExpansionTest is XofNTestBase {
         assertTrue(_compose(BASE, liquidity, address(remote)));
         uint256 ackFee = remote.quoteAck(address(token));
         assertEq(before - address(remote).balance, EXPANSION_PAIR_ETH + ackFee);
-        (, uint256 reserveEth) = chains[BASE].router.reservesOf(remoteToken);
-        assertEq(reserveEth, EXPANSION_PAIR_ETH);
+        assertEq(address(chains[BASE].poolManager).balance, EXPANSION_PAIR_ETH);
     }
 
     // ───────────────────────────── Helper ─────────────────────────────

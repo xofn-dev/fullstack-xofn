@@ -1,0 +1,29 @@
+[PASS] test_gas_fortress() (gas: 23940695)
+  fortress: launch: 3413461
+  fortress: graduate: 646041
+  fortress: expandAndLock (2 chains): 2760952
+  fortress: Remote.lzReceive DEPLOY (token + recipe + ack): 4264459
+  fortress: Graduator.lzReceive ack CONFIGURED (+ send liquidity): 786885
+  fortress: token.lzReceive liquidity credit: 195320
+  fortress: Remote.lzCompose (pool + lock + ack): 1274155
+  fortress: Graduator.lzReceive ack LOCKED: 101644
+  fortress: Graduator.lzReceive final ack LOCKED (locks home): 437829
+  fortress: Registry.verify (2 EIDs): 231719
+  fortress: Registry.verifyEid: 126544
+  fortress: Registry.verify (1 EID, expansion chain): 145571
+  fortress: token.lzReceive plain bridge: 117890
+[PASS] test_gas_standard() (gas: 23577730)
+  standard: launch: 3408538
+  standard: graduate: 646041
+  standard: expandAndLock (2 chains): 2668006
+  standard: Remote.lzReceive DEPLOY (token + recipe + ack): 4217732
+  standard: Graduator.lzReceive ack CONFIGURED (+ send liquidity): 779083
+  standard: token.lzReceive liquidity credit: 195320
+  standard: Remote.lzCompose (pool + lock + ack): 1267763
+  standard: Graduator.lzReceive ack LOCKED: 101644
+  standard: Graduator.lzReceive final ack LOCKED (locks home): 425040
+  standard: Registry.verify (2 EIDs): 221324
+  standard: Registry.verifyEid: 121348
+  standard: Registry.verify (1 EID, expansion chain): 140376
+  standard: token.lzReceive plain bridge: 117890
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 28.35ms (25.74ms CPU time)

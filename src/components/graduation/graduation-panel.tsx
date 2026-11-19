@@ -75,7 +75,9 @@ export function GraduationPanel({ token, deployment }: { token: TokenDetail; dep
           <ul className="step-list">
             <li className="ok">
               <span>{chain.name} pool created</span>
-              <span>{token.pool ? shortAddress(token.pool) : 'address not read'}</span>
+              <span title={token.pool ?? undefined}>
+                {token.pool ? `pool ID ${shortAddress(token.pool)}` : 'pool ID not read'}
+              </span>
             </li>
           </ul>
           <p className="step-note">

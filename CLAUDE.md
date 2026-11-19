@@ -69,10 +69,10 @@ Konflik yang belum diputuskan tercantum di `PRD.md` §11 (P#), `DESIGN_SYSTEM.md
 | **0** | Verifikasi riset: EID, DVN per pathway, semantik ULN, AMM, aset pasangan, paket, CreateX. Read-only, **tanpa transaksi** | Selesai 17 Nov 2026 + addendum home Robinhood; menunggu persetujuan gerbang (`proof/2026-11-17-phase0/notes.md`) |
 | **1** | Fondasi repo + port landing HTML (mode `preview`) | Selesai 17 Nov 2026; menunggu persetujuan gerbang (`proof/2026-11-17-phase1/notes.md`) |
 | **2** | XofN Check: baca OFT yang sudah ada di Robinhood/Base/Arbitrum + cache + kartu share | Selesai 17 Nov 2026; menunggu persetujuan gerbang (`proof/2026-11-17-phase2/notes.md`) |
-| **3** | Kontrak **lokal saja**. **3a** tahap 1: Token (OFT), Curve (implementation + clone), Graduator `graduate()`, Registry. **3b** tahap 2: Remote, `expandAndLock`, composer, `retryRemote`, multi-endpoint | P55 ditutup dan P51 diimplementasikan 19 Nov 2026 (opsi 1, varian ETH curve ke pool home; dua review independen); menunggu persetujuan gerbang (`proof/2026-11-19-phase3-p55-p51/notes.md`). Opsi A deploy dorman diuji di `test/lz/GoLive.t.sol`. Angka P1/P8/P15/P16/P41/P42/P43 wajib final sebelum Phase 5 |
-| **4** | Integrasi frontend aplikasi terhadap Anvil lokal / mode `simulation` (flow tahap 1 lebih dulu) | Selesai 17 Nov 2026 (mode simulation); menunggu persetujuan gerbang (`proof/2026-11-17-phase4/notes.md`). Dimulai walau P55 terbuka atas izin owner; kontrak tidak disentuh. P55 wajib tertutup sebelum Phase 5 dan sebelum deploy publik apa pun |
+| **3** | Kontrak **lokal saja**. **3a** tahap 1: Token (OFT), Curve (implementation + clone), Graduator `graduate()`, Registry. **3b** tahap 2: Remote, `expandAndLock`, composer, `retryRemote`, multi-endpoint | P55 ditutup dan P51 diimplementasikan 19 Nov 2026 (opsi 1, varian ETH curve ke pool home; dua review independen; `proof/2026-11-19-phase3-p55-p51/notes.md`). **Dibuka kembali 19 Nov 2026: pool pindah dari Uniswap v2 ke v4** (PRD P61; hook penjaga, `PoolSeeder` ditulis ulang; review independen tanpa temuan critical/high); **gerbang disetujui pengguna 19 Nov 2026** (`proof/2026-11-19-phase3-uniswap-v4/notes.md`). Opsi A deploy dorman diuji di `test/lz/GoLive.t.sol`. Angka P1/P8/P15/P16/P41/P42/P43 wajib final sebelum Phase 5 |
+| **4** | Integrasi frontend aplikasi terhadap Anvil lokal / mode `simulation` (flow tahap 1 lebih dulu) | Selesai 17 Nov 2026 (mode simulation); menunggu persetujuan gerbang (`proof/2026-11-17-phase4/notes.md`). 19 Nov 2026: pembacaan pool dan panel trading pool di-port ke Uniswap v4 (bukti di `proof/2026-11-19-phase3-uniswap-v4/notes.md`). Dimulai walau P55 terbuka atas izin owner; kontrak tidak disentuh. P55 wajib tertutup sebelum Phase 5 dan sebelum deploy publik apa pun |
 | **5** | Hardening & paket audit (audit eksternal wajib sebelum deploy mainnet 1b) | Belum mulai |
-| **6** | **Deploy Fase 1** (guide §5–6): 1a Robinhood testnet → 1b Robinhood mainnet + rilis publik XofN Check | **FROZEN total** |
+| **6** | **Deploy Fase 1** (guide §5–6): 1a Robinhood testnet → 1b Robinhood mainnet + rilis publik XofN Check | **1a testnet dibuka PM 19 Nov 2026**; dilanjutkan setelah gerbang Phase 3 (Uniswap v4) disetujui 19 Nov 2026 (deploy dorman saja; rencana `proof/2026-11-19-keputusan-pm/rencana-deploy-testnet-1a.md`, bukti `proof/2026-11-19-phase6-1a/`). **1b tetap FROZEN total** |
 | **7** | **Deploy Fase 2** (guide §7–8): 2a omnichain testnet → 2b omnichain mainnet | **FROZEN total** |
 | Backlog | lzRead / XofN Score | Pasca-MVP (Robinhood belum punya ReadLib1002) |
 
@@ -81,7 +81,11 @@ Gerbang tiap phase ada di `PRD.md` §8–9. Kerjakan **hanya** phase yang dimint
 ## 5. Scope & larangan per phase
 
 ### 5.1 Phase 6–7 FROZEN total — larangan mutlak sampai PM memberi perintah mulai
-Isi `deployguide-xofn.md` §1, §5–9 (perintah deploy, smoke test, transfer ke Safe, wiring, ekspansi mainnet) hanya **referensi**. Selama frozen, yang dilarang:
+Isi `deployguide-xofn.md` §1, §5–9 (perintah deploy, smoke test, transfer ke Safe, wiring, ekspansi mainnet) hanya **referensi**.
+
+**Pengecualian sempit (PM, 19 Nov 2026): Fase 1a Robinhood testnet (chain 46630), deploy dorman.** Agent boleh menulis `script/0*_*.s.sol` yang menolak berjalan di luar chain 46630, menjalankan dry-run tanpa key, dan membaca chain. `deployments/robinhood-testnet.json` hanya ditulis oleh broadcast developer. Semua larangan lain di bawah tetap berlaku untuk agent, termasuk di testnet: broadcast, key/keystore/Safe, `--verify`, fungsi produk, dan `setRegistrar`. Mainnet (1b) dan Phase 7 tidak tercakup.
+
+Selama frozen, yang dilarang:
 - Membuat atau mengubah script deploy untuk jaringan publik: `script/01_DeployCore.s.sol`, `02_TransferToSafe.s.sol`, `10_DeployRemote.s.sol`, `11_WireInfra.s.sol`, atau sejenisnya. Yang boleh hanya `script/local/*` untuk Anvil.
 - Mengisi `[etherscan]`, profil deploy, verifier, atau RPC testnet/mainnet untuk keperluan deploy di `foundry.toml`. RPC **fork read-only** untuk tes boleh dipakai, nilainya dibaca dari env.
 - Membuat file `deployments/` untuk jaringan publik (`robinhood-testnet.json`, `robinhood.json`, `base-sepolia.json`, `arbitrum-sepolia.json`, `base.json`, `arbitrum.json`). Yang boleh hanya `deployments/local.json`.
@@ -172,6 +176,11 @@ Dependency baru di `package.json` yang **tidak** tercantum di `ARCHITECTURE.md` 
   - nilai 0 berarti default, jadi factory menolak field 0;
   - array DVN terurut naik dan unik.
 - `lzCompose` hanya menerima panggilan dari endpoint, untuk token terdaftar. Pool dibuat dan diisi dalam satu panggilan.
+- **Pool = Uniswap v4** (PRD P61): ETH native / token, fee 0,30%, satu posisi full-range, hook `XofNPoolGuard`.
+  - Paket `@uniswap/v4-core` dan `@uniswap/v4-periphery` dipin; yang boleh diimpor kontrak hanya file ber-pragma longgar (bukan `PoolManager.sol`/`PositionManager.sol`, yang ber-pragma 0.8.26).
+  - `PoolSeeder` tetap library terhubung; Graduator dan Remote tidak boleh mendapat fungsi pengubah state baru (tidak ada `unlockCallback`).
+  - Hook hanya ber-flag `beforeInitialize`, tanpa state, tanpa owner; alamatnya divalidasi di constructor.
+  - Tes memakai PoolManager dan PositionManager asli dari artefak paket (`test/helpers/V4Env.sol`), bukan tiruan.
 - Semua **tes wajib** di `PRD.md` §9.2 harus ada dan lulus. Jalankan `forge test --profile ci` sebelum menyatakan Phase 3/5 selesai.
 - Fork test hanya membaca; tidak ada broadcast.
 

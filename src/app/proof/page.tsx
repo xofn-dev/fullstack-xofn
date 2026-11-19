@@ -90,7 +90,10 @@ export default function ProofPage() {
               <ul className="proof-list">
                 <li>
                   <b>Contracts are unaudited</b>
-                  <span>An independent review finding in pool seeding is open and must be closed before audit.</span>
+                  <span>
+                    Pool seeding was rewritten for Uniswap v4 and reviewed independently. No external
+                    audit has been done yet.
+                  </span>
                 </li>
                 <li>
                   <b>Infrastructure pathway</b>

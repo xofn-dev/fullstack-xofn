@@ -1,0 +1,6 @@
+[PASS] test_fork_rehearsal_dormantDeploy_thenForkOnlyGoLive() (gas: 1067901187)
+  gas 01 (libraries + Registry + Curve): 9643677
+  gas 02 (4 Safe transactions): 16688205
+  gas 03 (guard + Graduator + handover): 15577180
+  gas graduate() on live Uniswap v4: 644131
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 30.03s (30.00s CPU time)

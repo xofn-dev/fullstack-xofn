@@ -1,7 +1,7 @@
 import { parseAbi } from 'viem';
 
 // ABI kontrak XofN yang dipakai aplikasi. Ditulis tangan dari artefak `out/` (Phase 3) dan
-// dicocokkan kembali dengan artefak itu oleh tests/web3-abi.test.ts selama `out/` ada.
+// dicocokkan kembali dengan artefak itu oleh tests/web3.test.ts selama `out/` ada.
 // `Status` dan `Step` adalah enum Solidity, jadi di ABI berupa uint8 (lihat src/types/enums.ts).
 
 const PATHWAY_TUPLE =
@@ -14,7 +14,7 @@ export const graduatorAbi = parseAbi([
   'function retryRemote(address token, uint32 eid) payable',
   'function quoteExpandAndLock(address token) view returns (uint256 deployFees, uint256 liquidityFees)',
   'function quoteRetry(address token, uint32 eid) view returns (uint256)',
-  'function launchOf(address token) view returns ((address curve, address creator, uint8 tier, uint8 status, uint8 remotesLocked, address pool, address payer, bytes32 salt, uint256 tokensPerChain, uint32[] eids))',
+  'function launchOf(address token) view returns ((address curve, address creator, uint8 tier, uint8 status, uint8 remotesLocked, bytes32 poolId, uint256 positionId, address payer, bytes32 salt, uint256 tokensPerChain, uint32[] eids))',
   'function expansionOf(address token, uint32 eid) view returns ((uint8 step, address remoteToken, uint256 feeEscrow))',
   `function pathwayOf(uint32 eid) view returns (${PATHWAY_TUPLE})`,
   'function expansionEids() view returns (uint32[])',
@@ -28,11 +28,14 @@ export const graduatorAbi = parseAbi([
   'function callerReward() view returns (uint256)',
   'function expansionPairEth() view returns (uint256)',
   'function registry() view returns (address)',
-  'function router() view returns (address)',
+  'function positionManager() view returns (address)',
+  'function poolGuard() view returns (address)',
+  'function lpRecipient() view returns (address)',
+  'function poolKeyOf(address token) view returns ((address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks))',
   'function homeEid() view returns (uint32)',
   'function peers(uint32 eid) view returns (bytes32 peer)',
   'event Launched(address indexed token, address indexed curve, address indexed creator, uint8 tier, uint32[] eids, bytes32 metadataHash)',
-  'event Graduated(address indexed token, address indexed caller, address pool, uint256 poolTokens, uint256 poolEth, uint256 tokensPerChain)',
+  'event Graduated(address indexed token, address indexed caller, bytes32 indexed poolId, uint256 positionId, uint256 poolTokens, uint256 poolEth, uint256 tokensPerChain)',
   'event ExpansionStarted(address indexed token, address indexed caller)',
   'event ExpansionStep(address indexed token, uint32 indexed eid, uint8 step, bytes32 guid)',
   'event LiquidityDeferred(address indexed token, uint32 indexed eid)',
@@ -96,13 +99,14 @@ export const registryAbi = parseAbi([
 ]);
 
 export const remoteAbi = parseAbi([
-  'function deploymentOf(address homeToken) view returns ((address remoteToken, uint8 state, uint8 tier, address pool))',
+  'function deploymentOf(address homeToken) view returns ((address remoteToken, uint8 state, uint8 tier, bytes32 poolId, uint256 positionId))',
   'function homeTokenOf(address remoteToken) view returns (address homeToken)',
   'function quoteAck(address homeToken) view returns (uint256)',
   'function reAck(address homeToken) payable',
   'function registry() view returns (address)',
+  'function poolKeyOf(address remoteToken) view returns ((address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks))',
   'event TokenDeployed(address indexed homeToken, address indexed remoteToken, uint8 tier)',
-  'event PoolSeeded(address indexed homeToken, address indexed remoteToken, address pool, uint256 tokenAmount, uint256 ethAmount)',
+  'event PoolSeeded(address indexed homeToken, address indexed remoteToken, bytes32 indexed poolId, uint256 positionId, uint256 tokenAmount, uint256 ethAmount)',
   'event RemoteLocked(address indexed homeToken, address indexed remoteToken)',
   'event AckSent(address indexed homeToken, uint8 kind, bytes32 guid)',
   'event AckDeferred(address indexed homeToken, uint8 kind)',

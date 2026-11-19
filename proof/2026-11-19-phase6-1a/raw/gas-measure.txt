@@ -1,0 +1,37 @@
+Compiling 1 files with Solc 0.8.24
+Solc 0.8.24 finished in 12.62s
+Compiler run successful with warnings:
+235 |     function configHashOf(Pathway storage p, uint8 tier) external view returns (bytes32) {
+Ran 2 tests for test/lz/GasMeasure.t.sol:GasMeasureTest
+[PASS] test_gas_fortress() (gas: 28011829)
+Logs:
+  fortress: launch: 3413439
+  fortress: graduate: 2025859
+  fortress: expandAndLock (2 chains): 2760930
+  fortress: Remote.lzReceive DEPLOY (token + recipe + ack): 4264437
+  fortress: Graduator.lzReceive ack CONFIGURED (+ send liquidity): 786860
+  fortress: token.lzReceive liquidity credit: 195319
+  fortress: Remote.lzCompose (pool + lock + ack): 2653975
+  fortress: Graduator.lzReceive ack LOCKED: 101644
+  fortress: Graduator.lzReceive final ack LOCKED (locks home): 437828
+  fortress: Registry.verify (2 EIDs): 231719
+  fortress: Registry.verifyEid: 126544
+  fortress: Registry.verify (1 EID, expansion chain): 143457
+  fortress: token.lzReceive plain bridge: 117889
+[PASS] test_gas_standard() (gas: 27648864)
+Logs:
+  standard: launch: 3408516
+  standard: graduate: 2025859
+  standard: expandAndLock (2 chains): 2667984
+  standard: Remote.lzReceive DEPLOY (token + recipe + ack): 4217710
+  standard: Graduator.lzReceive ack CONFIGURED (+ send liquidity): 779058
+  standard: token.lzReceive liquidity credit: 195319
+  standard: Remote.lzCompose (pool + lock + ack): 2647583
+  standard: Graduator.lzReceive ack LOCKED: 101644
+  standard: Graduator.lzReceive final ack LOCKED (locks home): 425039
+  standard: Registry.verify (2 EIDs): 221324
+  standard: Registry.verifyEid: 121348
+  standard: Registry.verify (1 EID, expansion chain): 138262
+  standard: token.lzReceive plain bridge: 117889
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 45.20ms (27.70ms CPU time)
+Ran 1 test suite in 54.02ms (45.20ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)

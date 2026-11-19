@@ -1,7 +1,8 @@
 import type { Abi, PublicClient } from 'viem';
 import type { Address } from '@/lib/chains';
 import { getTierInfo, tierFromId } from '@/lib/tiers';
-import { localRelayAbi, mockRouterAbi } from '@/lib/web3/abi/local';
+import { localRelayAbi } from '@/lib/web3/abi/local';
+import { v4StateViewAbi } from '@/lib/web3/abi/uniswap-v4';
 import { curveAbi, endpointComposeAbi, graduatorAbi, registryAbi, remoteAbi, tokenAbi } from '@/lib/web3/abi/xofn';
 import {
   deploymentByEid,
@@ -11,11 +12,13 @@ import {
   type Deployment,
 } from '@/lib/web3/addresses';
 import { priceAtRaised, progressBps } from '@/lib/web3/curve-trade';
+import { isXofnPoolKey, poolIdOf } from '@/lib/web3/pool-trade';
 import { deriveStatus } from '@/lib/tokens/status';
 import type {
   CurveState,
   ExpansionChainState,
   Hex,
+  PoolState,
   TokenDetail,
   TokenEconomics,
   TokenPathway,
@@ -85,6 +88,8 @@ export interface ReadContext {
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const isZero = (address: string) => address.toLowerCase() === ZERO_ADDRESS;
+/** PoolId (bytes32) kosong berarti pool belum dibuat. */
+const isZeroHash = (hash: string) => /^0x0*$/.test(hash);
 
 /** Data token yang tidak berubah setelah launch; aman disimpan di index. */
 export interface TokenMeta {
@@ -107,7 +112,7 @@ interface LaunchStruct {
   tier: number;
   status: number;
   remotesLocked: number;
-  pool: Address;
+  poolId: Hex;
   tokensPerChain: bigint;
   eids: readonly number[];
 }
@@ -385,7 +390,7 @@ async function readExpansionOn(
       .catch(() => '0'),
   ]);
   let remoteState: ExpansionChainState['remoteState'] = 'unread';
-  let remotePool: Address | null = null;
+  let remotePool: Hex | null = null;
   let remoteToken: Address | null = isZero(expansion.remoteToken) ? null : lc(expansion.remoteToken);
   const remoteClient = ctx.clientFor(chain.chain);
   if (remoteClient && chain.remote) {
@@ -395,9 +400,9 @@ async function readExpansionOn(
         abi: remoteAbi,
         functionName: 'deploymentOf',
         args: [meta.address],
-      })) as { remoteToken: string; state: number; pool: string };
+      })) as { remoteToken: string; state: number; poolId: string };
       remoteState = REMOTE_STATES[deployed.state] ?? 'unread';
-      remotePool = isZero(deployed.pool) ? null : lc(deployed.pool);
+      remotePool = isZeroHash(deployed.poolId) ? null : (deployed.poolId.toLowerCase() as Hex);
       if (remoteToken === null && !isZero(deployed.remoteToken)) remoteToken = lc(deployed.remoteToken);
     } catch {
       remoteState = 'unread';
@@ -461,22 +466,48 @@ async function readEconomics(ctx: ReadContext): Promise<TokenEconomics> {
   };
 }
 
-async function readPoolReserves(
-  ctx: ReadContext,
-  token: Address,
-): Promise<{ token: string; eth: string } | null> {
+/**
+ * State pool home dari PoolManager Uniswap v4. PoolKey dibaca dari Graduator, lalu harus
+ * menghasilkan PoolId yang SAMA dengan yang dicatat Graduator saat graduation; bila tidak, atau
+ * bila ada pembacaan yang gagal, hasilnya null ("not read") dan tidak ada harga yang dikarang.
+ */
+async function readPoolState(ctx: ReadContext, token: Address, poolId: Hex): Promise<PoolState | null> {
   const { client, home } = homeClient(ctx);
-  // Router tiruan hanya ada di manifest lokal; di jaringan lain cadangan belum dibaca.
-  const router = home.chain.mocks?.router;
-  if (!router) return null;
+  // Kontrak pembaca (StateView) hanya ada di manifest lokal; di jaringan lain pool belum dibaca.
+  const v4 = home.chain.uniswapV4;
+  if (!v4) return null;
   try {
-    const [reserveToken, reserveEth] = (await client.readContract({
-      address: router,
-      abi: mockRouterAbi,
-      functionName: 'reservesOf',
-      args: [token],
-    })) as [bigint, bigint];
-    return { token: reserveToken.toString(), eth: reserveEth.toString() };
+    const [rawKey, positionManager] = await Promise.all([
+      client.readContract({ address: home.graduator, abi: graduatorAbi, functionName: 'poolKeyOf', args: [token] }),
+      client.readContract({ address: home.graduator, abi: graduatorAbi, functionName: 'positionManager' }),
+    ]);
+    const raw = rawKey as { currency0: string; currency1: string; fee: number; tickSpacing: number; hooks: string };
+    const key = {
+      currency0: lc(raw.currency0),
+      currency1: lc(raw.currency1),
+      fee: Number(raw.fee),
+      tickSpacing: Number(raw.tickSpacing),
+      hooks: lc(raw.hooks),
+    };
+    // Manifest dan Graduator harus menunjuk Uniswap v4 yang sama, dan pool yang dibaca harus
+    // pool yang dicatat kontrak, bukan pool lain untuk token yang sama.
+    if (lc(positionManager as string) !== v4.positionManager || key.hooks !== v4.poolGuard) return null;
+    if (!isXofnPoolKey(key, token) || poolIdOf(key).toLowerCase() !== poolId.toLowerCase()) return null;
+
+    const [slot0, liquidity] = await Promise.all([
+      client.readContract({ address: v4.stateView, abi: v4StateViewAbi, functionName: 'getSlot0', args: [poolId] }),
+      client.readContract({ address: v4.stateView, abi: v4StateViewAbi, functionName: 'getLiquidity', args: [poolId] }),
+    ]);
+    const [sqrtPriceX96, tick, protocolFee, lpFee] = slot0 as [bigint, number, number, number];
+    if (sqrtPriceX96 === 0n) return null;
+    return {
+      key,
+      sqrtPriceX96: sqrtPriceX96.toString(),
+      tick: Number(tick),
+      liquidity: (liquidity as bigint).toString(),
+      lpFee: Number(lpFee),
+      protocolFee: Number(protocolFee),
+    };
   } catch {
     return null;
   }
@@ -541,7 +572,7 @@ export async function readDetail(
     readRelayPending(ctx),
   ]);
   const graduatorStatus: GraduatorStatus = GRADUATOR_STATUSES[launch.status] ?? 'none';
-  const pool = isZero(launch.pool) ? null : lc(launch.pool);
+  const pool = isZeroHash(launch.poolId) ? null : (launch.poolId.toLowerCase() as Hex);
   return {
     address: meta.address,
     name: meta.name,
@@ -556,7 +587,7 @@ export async function readDetail(
     spark: sparkFromTrades(meta, trades),
     curveState,
     pool,
-    poolReserves: pool ? await readPoolReserves(ctx, meta.address) : null,
+    poolState: pool ? await readPoolState(ctx, meta.address, pool) : null,
     tokensPerChain: launch.tokensPerChain.toString(),
     trades,
     expansion,

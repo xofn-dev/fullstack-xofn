@@ -1,0 +1,9 @@
+| Contract               | Runtime Size (B) | Initcode Size (B) | Runtime Margin (B) | Initcode Margin (B) |
+| PoolSeeder             | 4,217            | 4,270             | 20,359             | 44,882              |
+| XofNCurve              | 3,764            | 3,848             | 20,812             | 45,304              |
+| XofNGraduator          | 21,255           | 27,647            | 3,321              | 21,505              |
+| XofNPoolGuard          | 440              | 660               | 24,136             | 48,492              |
+| XofNRegistry           | 6,703            | 7,114             | 17,873             | 42,038              |
+| XofNRemote             | 11,912           | 16,740            | 12,664             | 32,412              |
+| XofNToken              | 12,340           | 14,410            | 12,236             | 34,742              |
+| XofNTokenDeployer      | 15,909           | 15,962            | 8,667              | 33,190              |

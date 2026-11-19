@@ -18,6 +18,9 @@ import {XofNToken} from "../../contracts/XofNToken.sol";
 ///         ekspansi dibuka pada harga saat graduate. Bila harga home turun sebelum ekspansi,
 ///         pihak ketiga tanpa token bisa mengambil sebagian subsidi lewat arbitrase. Tes di sini
 ///         membuktikan batasnya: paling banyak expansionPairEth per chain.
+///
+///      Pool-nya Uniswap v4 asli (posisi full-range, fee 0,30%), yang berperilaku seperti x·y=k.
+///      Cadangan yang dipakai di sini adalah cadangan virtual posisi itu.
 abstract contract SubsidyEconomicsBase is XofNTestBase {
     /// @dev Pembeli tunggal: kembalikan selisih ETH penyerang (negatif = rugi) dan ETH yang
     ///      terpakai dari saldo Remote.
@@ -36,7 +39,7 @@ abstract contract SubsidyEconomicsBase is XofNTestBase {
 
         // Token dibagi sebanding cadangan tiap pool, lalu dijual semua.
         uint256 held = token.balanceOf(attacker);
-        (uint256 homeReserve,) = chains[HOME].router.reservesOf(address(token));
+        (uint256 homeReserve,) = _poolReserves(HOME, address(token));
         uint256 perChain = graduator.launchOf(address(token)).tokensPerChain;
         uint256 toRemote = ((held * perChain / (homeReserve + 2 * perChain)) / 1e12) * 1e12;
         _bridgeToBoth(token, toRemote);
@@ -69,13 +72,12 @@ abstract contract SubsidyEconomicsBase is XofNTestBase {
         XofNToken onBase = _remoteToken(token, BASE);
         uint256 ethForTokens;
         {
-            (uint256 homeTokens, uint256 homeEth) = chains[HOME].router.reservesOf(address(token));
-            (uint256 rt, uint256 re) = chains[BASE].router.reservesOf(address(onBase));
+            (uint256 homeTokens, uint256 homeEth) = _poolReserves(HOME, address(token));
+            (uint256 rt, uint256 re) = _poolReserves(BASE, address(onBase));
             uint256 d = Math.sqrt(Math.mulDiv(rt * re, homeTokens, homeEth)) - rt;
             ethForTokens = (Math.mulDiv(2 * d, homeEth, homeTokens) * 103) / 100;
         }
-        vm.prank(attacker);
-        chains[HOME].router.swapExactETHForTokens{value: ethForTokens}(address(token), attacker);
+        _poolBuy(HOME, address(token), attacker, ethForTokens);
         _bridgeToBoth(token, (token.balanceOf(attacker) / 2e12) * 1e12);
         _sellRemotes(token);
         if (token.balanceOf(attacker) > 0) {
@@ -112,10 +114,7 @@ abstract contract SubsidyEconomicsBase is XofNTestBase {
     }
 
     function _sell(uint32 eid, XofNToken t, address who, uint256 amount) internal {
-        vm.startPrank(who);
-        t.approve(address(chains[eid].router), amount);
-        chains[eid].router.swapExactTokensForETH(address(t), amount, who);
-        vm.stopPrank();
+        _poolSell(eid, address(t), who, amount);
     }
 
     function _remoteBalances() private view returns (uint256) {
@@ -148,6 +147,53 @@ contract SubsidyDefaultEconomicsTest is SubsidyEconomicsBase {
 
     function test_stalePrice_allSold_leakBoundedBySubsidy() public {
         _assertStaleLeakBounded(4);
+    }
+
+    /// @dev Arah sebaliknya (review 19 Nov 2026, INFO-2): harga home NAIK sebelum ekspansi, jadi
+    ///      pool ekspansi dibuka di bawah harga pasar dan pembeli pertama mendapat token murah.
+    ///      Itu juga biaya harga basi (PRD P60), tetapi bentuknya lain: yang keluar adalah TOKEN
+    ///      dari posisi likuiditas, bukan ETH subsidi. Saldo Remote tidak tersentuh oleh trade,
+    ///      dan ETH di pool ekspansi justru bertambah. Untung arbitrase di arah ini TIDAK dibatasi
+    ///      expansionPairEth; ia dibatasi nilai `tokensPerChain`.
+    function test_stalePrice_homePriceRose_subsidyEthIsNotDrained() public {
+        (XofNToken token, XofNCurve curve) = _launch(STANDARD, _eids(BASE, ARB));
+        _reachThreshold(curve);
+        vm.prank(keeper);
+        graduator.graduate(address(token));
+        uint256 pairEth = graduator.expansionPairEth();
+        uint256 perChain = graduator.launchOf(address(token)).tokensPerChain;
+
+        // Pembeli menaikkan harga home ±2,25x sebelum siapa pun mengekspansi.
+        vm.deal(bob, 10 ether);
+        _poolBuy(HOME, address(token), bob, 2 ether);
+
+        (uint256 deployFees, uint256 liquidityFees) = graduator.quoteExpandAndLock(address(token));
+        vm.deal(attacker, 100 ether);
+        vm.prank(attacker);
+        graduator.expandAndLock{value: deployFees + liquidityFees}(address(token));
+        _runChain(token, BASE);
+        _runChain(token, ARB);
+
+        uint256 remoteAfterExpansion = address(remotes[BASE]).balance + address(remotes[ARB]).balance;
+        XofNToken onBase = _remoteToken(token, BASE);
+        XofNToken onArb = _remoteToken(token, ARB);
+        // Arbitrase: beli token murah di kedua pool ekspansi.
+        uint256 boughtBase = _poolBuy(BASE, address(onBase), attacker, pairEth);
+        uint256 boughtArb = _poolBuy(ARB, address(onArb), attacker, pairEth);
+        assertGt(boughtBase + boughtArb, 0);
+        assertLt(boughtBase, perChain, "cannot buy the whole position");
+        assertLt(boughtArb, perChain, "cannot buy the whole position");
+
+        // Subsidi ETH tidak terkuras: saldo Remote tidak berubah, dan ETH pool bertambah.
+        assertEq(
+            address(remotes[BASE]).balance + address(remotes[ARB]).balance,
+            remoteAfterExpansion,
+            "trading must not touch the Remote balance"
+        );
+        (, uint256 baseEth) = _poolReserves(BASE, address(onBase));
+        (, uint256 arbEth) = _poolReserves(ARB, address(onArb));
+        assertGt(baseEth, pairEth, "pool ETH grows when tokens are bought");
+        assertGt(arbEth, pairEth, "pool ETH grows when tokens are bought");
     }
 }
 

@@ -227,7 +227,7 @@ export function TokenView({
           <TradesTable token={token} />
         </div>
         <div className="app-stack">
-          <TradePanel token={token} homeChain={home.chain.chain} mockRouter={home.chain.mocks?.router ?? null} />
+          <TradePanel token={token} homeChain={home.chain.chain} poolVenue={home.chain.uniswapV4} />
           <GraduationPanel token={token} deployment={deployment} />
           <ExpansionPanel token={token} deployment={deployment} />
         </div>

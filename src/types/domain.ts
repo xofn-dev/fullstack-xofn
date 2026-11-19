@@ -189,7 +189,8 @@ export interface ExpansionChainState {
   remoteToken: Address | null;
   /** State di kontrak Remote chain tujuan. `unread` bila tidak terbaca. */
   remoteState: RemoteState | 'unread';
-  remotePool: Address | null;
+  /** PoolId Uniswap v4 pool di chain ini; null sebelum pool dibuat. */
+  remotePool: Hex | null;
   /** Escrow fee yang tersisa di Graduator untuk langkah kirim likuiditas. */
   feeEscrow: string;
   /** Fee `retryRemote` saat ini (wei); '0' bila tidak ada yang bisa diulang dari home. */
@@ -221,6 +222,31 @@ export interface TokenSummary {
   spark: string[];
 }
 
+/** PoolKey Uniswap v4. Di pool XofN: currency0 = ETH native (alamat 0), currency1 = token. */
+export interface PoolKey {
+  currency0: Address;
+  currency1: Address;
+  /** Fee LP dalam pip (1e-6): 3000 = 0,30%. */
+  fee: number;
+  tickSpacing: number;
+  hooks: Address;
+}
+
+export interface PoolState {
+  key: PoolKey;
+  /** sqrt(token / ETH) * 2^96, sebagai string desimal. */
+  sqrtPriceX96: string;
+  tick: number;
+  liquidity: string;
+  /** Fee LP saat ini, dalam pip. */
+  lpFee: number;
+  /**
+   * Nilai mentah `slot0.protocolFee`: DUA nilai 12-bit yang dikemas (satu per arah swap), bukan
+   * satu angka pip. 0 berarti tidak ada fee protokol. Belum ditampilkan di UI (PRD P62).
+   */
+  protocolFee: number;
+}
+
 export interface TokenEconomics {
   callerReward: string;
   expansionPairEth: string;
@@ -229,10 +255,13 @@ export interface TokenEconomics {
 
 export interface TokenDetail extends TokenSummary {
   curveState: CurveState;
-  /** Pool home chain; null sebelum graduation. */
-  pool: Address | null;
-  /** Cadangan pool home (tiruan lokal); null bila belum ada atau tidak terbaca. */
-  poolReserves: { token: string; eth: string } | null;
+  /** PoolId Uniswap v4 pool home chain (bytes32); null sebelum graduation. */
+  pool: Hex | null;
+  /**
+   * State pool home dari PoolManager. null bila belum ada, tidak terbaca, kontrak pembacanya tidak
+   * ada di manifest jaringan ini, atau PoolKey tidak cocok dengan PoolId tercatat.
+   */
+  poolState: PoolState | null;
   tokensPerChain: string;
   trades: Trade[];
   expansion: ExpansionChainState[];

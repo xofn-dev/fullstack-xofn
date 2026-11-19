@@ -14,10 +14,10 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 
 import {IXofNCurve} from "./interfaces/IXofNCurve.sol";
 import {IXofNRegistry} from "./interfaces/IXofNRegistry.sol";
-import {IUniswapV2Router} from "./interfaces/IUniswapV2.sol";
 import {ExpansionMsg} from "./libraries/ExpansionMsg.sol";
 import {PoolSeeder} from "./libraries/PoolSeeder.sol";
 import {TierLib} from "./libraries/TierLib.sol";
@@ -70,10 +70,14 @@ contract XofNGraduator is OApp, ReentrancyGuard {
         RemoteLocked
     }
 
+    /// @dev `positionManager`: PositionManager Uniswap v4 chain ini (PoolManager dibaca darinya).
+    ///      `poolGuard`: hook `XofNPoolGuard` yang terikat ke kontrak ini; harus sudah di-deploy.
+    ///      `lpRecipient`: penerima NFT posisi likuiditas (PRD P41).
     struct Infra {
         address registry;
         address curveImplementation;
-        address router;
+        address positionManager;
+        address poolGuard;
         address lpRecipient;
     }
 
@@ -102,7 +106,8 @@ contract XofNGraduator is OApp, ReentrancyGuard {
         uint8 tier;
         Status status;
         uint8 remotesLocked;
-        address pool;
+        bytes32 poolId; // PoolId Uniswap v4 pool home
+        uint256 positionId; // NFT posisi di PositionManager
         address payer;
         bytes32 salt;
         uint256 tokensPerChain;
@@ -126,9 +131,8 @@ contract XofNGraduator is OApp, ReentrancyGuard {
 
     IXofNRegistry public immutable registry;
     address public immutable curveImplementation;
-    address public immutable router;
-    address public immutable factory;
-    address public immutable weth;
+    address public immutable positionManager;
+    address public immutable poolGuard;
     address public immutable lpRecipient;
     uint32 public immutable homeEid;
 
@@ -158,7 +162,8 @@ contract XofNGraduator is OApp, ReentrancyGuard {
     event Graduated(
         address indexed token,
         address indexed caller,
-        address pool,
+        bytes32 indexed poolId,
+        uint256 positionId,
         uint256 poolTokens,
         uint256 poolEth,
         uint256 tokensPerChain
@@ -196,16 +201,18 @@ contract XofNGraduator is OApp, ReentrancyGuard {
     ) OApp(_endpoint, _owner) Ownable(_owner) {
         if (
             _infra.registry == address(0) || _infra.curveImplementation == address(0)
-                || _infra.router == address(0) || _infra.lpRecipient == address(0)
+                || _infra.positionManager == address(0) || _infra.poolGuard == address(0)
+                || _infra.lpRecipient == address(0)
         ) revert ZeroAddress();
+        // Infrastruktur pool yang salah ketahuan saat deploy, bukan saat token pertama lulus.
+        PoolSeeder.validate(_infra.positionManager, _infra.poolGuard, _infra.lpRecipient);
         uint256 n = _pathwayList.length;
         if (n == 0 || n != _gasList.length) revert LengthMismatch();
 
         registry = IXofNRegistry(_infra.registry);
         curveImplementation = _infra.curveImplementation;
-        router = _infra.router;
-        factory = IUniswapV2Router(_infra.router).factory();
-        weth = IUniswapV2Router(_infra.router).WETH();
+        positionManager = _infra.positionManager;
+        poolGuard = _infra.poolGuard;
         lpRecipient = _infra.lpRecipient;
         homeEid = endpoint.eid();
 
@@ -359,10 +366,13 @@ contract XofNGraduator is OApp, ReentrancyGuard {
 
         l.tokensPerChain = tokensPerChain;
 
-        (address pool,) = PoolSeeder.seed(factory, weth, token, poolTokens, poolEth, lpRecipient);
-        l.pool = pool;
+        (bytes32 poolId, uint256 positionId) = PoolSeeder.seed(
+            positionManager, poolGuard, token, poolTokens, poolEth, lpRecipient
+        );
+        l.poolId = poolId;
+        l.positionId = positionId;
 
-        emit Graduated(token, msg.sender, pool, poolTokens, poolEth, tokensPerChain);
+        emit Graduated(token, msg.sender, poolId, positionId, poolTokens, poolEth, tokensPerChain);
         _sendEth(msg.sender, callerReward);
     }
 
@@ -629,6 +639,12 @@ contract XofNGraduator is OApp, ReentrancyGuard {
 
     function launchOf(address token) external view returns (Launch memory) {
         return _launches[token];
+    }
+
+    /// @notice PoolKey Uniswap v4 pool home sebuah token. `keccak256(abi.encode(key))` sama dengan
+    ///         `launchOf(token).poolId` setelah graduation.
+    function poolKeyOf(address token) external view returns (PoolKey memory) {
+        return PoolSeeder.poolKey(poolGuard, token);
     }
 
     function expansionOf(address token, uint32 eid) external view returns (Expansion memory) {

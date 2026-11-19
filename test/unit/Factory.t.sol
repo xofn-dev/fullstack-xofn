@@ -426,19 +426,23 @@ contract FactoryTest is XofNTestBase {
 
     /// @dev Remote memakai aturan yang sama untuk resep pathway ke home.
     function test_remoteConstructorAppliesSameRules() public {
+        // Infra (termasuk hook penjaga) disusun sebelum `expectRevert`: lihat XofNTestBase.
+        XofNRemote.Infra memory infra;
         TierLib.Pathway memory p = _pathway(BASE, HOME);
         address[] memory one = new address[](1);
         one[0] = chains[BASE].dvns[0];
         p.standardRequired = one;
+        infra = _remoteInfra(BASE);
         vm.expectRevert(
             abi.encodeWithSelector(TierLib.InvalidRequiredDvnCount.selector, uint256(1))
         );
-        new XofNRemote(chains[BASE].endpoint, safe, _remoteInfra(BASE), p);
+        new XofNRemote(chains[BASE].endpoint, safe, infra, p);
 
         p = _pathway(BASE, HOME);
         p.confirmations = 0;
+        infra = _remoteInfra(BASE);
         vm.expectRevert(TierLib.ZeroConfigField.selector);
-        new XofNRemote(chains[BASE].endpoint, safe, _remoteInfra(BASE), p);
+        new XofNRemote(chains[BASE].endpoint, safe, infra, p);
 
         // DVN chain lain tidak ada di daftar putih chain ini.
         p = _pathway(BASE, HOME);
@@ -446,13 +450,15 @@ contract FactoryTest is XofNTestBase {
         foreign[0] = chains[ARB].dvns[0];
         foreign[1] = chains[ARB].dvns[1];
         p.optionalDvns = foreign;
+        infra = _remoteInfra(BASE);
         vm.expectRevert(abi.encodeWithSelector(TierLib.DvnNotAllowed.selector, foreign[0]));
-        new XofNRemote(chains[BASE].endpoint, safe, _remoteInfra(BASE), p);
+        new XofNRemote(chains[BASE].endpoint, safe, infra, p);
 
         // Pathway harus menuju home EID.
         p = _pathway(BASE, ARB);
+        infra = _remoteInfra(BASE);
         vm.expectRevert(abi.encodeWithSelector(XofNRemote.UnsupportedEid.selector, ARB));
-        new XofNRemote(chains[BASE].endpoint, safe, _remoteInfra(BASE), p);
+        new XofNRemote(chains[BASE].endpoint, safe, infra, p);
     }
 
     function _expectGraduatorRevert(TierLib.Pathway[] memory pathways, bytes memory err) private {
