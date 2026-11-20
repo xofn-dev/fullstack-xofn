@@ -1,7 +1,7 @@
 'use client';
 
 import { useReadContract } from 'wagmi';
-import { getChain } from '@/lib/chains';
+import { getChain, getChains } from '@/lib/chains';
 import { cn } from '@/lib/cn';
 import { formatEth } from '@/lib/format';
 import { publicEnv } from '@/lib/public-env';
@@ -102,7 +102,14 @@ export function ExpansionPanel({ token, deployment }: { token: TokenDetail; depl
   const homeInfo = getChain(publicEnv.network, home.chain.chain);
   const tx = useTxFlow();
   const status = token.graduatorStatus;
-  const destinations = token.expansion.map((item) => getChain(publicEnv.network, item.chain).name);
+  // Rencana chain dari launch (`token.eids`), bukan dari yang sudah ter-deploy: di jaringan publik
+  // Fase 1 chain ekspansi belum ada, jadi `token.expansion` kosong.
+  const destinations = token.eids.map(
+    (eid) => getChains(publicEnv.network).find((chain) => chain.eid === eid)?.name ?? `EID ${eid}`,
+  );
+  // Ada chain rencana yang belum punya Remote di jaringan ini: expandAndLock akan revert
+  // (`InfraPathwayNotPinned`), jadi tombolnya tidak ditampilkan.
+  const expansionUnavailable = token.expansion.length < token.eids.length;
 
   const quote = useReadContract({
     address: home.graduator,
@@ -130,7 +137,13 @@ export function ExpansionPanel({ token, deployment }: { token: TokenDetail; depl
   return (
     <div className="app-panel">
       <h2>Expansion &amp; lock · stage 2</h2>
-      {status === 'graduated' && (
+      {status === 'graduated' && expansionUnavailable && (
+        <p>
+          Expansion to {destinations.join(' and ')} is not deployed on this network yet. The token stays
+          Graduated · awaiting expansion; owner and delegate remain the XofN Graduator contract.
+        </p>
+      )}
+      {status === 'graduated' && !expansionUnavailable && (
         <>
           <p>
             Deploys the token to {destinations.join(' and ')}, sends liquidity, applies the tier DVN
@@ -171,6 +184,7 @@ export function ExpansionPanel({ token, deployment }: { token: TokenDetail; depl
         <>
           {token.expansion.map((state) => {
             const remote = deployment.chains[state.chain];
+            if (!remote) return null;
             return <ChainSteps key={state.eid} token={token} state={state} deployment={deployment} remote={remote} />;
           })}
           <div className="step-chain">

@@ -4,10 +4,11 @@ import { AppBackdrop } from '@/components/landing/scene-loaders';
 import { TierProvider } from '@/components/landing/tier-context';
 import { LaunchForm } from '@/components/launch/launch-form';
 import { getExpansionChains, getHomeChain } from '@/lib/chains';
-import { getModeCopy, resolveMode } from '@/lib/mode';
+import { getModeCopy } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
+import { currentAppMode } from '@/lib/web3/app-mode';
 import { getLaunchConfig } from '@/lib/tokens';
-import { getDeployment, getManifestState } from '@/lib/web3/addresses';
+import { getDeployment } from '@/lib/web3/addresses';
 
 export const metadata: Metadata = {
   title: 'Launch',
@@ -23,7 +24,7 @@ export default async function LaunchPage() {
   const network = publicEnv.network;
   const home = getHomeChain(network);
   const expansions = getExpansionChains(network);
-  const mode = resolveMode({ network, manifest: getManifestState(network) });
+  const mode = currentAppMode();
   const deployment = getDeployment(network);
 
   if (mode === 'preview' || !deployment) {
@@ -68,8 +69,9 @@ export default async function LaunchPage() {
               </div>
             </div>
             <p className="preview-note">
-              ◈ LOCAL SIMULATION: transactions go to a local test node with mock LayerZero endpoints
-              and mock DVNs. No real funds are used and nothing is deployed to a public network.
+              {mode === 'simulation'
+                ? '◈ LOCAL SIMULATION: transactions go to a local test node with mock LayerZero endpoints and mock DVNs. No real funds are used and nothing is deployed to a public network.'
+                : `◈ TESTNET: transactions go to ${home.name}. Testnet ETH only, no real funds. Contracts are unaudited. Expansion chains are not deployed yet, so a token can graduate on ${home.name} but cannot expand or lock.`}
             </p>
           </div>
           <LaunchForm
@@ -77,7 +79,7 @@ export default async function LaunchPage() {
             expansions={expansions}
             deployment={deployment}
             config={config}
-            actionTag={getModeCopy(mode).actionTag}
+            actionTag={getModeCopy(mode, network).actionTag}
           />
         </div>
       </main>
