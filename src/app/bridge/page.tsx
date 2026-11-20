@@ -3,13 +3,14 @@ import { BridgeWidget } from '@/components/bridge/bridge-widget';
 import { BridgeDemo } from '@/components/landing/bridge-demo';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
 import { getExpansionChains, getHomeChain } from '@/lib/chains';
+import { getModeCopy } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
-import { currentAppMode } from '@/lib/web3/app-mode';
+import { currentAppMode, currentBuildNote } from '@/lib/web3/app-mode';
 import { expansionDeployments, getDeployment } from '@/lib/web3/addresses';
 
 export const metadata: Metadata = {
   title: 'Bridge',
-  description: 'Move a locked XofN token between its chains. Preview build.',
+  description: `Move a locked XofN token between its chains. ${currentBuildNote()}`,
 };
 
 // "/bridge" — USER_FLOWS Flow H. Mode preview memakai widget pratinjau landing (berlabel PLANNED).
@@ -38,7 +39,7 @@ export default function BridgePage() {
       <main className="app-page" id="top">
         <div className="container">
           <div className="app-head">
-            <div className="section-label">BRIDGE · LOCAL SIMULATION</div>
+            <div className="section-label">BRIDGE · {getModeCopy(mode, network).actionTag}</div>
             <h1>
               Move a locked token <span className="accent">between its chains.</span>
             </h1>

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { currentBuildNote } from '@/lib/web3/app-mode';
 import { CheckForm } from '@/components/check/check-form';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
 import { checkLzAddresses } from '@/lib/check/local-lz';
@@ -8,7 +9,7 @@ import { publicEnv } from '@/lib/public-env';
 export const metadata: Metadata = {
   title: 'XofN Check',
   description:
-    'Read the DVN configuration, owner and delegate of an OFT directly from the chain. Preview build.',
+    `Read the DVN configuration, owner and delegate of an OFT directly from the chain. ${currentBuildNote()}`,
 };
 
 // "/check" — pintu masuk XofN Check. Hanya membaca chain; tidak butuh wallet.

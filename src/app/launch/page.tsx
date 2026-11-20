@@ -6,14 +6,14 @@ import { LaunchForm } from '@/components/launch/launch-form';
 import { getExpansionChains, getHomeChain } from '@/lib/chains';
 import { getModeCopy } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
-import { currentAppMode } from '@/lib/web3/app-mode';
+import { currentAppMode, currentBuildNote } from '@/lib/web3/app-mode';
 import { getLaunchConfig } from '@/lib/tokens';
 import { getDeployment } from '@/lib/web3/addresses';
 import { parseLaunchDraft } from '@/lib/launch-draft';
 
 export const metadata: Metadata = {
   title: 'Launch',
-  description: 'Create a token with a fixed supply and a committed security tier. Preview build.',
+  description: `Create a token with a fixed supply and a committed security tier. ${currentBuildNote()}`,
 };
 
 // Konfigurasi launch dibaca dari chain pada saat halaman diminta.

@@ -117,7 +117,16 @@ function buildStations(home: ChainInfo, expA: ChainInfo, expB: ChainInfo): Recor
 }
 
 // Section 5 — satu koin melewati enam stasiun; tiga mode kamera; tur otomatis.
-export function Architecture({ home, expansions }: { home: ChainInfo; expansions: ChainInfo[] }) {
+export function Architecture({
+  home,
+  expansions,
+  illustrationLabel,
+}: {
+  home: ChainInfo;
+  expansions: ChainInfo[];
+  /** Label sudut scene: diagram ini selalu ilustrasi, apa pun mode build-nya. */
+  illustrationLabel: string;
+}) {
   const [expA, expB] = expansions;
   const { tier } = useTier();
   const [active, setActive] = useState<ArchStation>('core');
@@ -283,7 +292,7 @@ export function Architecture({ home, expansions }: { home: ChainInfo; expansions
               XOFN : COIN RUN <span>0{ARCH_MODES.indexOf(mode) + 1} / 03</span>
             </div>
             <div className="v3-scene-right coin-scene-label">
-              INTERACTIVE PROTOCOL PREVIEW&nbsp; / &nbsp; NOT LIVE
+              {illustrationLabel}
             </div>
             <div
               className="v3-view v3-blueprint active"

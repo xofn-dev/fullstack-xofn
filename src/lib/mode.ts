@@ -36,6 +36,11 @@ export interface ModeCopy {
   noticeText: string;
   /** Tag pada aksi/form. */
   actionTag: string;
+  /** Status di hero dan intro loader: "XOFN / <statusLabel> ● <statusFlag>". */
+  statusLabel: string;
+  statusFlag: string;
+  /** Kalimat penutup description metadata halaman. */
+  buildNote: string;
 }
 
 // Teks per mode (DESIGN_SYSTEM §10.2). `live` hanya punya copy untuk TESTNET: go-live Robinhood
@@ -49,12 +54,18 @@ export function getModeCopy(mode: AppMode, network: Network): ModeCopy {
         // D18: sejak Check nyata ada (Phase 2), teks tidak lagi berbunyi "no live verification".
         noticeText: 'NO TOKEN SALE · CHECK READS PUBLIC CHAIN DATA',
         actionTag: 'PREVIEW',
+        statusLabel: 'PROTOCOL PREVIEW',
+        statusFlag: 'NOT LIVE',
+        buildNote: 'Preview build.',
       };
     case 'simulation':
       return {
         noticeChip: 'LOCAL SIMULATION',
         noticeText: 'NO REAL FUNDS',
         actionTag: 'SIMULATION',
+        statusLabel: 'LOCAL SIMULATION',
+        statusFlag: 'NO REAL FUNDS',
+        buildNote: 'Local simulation build.',
       };
     case 'live':
       if (network === 'testnet') {
@@ -62,6 +73,9 @@ export function getModeCopy(mode: AppMode, network: Network): ModeCopy {
           noticeChip: 'TESTNET',
           noticeText: 'LAUNCHPAD OPEN ON TESTNET · NO REAL FUNDS · UNAUDITED',
           actionTag: 'TESTNET',
+          statusLabel: 'TESTNET',
+          statusFlag: 'LAUNCHPAD OPEN',
+          buildNote: 'Testnet build: no real funds, contracts unaudited.',
         };
       }
       throw new Error('Mode "live" di mainnet belum dibuka (Fase 1b FROZEN).');

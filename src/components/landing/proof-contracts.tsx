@@ -1,8 +1,11 @@
-import type { ChainInfo } from '@/lib/chains';
+import Link from 'next/link';
+import { explorerAddressUrl, type ChainInfo } from '@/lib/chains';
+import { shortAddress } from '@/lib/format';
+import type { HomeOnlyDeployment } from '@/lib/web3/addresses';
 import { SplitHeading } from '@/components/landing/split-heading';
 
-// Semua status di bawah mencerminkan keadaan nyata: belum ada kontrak yang ter-deploy,
-// jadi tidak ada centang (USER_FLOWS Flow I).
+// Semua status di bawah mencerminkan keadaan nyata dan tidak pernah memakai centang (USER_FLOWS
+// Flow I). Versi pertama berlaku selama belum ada kontrak publik yang live.
 const INVARIANTS = [
   ['Contract owner is zero', 'NOT DEPLOYED'],
   ['Endpoint delegate is zero', 'NOT DEPLOYED'],
@@ -19,6 +22,24 @@ const ROADMAP = [
   ['Home-chain release, then expansion', 'NOT LIVE'],
 ] as const;
 
+// Testnet live (Fase 1a): kontrak home sudah terbuka di testnet, tetapi belum ada token yang
+// berekspansi, jadi belum ada verify() yang bisa ditunjukkan dan Locked tetap belum mungkin.
+const INVARIANTS_TESTNET = [
+  ['Contract owner is zero', 'NO TOKEN LOCKED YET'],
+  ['Endpoint delegate is zero', 'NO TOKEN LOCKED YET'],
+  ['DVN threshold matches tier', 'NOT VERIFIED'],
+  ['Libraries and pathways pinned', 'NOT VERIFIED'],
+  ['All expansion chains complete', 'NOT DEPLOYED'],
+] as const;
+
+const ROADMAP_TESTNET = [
+  ['Research · DVN and pathway feasibility', 'IN REVIEW'],
+  ['XofN Check · public OFT reader', 'ON TESTNET'],
+  ['Curve / Graduator / Registry', 'ON TESTNET'],
+  ['Independent security audit', 'REQUIRED'],
+  ['Home-chain release, then expansion', 'TESTNET ONLY'],
+] as const;
+
 const MILESTONES = [
   ['VERIFY', 'DVN pathways, AMM options, liquidity pairing.', 'FEASIBILITY GATE'],
   ['CHECK', 'OFT reader and configuration comparison.', 'PUBLIC TOOL FIRST'],
@@ -28,8 +49,10 @@ const MILESTONES = [
   ['RELEASE', 'Staged rollout with published evidence.', 'ON-CHAIN EVIDENCE'],
 ] as const;
 
-// Section 14 — bukti dan roadmap.
-export function Proof() {
+// Section 14 — bukti dan roadmap. `testnetLive`: launchpad home sudah dibuka di testnet.
+export function Proof({ testnetLive }: { testnetLive: boolean }) {
+  const invariants = testnetLive ? INVARIANTS_TESTNET : INVARIANTS;
+  const roadmap = testnetLive ? ROADMAP_TESTNET : ROADMAP;
   return (
     <section className="section proof-section" id="proof">
       <div className="container">
@@ -59,7 +82,7 @@ export function Proof() {
               These checks must all pass before displaying a locked state.
             </p>
             <div className="proof-checks">
-              {INVARIANTS.map(([label, status]) => (
+              {invariants.map(([label, status]) => (
                 <div className="proof-check" key={label}>
                   <span>{label}</span>
                   <b>{status}</b>
@@ -75,7 +98,7 @@ export function Proof() {
               timelines.
             </p>
             <div className="proof-checks">
-              {ROADMAP.map(([label, status]) => (
+              {roadmap.map(([label, status]) => (
                 <div className="proof-check" key={label}>
                   <span>{label}</span>
                   <b>{status}</b>
@@ -100,15 +123,57 @@ export function Proof() {
   );
 }
 
-// Section 15 — tabel kontrak. Alamat baru muncul setelah ada manifest deployment yang sah.
-export function Contracts({ home, expansions }: { home: ChainInfo; expansions: ChainInfo[] }) {
-  const rows = [
-    ['XofNToken', 'Fixed-supply OFT · 999M'],
-    ['XofNCurve', `${home.name} bonding curve`],
-    ['XofNGraduator', 'graduate() · expandAndLock() · immutable recipe'],
-    ['XofNRemote', 'Remote token deployment · lzCompose pooling'],
-    ['XofNRegistry', 'Tier registry · verify(token) on every chain'],
-  ] as const;
+interface ContractRow {
+  name: string;
+  role: string;
+  /** Alamat dari manifest; null = belum dipublikasikan. */
+  address: string | null;
+  /** Teks pengganti alamat untuk kontrak yang lahir per launch. */
+  note?: string;
+  status: string;
+}
+
+// Section 15 — tabel kontrak. Alamat hanya dari manifest deployment yang sah dan hanya setelah
+// launchpad live (dorman ≠ live, PRD P52). Remote tetap PLANNED sampai chain ekspansi di-deploy.
+export function Contracts({
+  home,
+  expansions,
+  homeOnly,
+}: {
+  home: ChainInfo;
+  expansions: ChainInfo[];
+  homeOnly: HomeOnlyDeployment | null;
+}) {
+  const live = homeOnly?.status === 'live' ? homeOnly : null;
+  const deployed = live ? 'ON TESTNET' : 'PLANNED';
+  const rows: ContractRow[] = [
+    {
+      name: 'XofNToken',
+      role: 'Fixed-supply OFT · 999M',
+      address: null,
+      note: live ? 'One per launch' : undefined,
+      status: live ? 'PER LAUNCH' : 'PLANNED',
+    },
+    {
+      name: 'XofNCurve',
+      role: `${home.name} bonding curve`,
+      address: live?.contracts.curveImplementation ?? null,
+      status: deployed,
+    },
+    {
+      name: 'XofNGraduator',
+      role: 'graduate() · expandAndLock() · immutable recipe',
+      address: live?.contracts.graduator ?? null,
+      status: deployed,
+    },
+    { name: 'XofNRemote', role: 'Remote token deployment · lzCompose pooling', address: null, status: 'PLANNED' },
+    {
+      name: 'XofNRegistry',
+      role: 'Tier registry · verify(token) on every chain',
+      address: live?.contracts.registry ?? null,
+      status: deployed,
+    },
+  ];
   const chainList = [home, ...expansions]
     .map((chain) => (chain.role === 'home' ? `${chain.name} (home)` : chain.name))
     .join(' / ');
@@ -128,8 +193,9 @@ export function Contracts({ home, expansions }: { home: ChainInfo; expansions: C
             />
           </div>
           <p>
-            Five core components, defined responsibilities. Addresses and audit evidence will only
-            appear after actual deployment and verification.
+            {live
+              ? `Five core components, defined responsibilities. The home-chain contracts are live on ${home.name}; remote contracts appear after expansion is deployed. Unaudited.`
+              : 'Five core components, defined responsibilities. Addresses and audit evidence will only appear after actual deployment and verification.'}
           </p>
         </div>
         <div className="contract-table-wrap">
@@ -144,23 +210,43 @@ export function Contracts({ home, expansions }: { home: ChainInfo; expansions: C
                 </tr>
               </thead>
               <tbody>
-                {rows.map(([name, role]) => (
-                  <tr key={name}>
-                    <td>{name}</td>
-                    <td>{role}</td>
-                    <td>Not published</td>
-                    <td className="planned">PLANNED</td>
-                  </tr>
-                ))}
+                {rows.map((row) => {
+                  const url = row.address ? explorerAddressUrl(home, row.address) : null;
+                  return (
+                    <tr key={row.name}>
+                      <td>{row.name}</td>
+                      <td>{row.role}</td>
+                      <td>
+                        {!row.address ? (
+                          (row.note ?? 'Not published')
+                        ) : url ? (
+                          <a className="mono" href={url} target="_blank" rel="noreferrer noopener" title={row.address}>
+                            {shortAddress(row.address)} ↗
+                          </a>
+                        ) : (
+                          <span className="mono">{shortAddress(row.address)}</span>
+                        )}
+                      </td>
+                      <td className="planned">{row.status}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
         <div className="contract-foot">
           <span className="tag warn">
-            <i /> NOT DEPLOYED
+            <i /> {live ? 'TESTNET · UNAUDITED' : 'NOT DEPLOYED'}
           </span>
-          <span className="muted mono">{chainList} follow the deploy guide v1.0.</span>
+          {live ? (
+            <span className="muted mono">
+              Expansion to {expansions.map((chain) => chain.name).join(' / ')} is planned.{' '}
+              <Link href="/contracts">All addresses ↗</Link>
+            </span>
+          ) : (
+            <span className="muted mono">{chainList} follow the deploy guide v1.0.</span>
+          )}
         </div>
       </div>
     </section>

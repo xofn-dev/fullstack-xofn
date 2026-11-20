@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
+import { currentBuildNote } from '@/lib/web3/app-mode';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
 import { getExpansionChains, getHomeChain } from '@/lib/chains';
 import { publicEnv } from '@/lib/public-env';
-import { getManifestState } from '@/lib/web3/addresses';
+import { getHomeOnlyDeployment, getManifestState } from '@/lib/web3/addresses';
 
 export const metadata: Metadata = {
   title: 'Proof',
-  description: 'What verify() checks, what is not proven yet, and where the evidence lives. Preview build.',
+  description: `What verify() checks, what is not proven yet, and where the evidence lives. ${currentBuildNote()}`,
 };
 
 // Yang diperiksa `XofNRegistry.verify(token)` untuk setiap chain token (kontrak Phase 3).
@@ -26,20 +27,32 @@ const EVIDENCE = [
   ['proof/2026-11-17-phase2', 'XofN Check: read-only OFT reader, cache, share card'],
   ['proof/2026-11-17-phase3', 'Contracts and local tests. Open review finding recorded'],
   ['proof/2026-11-17-phase4', 'Application pages against a local test node'],
+  ['proof/2026-11-19-phase3-uniswap-v4', 'Pools moved to Uniswap v4 with a guard hook; independent review'],
+  ['proof/2026-11-19-phase6-1a', 'Home-chain deploy on testnet, then go-live through the Safe'],
 ] as const;
 
 // "/proof" — USER_FLOWS Flow I. Yang belum terpenuhi ditulis PLANNED / NOT DEPLOYED, tanpa centang.
 export default function ProofPage() {
   const network = publicEnv.network;
   const home = getHomeChain(network);
-  const expansions = getExpansionChains(network).map((chain) => chain.name).join(' and ');
+  // Milestone memakai nama chain mainnet dari registry, supaya di build testnet tidak terbaca
+  // "Robinhood Chain Testnet testnet".
+  const homeBase = getHomeChain('mainnet').name;
+  const expansions = getExpansionChains('mainnet').map((chain) => chain.name).join(' and ');
   const local = getManifestState(network) === 'local';
+  // Fase 1a live: launchpad home terbuka di testnet (Safe memanggil setRegistrar).
+  const testnetLive = network === 'testnet' && getHomeOnlyDeployment(network)?.status === 'live';
   const milestones = [
-    ['1a', `${home.name} testnet`],
-    ['1b', `${home.name} mainnet + public XofN Check`],
-    ['2a', `Expansion to ${expansions} on testnet`],
-    ['2b', `Expansion to ${expansions} on mainnet`],
+    ['1a', `${homeBase} testnet`, testnetLive ? '● LIVE ON TESTNET · UNAUDITED' : '○ PLANNED'],
+    ['1b', `${homeBase} mainnet + public XofN Check`, '○ PLANNED'],
+    ['2a', `Expansion to ${expansions} on testnet`, '○ PLANNED'],
+    ['2b', `Expansion to ${expansions} on mainnet`, '○ PLANNED'],
   ] as const;
+  const invariantStatus = local
+    ? '○ CHECKED ON LOCAL TEST NODE ONLY'
+    : testnetLive
+      ? '○ NOT SHOWN YET · NO TOKEN HAS EXPANDED'
+      : '○ NOT DEPLOYED';
 
   return (
     <>
@@ -52,8 +65,10 @@ export default function ProofPage() {
               Graduate on proof, <span className="accent">not promises.</span>
             </h1>
             <p>
-              This page lists what the Registry checks, what has been shown so far and what has not.
-              Nothing below is deployed to a public network.
+              This page lists what the Registry checks, what has been shown so far and what has not.{' '}
+              {testnetLive
+                ? `The home-chain contracts are live on ${home.name}. Nothing has expanded yet, so no token is Locked.`
+                : 'Nothing below is deployed to a public network.'}
             </p>
           </div>
           <div className="app-stack">
@@ -63,7 +78,7 @@ export default function ProofPage() {
                 {INVARIANTS.map((item) => (
                   <li key={item}>
                     <b>{item}</b>
-                    <span>{local ? '○ CHECKED ON LOCAL TEST NODE ONLY' : '○ NOT DEPLOYED'}</span>
+                    <span>{invariantStatus}</span>
                   </li>
                 ))}
               </ul>
@@ -75,12 +90,12 @@ export default function ProofPage() {
             <div className="app-panel">
               <h2>Milestones</h2>
               <ul className="proof-list">
-                {milestones.map(([id, label]) => (
+                {milestones.map(([id, label, status]) => (
                   <li key={id}>
                     <b>
                       {id} · {label}
                     </b>
-                    <span>○ PLANNED</span>
+                    <span>{status}</span>
                   </li>
                 ))}
               </ul>

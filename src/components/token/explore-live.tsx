@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import type { ChainInfo } from '@/lib/chains';
 import { cn } from '@/lib/cn';
 import { pricePolyline } from '@/lib/format';
 import { ApiError, useTokenList } from '@/lib/client/use-tokens';
@@ -10,7 +11,7 @@ import { STATUS_LABEL, type StatusFilter } from '@/lib/tokens/status';
 import { TokenCard } from '@/components/token/token-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusPill } from '@/components/ui/status-pill';
-import type { DisplayStatus } from '@/types/enums';
+import type { AppMode, DisplayStatus } from '@/types/enums';
 
 const FILTERS: Array<{ key: StatusFilter; label: string }> = [
   { key: 'all', label: 'All' },
@@ -28,9 +29,10 @@ const TONE: Record<DisplayStatus, string> = {
   unread: 'var(--color-muted)',
 };
 
-// Daftar token nyata untuk mode simulation (USER_FLOWS Flow A). Status tiap kartu dibaca dari
-// chain lewat API; kartu membuka halaman token. Tidak ada token fiktif di sini.
-export function ExploreLive() {
+// Daftar token nyata untuk mode simulation dan live testnet (USER_FLOWS Flow A). Status tiap kartu
+// dibaca dari chain lewat API; kartu membuka halaman token. Tidak ada token fiktif di sini.
+export function ExploreLive({ home, mode }: { home: ChainInfo; mode: Exclude<AppMode, 'preview'> }) {
+  const simulation = mode === 'simulation';
   const [filter, setFilter] = useState<StatusFilter>('all');
   const query = useTokenList(filter);
   const tokens = query.data;
@@ -67,7 +69,7 @@ export function ExploreLive() {
                   {token.name}
                 </Link>
               }
-              subtitle={`$${token.symbol} · LOCAL SIMULATION`}
+              subtitle={`$${token.symbol} · ${simulation ? 'LOCAL SIMULATION' : 'TESTNET'}`}
               status={<StatusPill status={token.status} short />}
               points={pricePolyline(token.spark)}
               progressLabel="GRADUATION"
@@ -97,14 +99,25 @@ export function ExploreLive() {
         <EmptyState title="No tokens in this state yet.">
           {filter === 'all' ? (
             <>
-              Nothing has been launched on this local node. <Link href="/launch">Launch a token ↗</Link>
+              Nothing has been launched on {simulation ? 'this local node' : home.name} yet.{' '}
+              <Link href="/launch">Launch a token ↗</Link>
             </>
           ) : null}
         </EmptyState>
       )}
       <p className="preview-note">
-        ◈ LOCAL SIMULATION: these tokens exist only on a local test node. Status is read from the
-        chain; a token is shown as Locked only when verify() is true on every chain.
+        {simulation ? (
+          <>
+            ◈ LOCAL SIMULATION: these tokens exist only on a local test node. Status is read from the
+            chain; a token is shown as Locked only when verify() is true on every chain.
+          </>
+        ) : (
+          <>
+            ◈ TESTNET: these tokens live on {home.name}. No real funds; contracts are unaudited.
+            Status is read from the chain. Expansion chains are not deployed yet, so no token can be
+            Locked: a token is shown as Locked only when verify() is true on every chain.
+          </>
+        )}
       </p>
     </>
   );

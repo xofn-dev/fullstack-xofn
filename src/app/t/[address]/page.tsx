@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { currentBuildNote } from '@/lib/web3/app-mode';
 import { notFound, redirect } from 'next/navigation';
 import { isAddress } from 'viem';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
@@ -12,7 +13,7 @@ import type { TokenDetail } from '@/types/domain';
 
 export const metadata: Metadata = {
   title: 'Token',
-  description: 'Token status, security tier and verify() reads for an XofN token. Preview build.',
+  description: `Token status, security tier and verify() reads for an XofN token. ${currentBuildNote()}`,
 };
 
 export const dynamic = 'force-dynamic';

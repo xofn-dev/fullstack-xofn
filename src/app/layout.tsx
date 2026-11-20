@@ -9,7 +9,7 @@ import { OverlayProvider } from '@/components/ui/overlay-provider';
 import { Web3Provider } from '@/components/wallet/web3-provider';
 import { getModeCopy } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
-import { currentAppMode } from '@/lib/web3/app-mode';
+import { currentAppMode, currentBuildNote } from '@/lib/web3/app-mode';
 import './globals.css';
 
 // D3 (rekomendasi, menunggu keputusan owner): Inter Tight + JetBrains Mono, fallback Arial/mono sistem.
@@ -26,6 +26,13 @@ const mono = JetBrains_Mono({
 });
 
 // Klaim mengikuti PRD §4.3: hanya "Building the launchpad where 1-of-1 is never allowed" yang boleh sekarang.
+// Preview mempertahankan kalimat lama; build testnet/simulation memakai catatan build dari mode.
+const SITE_DESCRIPTION = `Building the launchpad where 1-of-1 is never allowed. ${
+  currentAppMode() === 'preview'
+    ? 'Preview build: no token sale, deployment or live verification.'
+    : currentBuildNote()
+}`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.siteUrl),
   title: {
@@ -33,11 +40,11 @@ export const metadata: Metadata = {
     template: '%s · XofN',
   },
   description:
-    'Building the launchpad where 1-of-1 is never allowed. Preview build: no token sale, deployment or live verification.',
+    SITE_DESCRIPTION,
   openGraph: {
     title: 'XofN. Never one of one.',
     description:
-      'Building the launchpad where 1-of-1 is never allowed. Preview build: no token sale, deployment or live verification.',
+      SITE_DESCRIPTION,
     type: 'website',
     siteName: 'XofN',
   },
