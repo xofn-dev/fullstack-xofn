@@ -54,8 +54,19 @@ Owner Registry = Safe; `registrar` = 0; keempat DVN diizinkan; owner dan delegat
 
 `deployments/robinhood-testnet.json` ditulis broadcast 03 dengan `status: "deployed-dormant"`. `deployBlock` diisi agent = 155512843 (blok L2 transaksi pertama, dari receipt), sesuai rencana yang disetujui.
 
+## Setelah broadcast (20 Nov 2026)
+
+- **Aplikasi membaca manifest dorman.** `getManifestState('testnet')` = `deployed-dormant` → mode tetap
+  preview (launch mati, PRD P52). Halaman Contracts menampilkan alamat home chain dengan status
+  "DEPLOYED (DORMANT) · SOURCE NOT VERIFIED" dan tautan explorer; chain ekspansi "PLANNED · NOT DEPLOYED".
+  `getDeployment('testnet')` tetap null, jadi pembaca token dan Check tidak menganggap XofN berjalan
+  di testnet. Lebar 360-1680 px tanpa overflow (`raw/app-contracts-widths.txt`,
+  `screens/contracts-testnet-1280.png`).
+- **Paket verifikasi Blockscout** di `verify/`: standard JSON tiap kontrak (terbukti identik dengan
+  bytecode on-chain, `raw/verify-bytecode-match.txt`) dan argumen constructor dari transaksi asli.
+- **Draf pengumuman alamat:** `06-announcement-draft.md`.
+
 ## Belum
 
-- Verifikasi source di UI Blockscout (developer).
-- Aplikasi membaca manifest dorman (mode preview, launch mati).
+- Verifikasi source di UI Blockscout (developer, panduan `verify/README.md`).
 - Go-live (`setRegistrar` lewat Safe): keputusan PM, bukan bagian 1a.

@@ -19,7 +19,7 @@ export function Footer({ mode }: { mode: AppMode }) {
             LayerZero Labs.{' '}
             {mode === 'simulation'
               ? 'This build runs against a local test node with mock LayerZero endpoints, mock DVNs and a local Uniswap v4 deployment with a test swap router. No real funds, token sale, public deployment or audit are represented here.'
-              : 'No live verification, token sale, contract deployment, audit or wallet transactions are represented here.'}{' '}
+              : 'No live verification, token sale, token launch, audit or wallet transactions are represented here.'}{' '}
             $XOFN itself is out of MVP scope until mainnet is live and audited. On-chain security
             badges do not guarantee investment returns or eliminate risk.
           </div>

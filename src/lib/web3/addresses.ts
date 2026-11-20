@@ -1,11 +1,12 @@
 import { isAddress } from 'viem';
 import localManifest from '../../../deployments/local.json';
-import { getChain, type Address } from '@/lib/chains';
+import robinhoodTestnetManifest from '../../../deployments/robinhood-testnet.json';
+import { getChain, getHomeChain, type Address } from '@/lib/chains';
 import type { ManifestState } from '@/lib/mode';
 import { CHAIN_KEYS, type ChainKey, type Network } from '@/types/enums';
 
-// SATU-SATUNYA tempat alamat kontrak XofN (CLAUDE.md §6). Sumbernya `deployments/<network>.json`.
-// Saat ini hanya manifest lokal (Anvil) yang boleh ada; manifest publik FROZEN (CLAUDE.md §5.1).
+// SATU-SATUNYA tempat alamat kontrak XofN (CLAUDE.md §6). Sumbernya `deployments/*.json`:
+// `local.json` (Anvil, tiga chain) dan `robinhood-testnet.json` (Fase 1a, home saja, dorman).
 
 /** Kontrak LayerZero tiruan yang hanya ada di manifest Anvil. */
 export interface LocalMocks {
@@ -165,10 +166,92 @@ export function parseManifest(network: Network, raw: unknown): Deployment {
   };
 }
 
-// Manifest publik belum ada (Phase 6–7 FROZEN), jadi hanya jaringan lokal yang punya isi.
+/**
+ * Deploy Fase 1a: HANYA home chain (guide §5). Bentuknya satu chain per file, sesuai guide §2,
+ * ditambah `status`, `libraries`, dan `amm`. Belum ada Remote, jadi ini bukan `Deployment` penuh:
+ * `getDeployment` tetap null untuk jaringan ini, dan pembaca token, Check, serta halaman token
+ * tidak menganggap XofN sudah berjalan di sana. Yang memakainya hanya status mode dan halaman
+ * Contracts.
+ */
+export interface HomeOnlyDeployment {
+  network: Network;
+  status: 'deployed-dormant' | 'live';
+  chain: ChainKey;
+  chainId: number;
+  eid: number;
+  endpointV2: Address;
+  /** Safe yang memegang Registry dan Graduator. */
+  owner: Address;
+  deployer: Address;
+  lpRecipient: Address;
+  deployBlock: bigint;
+  verifiedSource: boolean;
+  contracts: { registry: Address; graduator: Address; curveImplementation: Address; poolGuard: Address };
+  libraries: { tierLib: Address; poolSeeder: Address; tokenDeployer: Address };
+  amm: { poolManager: Address; positionManager: Address };
+}
+
+function record(value: unknown, field: string): Record<string, unknown> {
+  if (!isRecord(value)) throw new ManifestError(`${field} bukan objek.`);
+  return value;
+}
+
+export function parseHomeManifest(network: Network, raw: unknown): HomeOnlyDeployment {
+  if (network === 'local') throw new ManifestError('manifest satu chain hanya untuk jaringan publik.');
+  const root = record(raw, 'manifest');
+  if (root.network !== network) {
+    throw new ManifestError(`ditulis untuk jaringan "${String(root.network)}", bukan "${network}".`);
+  }
+  const home = getHomeChain(network);
+  const chainId = integer(root.chainId, 'chainId');
+  const eid = integer(root.eid, 'eid');
+  if (chainId !== home.chainId) throw new ManifestError(`chainId ${chainId} ≠ registry ${home.chainId}.`);
+  if (eid !== home.eid) throw new ManifestError(`eid ${eid} ≠ registry ${String(home.eid)}.`);
+  const contracts = record(root.contracts, 'contracts');
+  const libraries = record(root.libraries, 'libraries');
+  const amm = record(root.amm, 'amm');
+  return {
+    network,
+    status: parseStatus(network, root.status) as HomeOnlyDeployment['status'],
+    chain: home.key,
+    chainId,
+    eid,
+    endpointV2: address(root.endpointV2, 'endpointV2'),
+    owner: address(root.owner, 'owner'),
+    deployer: address(root.deployer, 'deployer'),
+    lpRecipient: address(root.lpRecipient, 'lpRecipient'),
+    deployBlock: BigInt(integer(root.deployBlock, 'deployBlock')),
+    verifiedSource: root.verifiedSource === true,
+    contracts: {
+      registry: address(contracts.XofNRegistry, 'contracts.XofNRegistry'),
+      graduator: address(contracts.XofNGraduator, 'contracts.XofNGraduator'),
+      curveImplementation: address(contracts.XofNCurveImplementation, 'contracts.XofNCurveImplementation'),
+      poolGuard: address(contracts.XofNPoolGuard, 'contracts.XofNPoolGuard'),
+    },
+    libraries: {
+      tierLib: address(libraries.TierLib, 'libraries.TierLib'),
+      poolSeeder: address(libraries.PoolSeeder, 'libraries.PoolSeeder'),
+      tokenDeployer: address(libraries.XofNTokenDeployer, 'libraries.XofNTokenDeployer'),
+    },
+    amm: {
+      poolManager: address(amm.poolManager, 'amm.poolManager'),
+      positionManager: address(amm.positionManager, 'amm.positionManager'),
+    },
+  };
+}
+
+// Manifest tiga chain (tahap 2) baru ada untuk Anvil. Jaringan publik belum punya Remote.
 const DEPLOYMENTS: Record<Network, Deployment | null> = {
   local: parseManifest('local', localManifest),
   testnet: null,
+  mainnet: null,
+};
+
+// Fase 1a: Robinhood testnet, deploy dorman (proof/2026-11-19-phase6-1a/05-broadcast.md).
+// Mainnet (1b) FROZEN.
+const HOME_ONLY: Record<Network, HomeOnlyDeployment | null> = {
+  local: null,
+  testnet: parseHomeManifest('testnet', robinhoodTestnetManifest),
   mainnet: null,
 };
 
@@ -176,8 +259,13 @@ export function getDeployment(network: Network): Deployment | null {
   return DEPLOYMENTS[network];
 }
 
+export function getHomeOnlyDeployment(network: Network): HomeOnlyDeployment | null {
+  return HOME_ONLY[network];
+}
+
+/** Dorman tetap `preview` di `resolveMode` (PRD P52): launch tidak pernah dinyalakan di sini. */
 export function getManifestState(network: Network): ManifestState {
-  return DEPLOYMENTS[network]?.status ?? 'none';
+  return DEPLOYMENTS[network]?.status ?? HOME_ONLY[network]?.status ?? 'none';
 }
 
 export interface HomeContracts {

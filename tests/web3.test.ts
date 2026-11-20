@@ -10,6 +10,7 @@ import {
 } from 'viem';
 import { describe, expect, it } from 'vitest';
 import localManifest from '../deployments/local.json';
+import testnetManifest from '../deployments/robinhood-testnet.json';
 import { formatBps, formatEth, formatTokens, formatUnitsFixed, parseAmount, pricePolyline } from '@/lib/format';
 import { getTierInfo, tierDvnSummary, tierFromId, tierId } from '@/lib/tiers';
 import { xofnErrorsAbi } from '@/lib/web3/abi/errors';
@@ -20,9 +21,11 @@ import {
   deploymentByEid,
   expansionDeployments,
   getDeployment,
+  getHomeOnlyDeployment,
   getManifestState,
   homeContracts,
   ManifestError,
+  parseHomeManifest,
   parseManifest,
 } from '@/lib/web3/addresses';
 import { bridgeRoute, buildBridgeSend, buildSendParam, splitDust } from '@/lib/web3/bridge-send';
@@ -53,7 +56,9 @@ describe('manifest deployment', () => {
 
   it('manifest lokal terbaca, alamat di-lowercase, dan hanya jaringan lokal yang punya manifest', () => {
     expect(getManifestState('local')).toBe('local');
-    expect(getManifestState('testnet')).toBe('none');
+    // Fase 1a: Robinhood testnet deployed (dorman), hanya home chain.
+    expect(getManifestState('testnet')).toBe('deployed-dormant');
+    expect(getDeployment('testnet')).toBeNull();
     expect(getManifestState('mainnet')).toBe('none');
     const home = homeContracts(deployment);
     expect(home.chain.chain).toBe('robinhood');
@@ -95,6 +100,45 @@ describe('manifest deployment', () => {
     const parsed = parseManifest('testnet', asTestnet);
     expect(parsed.status).toBe('deployed-dormant');
     expect(parsed.chains.robinhood.uniswapV4).toBeNull();
+  });
+
+  it('manifest testnet Fase 1a: home saja, dorman, alamat di-lowercase', () => {
+    const home = getHomeOnlyDeployment('testnet');
+    expect(home).not.toBeNull();
+    expect(home!.status).toBe('deployed-dormant');
+    expect(home!.chain).toBe('robinhood');
+    expect([home!.chainId, home!.eid]).toEqual([46630, 40451]);
+    expect(home!.deployBlock).toBeGreaterThan(0n);
+    for (const value of [
+      ...Object.values(home!.contracts),
+      ...Object.values(home!.libraries),
+      ...Object.values(home!.amm),
+      home!.owner,
+    ]) {
+      expect(value).toMatch(/^0x[0-9a-f]{40}$/);
+    }
+    // Izin hook v4 di 14 bit terendah alamat: hanya `beforeInitialize`.
+    expect(BigInt(home!.contracts.poolGuard) & 0x3fffn).toBe(0x2000n);
+    expect(getHomeOnlyDeployment('local')).toBeNull();
+    expect(getHomeOnlyDeployment('mainnet')).toBeNull();
+  });
+
+  it('manifest satu chain ditolak bila jaringan, chain ID, status, atau alamatnya salah', () => {
+    const clone = () => structuredClone(testnetManifest) as Record<string, unknown>;
+    expect(() => parseHomeManifest('mainnet', testnetManifest)).toThrow(ManifestError);
+    expect(() => parseHomeManifest('local', testnetManifest)).toThrow(ManifestError);
+    const wrongChain = clone();
+    wrongChain.chainId = 4663;
+    expect(() => parseHomeManifest('testnet', wrongChain)).toThrow(ManifestError);
+    const noStatus = clone();
+    delete noStatus.status;
+    expect(() => parseHomeManifest('testnet', noStatus)).toThrow(ManifestError);
+    const badAddress = clone();
+    (badAddress.contracts as Record<string, string>).XofNGraduator = '0x123';
+    expect(() => parseHomeManifest('testnet', badAddress)).toThrow(ManifestError);
+    const noGuard = clone();
+    delete (noGuard.contracts as Record<string, string>).XofNPoolGuard;
+    expect(() => parseHomeManifest('testnet', noGuard)).toThrow(ManifestError);
   });
 
   it('EID atau chain ID yang tidak cocok dengan registry chain ditolak', () => {

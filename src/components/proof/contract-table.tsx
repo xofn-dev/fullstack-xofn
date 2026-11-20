@@ -1,33 +1,57 @@
-import { getChains, type ChainInfo } from '@/lib/chains';
-import type { ChainDeployment, Deployment } from '@/lib/web3/addresses';
+import { explorerAddressUrl, getChains, type ChainInfo } from '@/lib/chains';
+import type { ChainDeployment, Deployment, HomeOnlyDeployment } from '@/lib/web3/addresses';
 import type { Network } from '@/types/enums';
 
 interface Row {
   name: string;
   role: string;
   address: string | null;
+  /** Status tetap untuk baris yang bukan kontrak XofN (mis. Safe kanonik). */
+  status?: string;
 }
 
-function rowsFor(chain: ChainInfo, deployed: ChainDeployment | null): Row[] {
+function rowsFor(chain: ChainInfo, deployed: ChainDeployment | null, homeOnly: HomeOnlyDeployment | null): Row[] {
+  const home = chain.role === 'home' ? homeOnly : null;
   const registry: Row = {
     name: 'XofNRegistry',
     role: 'Proves lock state on this chain with verify(token)',
-    address: deployed?.registry ?? null,
+    address: deployed?.registry ?? home?.contracts.registry ?? null,
   };
   if (chain.role === 'home') {
-    return [
+    const rows: Row[] = [
       {
         name: 'XofNGraduator',
         role: 'Launch, graduate, expand & lock. Owner and delegate of each token until it is locked',
-        address: deployed?.graduator ?? null,
+        address: deployed?.graduator ?? home?.contracts.graduator ?? null,
       },
       {
         name: 'XofNCurve (implementation)',
         role: 'Bonding curve template, cloned once per launch',
-        address: deployed?.curveImplementation ?? null,
+        address: deployed?.curveImplementation ?? home?.contracts.curveImplementation ?? null,
       },
       registry,
     ];
+    // Manifest publik Fase 1a memuat hook, library, dan Safe; manifest lokal tidak.
+    if (home) {
+      rows.push(
+        {
+          name: 'XofNPoolGuard',
+          role: 'Uniswap v4 hook: only the Graduator can create an XofN pool. No owner, no state',
+          address: home.contracts.poolGuard,
+        },
+        { name: 'TierLib (library)', role: 'DVN tier recipes and checks. No 1-of-1 recipe is accepted', address: home.libraries.tierLib },
+        { name: 'PoolSeeder (library)', role: 'Creates and funds the pool in one call', address: home.libraries.poolSeeder },
+        { name: 'XofNTokenDeployer (library)', role: 'Deploys each token at a deterministic address', address: home.libraries.tokenDeployer },
+        {
+          name: 'Owner (2-of-3 Safe)',
+          role: 'Owns the Registry and the Graduator. Only it can open launching',
+          address: home.owner,
+          // Proxy Safe v1.4.1 kanonik, bukan kontrak XofN: tidak ada source XofN untuk diverifikasi.
+          status: '○ SAFE V1.4.1 MULTISIG',
+        },
+      );
+    }
+    return rows;
   }
   return [
     {
@@ -39,14 +63,39 @@ function rowsFor(chain: ChainInfo, deployed: ChainDeployment | null): Row[] {
   ];
 }
 
+function statusText(
+  address: string | null,
+  local: boolean,
+  deployed: ChainDeployment | null,
+  home: HomeOnlyDeployment | null,
+): string {
+  if (!address) return '○ PLANNED · NOT DEPLOYED';
+  if (local) return '○ LOCAL SIMULATION ONLY · SOURCE NOT VERIFIED';
+  if (home) {
+    // Dorman ≠ live (CLAUDE.md §9): kontraknya ada, tetapi launch tertutup sampai Safe membukanya.
+    const phase = home.status === 'deployed-dormant' ? 'DEPLOYED (DORMANT)' : 'DEPLOYED';
+    return home.verifiedSource ? `● ${phase} · VERIFIED` : `○ ${phase} · SOURCE NOT VERIFIED`;
+  }
+  return deployed?.verifiedSource ? '● VERIFIED' : '○ DEPLOYED · NOT VERIFIED';
+}
+
 // Tabel kontrak per chain (USER_FLOWS Flow I). Alamat hanya dari manifest deployment. Yang belum
 // terpenuhi ditulis apa adanya (PLANNED / NOT VERIFIED), tidak pernah dengan centang.
-export function ContractTable({ network, deployment }: { network: Network; deployment: Deployment | null }) {
+export function ContractTable({
+  network,
+  deployment,
+  homeOnly,
+}: {
+  network: Network;
+  deployment: Deployment | null;
+  homeOnly: HomeOnlyDeployment | null;
+}) {
   const local = deployment?.status === 'local';
   return (
     <>
       {getChains(network).map((chain) => {
         const deployed = deployment?.chains[chain.key] ?? null;
+        const home = chain.role === 'home' ? homeOnly : null;
         return (
           <div className="app-panel" key={chain.key}>
             <h2>
@@ -65,24 +114,30 @@ export function ContractTable({ network, deployment }: { network: Network; deplo
                     </tr>
                   </thead>
                   <tbody>
-                    {rowsFor(chain, deployed).map((row) => (
-                      <tr key={row.name}>
-                        <td>{row.name}</td>
-                        <td>{row.role}</td>
-                        <td>{row.address ? <span className="mono">{row.address}</span> : 'Not published'}</td>
-                        <td>
-                          <span className="planned">
-                            {row.address
-                              ? local
-                                ? '○ LOCAL SIMULATION ONLY · SOURCE NOT VERIFIED'
-                                : deployed?.verifiedSource
-                                  ? '● VERIFIED'
-                                  : '○ DEPLOYED · NOT VERIFIED'
-                              : '○ PLANNED · NOT DEPLOYED'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {rowsFor(chain, deployed, homeOnly).map((row) => {
+                      // Di Anvil tidak ada explorer; tautan hanya untuk jaringan publik.
+                      const url = row.address && !local ? explorerAddressUrl(chain, row.address) : null;
+                      return (
+                        <tr key={row.name}>
+                          <td>{row.name}</td>
+                          <td>{row.role}</td>
+                          <td>
+                            {!row.address ? (
+                              'Not published'
+                            ) : url ? (
+                              <a className="mono" href={url} target="_blank" rel="noreferrer noopener">
+                                {row.address} ↗
+                              </a>
+                            ) : (
+                              <span className="mono">{row.address}</span>
+                            )}
+                          </td>
+                          <td>
+                            <span className="planned">{row.status ?? statusText(row.address, local, deployed, home)}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
