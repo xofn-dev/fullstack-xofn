@@ -1,0 +1,7 @@
+TierLib            size chain=4863 compiled=4863 -> MATCH (full, incl. metadata)
+PoolSeeder         size chain=4217 compiled=4217 -> MATCH (full, incl. metadata)
+XofNTokenDeployer  size chain=15909 compiled=15909 -> MATCH (full, incl. metadata)
+XofNRegistry       size chain=6703 compiled=6703 -> MATCH (full, incl. metadata)
+XofNCurve          size chain=3764 compiled=3764 -> MATCH (full, incl. metadata)
+XofNPoolGuard      size chain=440 compiled=440 -> MATCH (full, incl. metadata)
+XofNGraduator      size chain=21255 compiled=21255 -> MATCH (full, incl. metadata)
