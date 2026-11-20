@@ -57,9 +57,9 @@ describe('manifest deployment', () => {
 
   it('manifest lokal terbaca, alamat di-lowercase, dan hanya jaringan lokal yang punya manifest', () => {
     expect(getManifestState('local')).toBe('local');
-    // Fase 1a: Robinhood testnet deployed (dorman), hanya home chain.
-    expect(getManifestState('testnet')).toBe('deployed-dormant');
-    expect(getDeployment('testnet')).toBeNull();
+    // Fase 1a: Robinhood testnet live sejak go-live Safe 20 Nov 2026 (tx 0x156cf57b…a11b), hanya home chain.
+    expect(getManifestState('testnet')).toBe('live');
+    expect(Object.keys(getDeployment('testnet')!.chains)).toEqual(['robinhood']);
     expect(getManifestState('mainnet')).toBe('none');
     const home = homeContracts(deployment);
     expect(home.chain.chain).toBe('robinhood');
@@ -103,10 +103,10 @@ describe('manifest deployment', () => {
     expect(parsed.chains.robinhood!.uniswapV4).toBeNull();
   });
 
-  it('manifest testnet Fase 1a: home saja, dorman, alamat di-lowercase', () => {
+  it('manifest testnet Fase 1a: home saja, live, alamat di-lowercase', () => {
     const home = getHomeOnlyDeployment('testnet');
     expect(home).not.toBeNull();
-    expect(home!.status).toBe('deployed-dormant');
+    expect(home!.status).toBe('live');
     expect(home!.chain).toBe('robinhood');
     expect([home!.chainId, home!.eid]).toEqual([46630, 40451]);
     expect(home!.deployBlock).toBeGreaterThan(0n);
@@ -125,9 +125,10 @@ describe('manifest deployment', () => {
   });
 
   it('deployment home saja baru dibaca aplikasi setelah live; chain ekspansi tidak ada', () => {
-    const dormant = getHomeOnlyDeployment('testnet')!;
+    // Dorman ≠ live (PRD P52): salinan manifest berstatus dorman tidak pernah dibaca aplikasi.
+    const dormant = { ...getHomeOnlyDeployment('testnet')!, status: 'deployed-dormant' as const };
     expect(homeOnlyAsDeployment(dormant)).toBeNull();
-    const live = homeOnlyAsDeployment({ ...dormant, status: 'live' })!;
+    const live = homeOnlyAsDeployment(getHomeOnlyDeployment('testnet'))!;
     expect(live.status).toBe('live');
     expect(Object.keys(live.chains)).toEqual(['robinhood']);
     expect(homeContracts(live).graduator).toBe(dormant.contracts.graduator);

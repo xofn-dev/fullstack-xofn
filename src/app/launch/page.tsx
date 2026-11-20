@@ -9,6 +9,7 @@ import { publicEnv } from '@/lib/public-env';
 import { currentAppMode } from '@/lib/web3/app-mode';
 import { getLaunchConfig } from '@/lib/tokens';
 import { getDeployment } from '@/lib/web3/addresses';
+import { parseLaunchDraft } from '@/lib/launch-draft';
 
 export const metadata: Metadata = {
   title: 'Launch',
@@ -20,7 +21,11 @@ export const dynamic = 'force-dynamic';
 
 // "/launch" — USER_FLOWS Flow D. Mode preview memakai form pratinjau landing (tanpa transaksi);
 // mode simulation menandatangani launch di Anvil lokal.
-export default async function LaunchPage() {
+export default async function LaunchPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const network = publicEnv.network;
   const home = getHomeChain(network);
   const expansions = getExpansionChains(network);
@@ -32,13 +37,18 @@ export default async function LaunchPage() {
       <TierProvider>
         <AppBackdrop />
         <main className="app-page" id="top">
-          <LaunchDemo home={home} expansions={expansions} />
+          <LaunchDemo home={home} expansions={expansions} mode="preview" actionTag={getModeCopy('preview', network).actionTag} />
         </main>
       </TierProvider>
     );
   }
 
   const config = await getLaunchConfig();
+  // Draft dari form pratinjau di landing; hanya nilai awal, validasi tetap di form dan kontrak.
+  const draft = parseLaunchDraft(
+    await searchParams,
+    expansions.map((chain) => chain.key),
+  );
   return (
     <>
       <AppBackdrop />
@@ -80,6 +90,7 @@ export default async function LaunchPage() {
             deployment={deployment}
             config={config}
             actionTag={getModeCopy(mode, network).actionTag}
+            draft={draft}
           />
         </div>
       </main>

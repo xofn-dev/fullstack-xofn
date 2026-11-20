@@ -1,20 +1,37 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { ChainInfo } from '@/lib/chains';
 import { formatInt, isValidTicker } from '@/lib/format';
-import type { ChainKey } from '@/types/enums';
+import { launchDraftQuery } from '@/lib/launch-draft';
+import type { AppMode, ChainKey } from '@/types/enums';
 import { useOverlay } from '@/components/ui/overlay-provider';
 import { FIXED_SUPPLY, LaunchFields } from '@/components/launch/launch-fields';
 import { SplitHeading } from '@/components/landing/split-heading';
 import { TIER_COPY, useTier } from '@/components/landing/tier-context';
 
 // Section 12 — form launch versi pratinjau (D8). Tidak ada transaksi, wallet, atau unggahan:
-// gambar hanya dipratinjau lokal lewat object URL.
-export function LaunchDemo({ home, expansions }: { home: ChainInfo; expansions: ChainInfo[] }) {
+// gambar hanya dipratinjau lokal lewat object URL. Bila build ini punya launchpad yang menyala
+// (testnet live / simulation), form ini tidak berhenti di modal draft: isiannya dibawa ke /launch,
+// tempat wallet tersambung dan transaksi ditandatangani. Tanpa itu pengguna mengira form ini
+// launchpad sungguhan dan tidak pernah sampai ke tombol sign.
+export function LaunchDemo({
+  home,
+  expansions,
+  mode,
+  actionTag,
+}: {
+  home: ChainInfo;
+  expansions: ChainInfo[];
+  mode: AppMode;
+  actionTag: string;
+}) {
   const { tier, setTier } = useTier();
   const { openModal } = useOverlay();
+  const router = useRouter();
+  const handsOff = mode !== 'preview';
   const [name, setName] = useState('');
   const [ticker, setTicker] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -51,6 +68,13 @@ export function LaunchDemo({ home, expansions }: { home: ChainInfo; expansions: 
       return;
     }
     setError('');
+    if (handsOff) {
+      // Logo tidak ikut: gambar hanya object URL lokal dan dipilih ulang di /launch.
+      router.push(
+        `/launch?${launchDraftQuery({ name: cleanName, ticker: cleanTicker.toUpperCase(), tier, chains: selected })}`,
+      );
+      return;
+    }
     const networks = expansions
       .filter((chain) => selected.includes(chain.key))
       .map((chain) => chain.name)
@@ -106,15 +130,25 @@ export function LaunchDemo({ home, expansions }: { home: ChainInfo; expansions: 
             </div>
           </div>
           <p className="preview-note">
-            This builder is an interactive preview form. It does not deploy a contract, connect a
-            wallet or collect funds. <Link href="/launch">Open the launch page ↗</Link>
+            {handsOff ? (
+              <>
+                Fill in the draft here, then continue on the launch page to connect a wallet and
+                sign on {home.name}. Nothing is sent from this section.{' '}
+                <Link href="/launch">Open the launch page ↗</Link>
+              </>
+            ) : (
+              <>
+                This builder is an interactive preview form. It does not deploy a contract, connect a
+                wallet or collect funds. <Link href="/launch">Open the launch page ↗</Link>
+              </>
+            )}
           </p>
         </div>
         <form className="launch-form" id="launchForm" noValidate onSubmit={onSubmit}>
           <div className="form-header">
             <h3>Create a launch</h3>
             <span className="tag warn">
-              <i /> PREVIEW
+              <i /> {actionTag}
             </span>
           </div>
           <LaunchFields
@@ -143,7 +177,7 @@ export function LaunchDemo({ home, expansions }: { home: ChainInfo; expansions: 
             <strong>NOT QUOTED</strong>
           </div>
           <button className="btn primary form-submit" type="submit">
-            Review launch configuration <span className="arr">↗</span>
+            {handsOff ? 'Continue to launch' : 'Review launch configuration'} <span className="arr">↗</span>
           </button>
           <div id="launchError" className="error-msg" aria-live="polite">
             {error}

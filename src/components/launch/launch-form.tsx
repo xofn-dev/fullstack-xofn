@@ -6,6 +6,7 @@ import { keccak256 } from 'viem';
 import type { ChainInfo } from '@/lib/chains';
 import { formatEth, formatInt } from '@/lib/format';
 import { getTierInfo } from '@/lib/tiers';
+import type { LaunchDraft } from '@/lib/launch-draft';
 import type { LaunchConfig } from '@/lib/tokens/read';
 import { homeContracts, type Deployment } from '@/lib/web3/addresses';
 import { buildLaunch, parseLaunchLogs, validateLaunchInput, ZERO_HASH } from '@/lib/web3/launch';
@@ -25,19 +26,23 @@ interface LaunchFormProps {
   /** null = chain tidak terbaca: launch dinonaktifkan, tidak ada yang ditebak. */
   config: LaunchConfig | null;
   actionTag: string;
+  /** Nilai awal dari form pratinjau di landing (query string). Tetap divalidasi di sini. */
+  draft?: LaunchDraft;
 }
 
 // Form launch sungguhan (USER_FLOWS Flow D). Satu tanda tangan di home chain; token lahir sebagai
 // OFT dengan owner dan delegate = Graduator. Ekspansi dan penguncian adalah langkah terpisah.
-export function LaunchForm({ home, expansions, deployment, config, actionTag }: LaunchFormProps) {
+export function LaunchForm({ home, expansions, deployment, config, actionTag, draft }: LaunchFormProps) {
   const router = useRouter();
   const tx = useTxFlow();
-  const [name, setName] = useState('');
-  const [ticker, setTicker] = useState('');
+  const [name, setName] = useState(draft?.name ?? '');
+  const [ticker, setTicker] = useState(draft?.ticker ?? '');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoHash, setLogoHash] = useState<Hex>(ZERO_HASH);
-  const [tier, setTier] = useState<Tier>('standard');
-  const [selected, setSelected] = useState<ChainKey[]>(() => expansions.map((chain) => chain.key));
+  const [tier, setTier] = useState<Tier>(draft?.tier ?? 'standard');
+  const [selected, setSelected] = useState<ChainKey[]>(
+    () => draft?.chains ?? expansions.map((chain) => chain.key),
+  );
   const [error, setError] = useState('');
   const [reviewing, setReviewing] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
