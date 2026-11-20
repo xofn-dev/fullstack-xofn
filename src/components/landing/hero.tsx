@@ -6,7 +6,16 @@ import { HeroCanvas } from '@/components/landing/scene-loaders';
 const FIXED_SUPPLY = 999_000_000;
 
 // Section 1. Chip chain mengikuti peran dari registry (D15): home = Robinhood, ekspansi = Base & Arbitrum.
-export function Hero({ home, expansions }: { home: ChainInfo; expansions: ChainInfo[] }) {
+export function Hero({
+  home,
+  expansions,
+  status,
+}: {
+  home: ChainInfo;
+  expansions: ChainInfo[];
+  /** Dari getModeCopy: mis. PROTOCOL PREVIEW / NOT LIVE, atau TESTNET / LAUNCHPAD OPEN. */
+  status: { label: string; flag: string };
+}) {
   const [expA, expB] = expansions;
   return (
     <section className="hero">
@@ -17,7 +26,7 @@ export function Hero({ home, expansions }: { home: ChainInfo; expansions: ChainI
             <span className="eyebrow">SECURITY IS A CONFIGURATION. NOT A PROMISE.</span>
           </div>
           <div className="v3-hero-coordinate">
-            XOFN / PROTOCOL PREVIEW <span>● NOT LIVE</span>
+            XOFN / {status.label} <span>● {status.flag}</span>
           </div>
           <h1>
             <span>NEVER</span>

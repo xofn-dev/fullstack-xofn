@@ -1,4 +1,4 @@
-import { resolveMode } from '@/lib/mode';
+import { getModeCopy, resolveMode } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
 import { getManifestState } from '@/lib/web3/addresses';
 import { isWeb3Configured } from '@/lib/web3/config';
@@ -14,4 +14,9 @@ export function currentAppMode(): AppMode {
     manifest: getManifestState(publicEnv.network),
     walletConfigured: isWeb3Configured,
   });
+}
+
+/** Kalimat penutup description metadata halaman, mengikuti mode build (mis. "Preview build."). */
+export function currentBuildNote(): string {
+  return getModeCopy(currentAppMode(), publicEnv.network).buildNote;
 }

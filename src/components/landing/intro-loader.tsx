@@ -74,7 +74,7 @@ const STEP_COPY: Record<'fonts' | HeroSceneState, string> = {
  * tengah dan iris membuka landing. Hanya diputar penuh sekali per sesi; navigasi klien
  * kembali ke `/` tidak menampilkannya lagi. Reduced motion: fade singkat saja.
  */
-export function IntroLoader() {
+export function IntroLoader({ status }: { status: { label: string; flag: string } }) {
   // Modul `intro` direset tiap pemuatan dokumen, jadi SSR dan hydration pertama selalu sepakat.
   const [visible, setVisible] = useState(() => !hasIntroBooted());
   const rootRef = useRef<HTMLDivElement>(null);
@@ -309,7 +309,7 @@ export function IntroLoader() {
         <style>{'[data-intro-loader]{display:none!important}.hero-visual{animation:none!important;--hero-reveal:1}'}</style>
       </noscript>
       <span className="sr-only" role="status">
-        Loading XofN preview
+        Loading XofN
       </span>
       <div className="il-bg" aria-hidden="true">
         <div className="il-stars" />
@@ -317,8 +317,8 @@ export function IntroLoader() {
       </div>
       <div className="il-rim" aria-hidden="true" />
       <div className="il-meta" aria-hidden="true">
-        <span>XOFN / PROTOCOL PREVIEW</span>
-        <b>● NOT LIVE</b>
+        <span>XOFN / {status.label}</span>
+        <b>● {status.flag}</b>
       </div>
       <div className="il-stage" aria-hidden="true">
         <svg className="il-ring" viewBox="0 0 100 100">

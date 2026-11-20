@@ -111,16 +111,20 @@ describe('mode', () => {
   it('copy preview dan simulation tidak memuat klaim live', () => {
     for (const mode of ['preview', 'simulation'] as const) {
       const copy = getModeCopy(mode, 'testnet');
-      const text = `${copy.noticeChip} ${copy.noticeText} ${copy.actionTag}`.toLowerCase();
-      expect(text).not.toMatch(/\blive on\b|unhackable|zero risk|official|partner/);
+      const text = `${copy.noticeChip} ${copy.noticeText} ${copy.actionTag} ${copy.statusLabel} ${copy.statusFlag} ${copy.buildNote}`.toLowerCase();
+      expect(text).not.toMatch(/\blive on\b|launchpad open|unhackable|zero risk|official|partner/);
     }
     expect(getModeCopy('preview', 'testnet').noticeChip).toContain('NOT LIVE');
+    expect(getModeCopy('preview', 'testnet').statusFlag).toBe('NOT LIVE');
+    expect(getModeCopy('preview', 'testnet').buildNote).toBe('Preview build.');
   });
 
   it('mode live: hanya testnet yang punya copy (go-live testnet dibuka PM 20 Nov 2026)', () => {
     const copy = getModeCopy('live', 'testnet');
-    const text = `${copy.noticeChip} ${copy.noticeText} ${copy.actionTag}`;
+    const text = `${copy.noticeChip} ${copy.noticeText} ${copy.actionTag} ${copy.statusLabel} ${copy.statusFlag} ${copy.buildNote}`;
     expect(text).toMatch(/TESTNET/);
+    expect(copy.statusLabel).toBe('TESTNET');
+    expect(copy.buildNote).toMatch(/no real funds.*unaudited/i);
     expect(text).toMatch(/NO REAL FUNDS/);
     expect(text.toLowerCase()).not.toMatch(/omnichain|unhackable|zero risk|official|partner|mainnet/);
     // Mainnet (Fase 1b) tetap FROZEN.

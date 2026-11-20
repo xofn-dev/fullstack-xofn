@@ -37,15 +37,15 @@ const HEADING = (
   </div>
 );
 
-// Section 7. Mode preview: contoh token fiktif + drawer detail. Mode simulation: token nyata dari
-// chain lokal, kartu membuka /t/[address] (USER_FLOWS Flow A langkah 4).
+// Section 7. Mode preview: contoh token fiktif + drawer detail. Mode simulation dan live (testnet):
+// token nyata dari chain, kartu membuka /t/[address] (USER_FLOWS Flow A langkah 4).
 export function Explore({ home, mode }: { home: ChainInfo; mode: AppMode }) {
-  if (mode === 'simulation') {
+  if (mode !== 'preview') {
     return (
       <section className="section alt" id="explore">
         <div className="container">
           <div className="sec-head">{HEADING}</div>
-          <ExploreLive />
+          <ExploreLive home={home} mode={mode} />
         </div>
       </section>
     );

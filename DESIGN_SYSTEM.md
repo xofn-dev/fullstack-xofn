@@ -417,7 +417,10 @@ Semua geometri dibuat prosedural dalam kode (tanpa file model, tekstur, atau vid
 |---|---|---|
 | `preview` | `PREVIEW / NOT LIVE · NO TOKEN SALE OR LIVE VERIFICATION` | `PREVIEW`, `DEMO` |
 | `simulation` | `LOCAL SIMULATION · NO REAL FUNDS` | `SIMULATION` |
-| `live` | (Phase 6–7, FROZEN) | — |
+| `live` · testnet (Fase 1a, sejak go-live 20 Nov 2026) | `TESTNET · LAUNCHPAD OPEN ON TESTNET · NO REAL FUNDS · UNAUDITED` | `TESTNET` |
+| `live` · mainnet | (Fase 1b, FROZEN: `getModeCopy` melempar error) | — |
+
+Status di hero dan intro loader (`statusLabel ● statusFlag`, `src/lib/mode.ts`): `PROTOCOL PREVIEW ● NOT LIVE` / `LOCAL SIMULATION ● NO REAL FUNDS` / `TESTNET ● LAUNCHPAD OPEN`. Di testnet, Discover menampilkan token asli dan section Contracts menampilkan alamat home dari manifest. Ekspansi, omnichain, bridge, dan Locked tetap `PLANNED` (klaim per tahap, §10.2a).
 
 Label versi konsep ("COINFALL V8", "DESIGN CONCEPT 008", "COIN RUN · V5") dihapus dari copy produksi (D10).
 
