@@ -17,6 +17,7 @@ import { Thesis } from '@/components/landing/thesis';
 import { TierProvider } from '@/components/landing/tier-context';
 import { Vision } from '@/components/landing/vision';
 import { getExpansionChains, getHomeChain } from '@/lib/chains';
+import { getModeCopy } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
 import { currentAppMode } from '@/lib/web3/app-mode';
 
@@ -45,7 +46,7 @@ export default function LandingPage() {
         <InsideCoin />
         <Security />
         <Graduation {...chains} />
-        <LaunchDemo {...chains} />
+        <LaunchDemo {...chains} mode={mode} actionTag={getModeCopy(mode, publicEnv.network).actionTag} />
         <BridgeDemo {...chains} />
         <Proof />
         <Contracts {...chains} />
