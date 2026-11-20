@@ -1,0 +1,19 @@
+== Logs ==
+  XofN 1a / 04 VerifyDormant
+  MODE: DRY RUN (nothing is sent)
+  chainId         46630
+  deployer        0x8B6C2F73bF0d2534e1E25619E2894329D67f662C
+  safe            0x5Bf81326c6D8C7a2d7632cD9050A660c3a088BfC
+  lpRecipient     0x1EEF2925afb9592F3f69d56CB3aEAc1037BDb109
+  TierLib              0x15b3B5908db0EB9646123fe9e062144047C9ac8c
+  PoolSeeder           0xE741ea6F114b61111D795394d0917DE5107d3B1c
+  XofNTokenDeployer    0x381e1125c8835F16d632E762891d2A6A6c49f092
+  XofNRegistry         0xba1c8dFC2aBc6Ae85ac968B4F5A4afa9BE5c3006
+  XofNCurve (impl)     0x9E2d5326eA545ac81941Eec9C0405379F7Be5B6F
+  XofNPoolGuard        0x3D245de80BaEDBF59A47209cED57FA2F059FA000
+  XofNGraduator        0x46E39010AFA7eE6FfBFEcc981400051e1d8929FF
+  codehash Registry   0xc4378068ae75e52ebe3b4a4d6b91525f61fe740acb909675f806f524e3ffea4f
+  codehash Curve      0x7b380e9d6a15d2004299db2203c33af042f3afa7fe7ddd9007b96b640841db89
+  codehash PoolGuard  0x3a8d15e4b6a11bf9a5ac18bfb4ef9d742aa6ef2089d2d37ea586556f5aa1a2e3
+  codehash Graduator  0x19f2c92047cd5110826085d19a66b12c747bfb44dd235fa68b73b5b7ccd7ec3e
+  RESULT: deployed-dormant. All checks passed. launch() reverts OnlyRegistrar.

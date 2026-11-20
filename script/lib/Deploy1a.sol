@@ -668,6 +668,12 @@ abstract contract Deploy1a is CommonBase {
         if (a.registry.code.length == 0) revert NotDeployed("registry", a.registry);
         if (a.curve.code.length == 0) revert NotDeployed("curve", a.curve);
         if (a.graduator.code.length == 0) revert NotDeployed("graduator", a.graduator);
+        // Alamat hook (CREATE2) bergantung pada bytecode-nya, dan bytecode itu ikut berubah
+        // bila kompilasinya memakai `--libraries` (metadata compiler berbeda). Script 03 dijalankan
+        // dengan flag itu, script ini tidak, jadi prediksinya bisa beda. Yang dipakai adalah hook
+        // yang benar-benar terpasang di Graduator; `_verifyGraduator` memeriksa flag dan seeder-nya.
+        a.poolGuard = XofNGraduator(payable(a.graduator)).poolGuard();
+        a.poolGuardSalt = bytes32(0);
         if (a.poolGuard.code.length == 0) revert NotDeployed("poolGuard", a.poolGuard);
 
         _verifyRegistry(cfg, a);

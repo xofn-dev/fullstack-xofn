@@ -8,6 +8,8 @@ next-env.d.ts
 # env: tidak pernah di-commit (CLAUDE.md §9)
 .env
 .env.*
+# Templat tanpa nilai rahasia boleh di-commit.
+!.env.example
 
 # foundry (dipakai mulai Phase 3)
 cache/
