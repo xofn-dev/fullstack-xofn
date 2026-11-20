@@ -13,8 +13,9 @@ export function checkLzAddresses(network: Network, chain: ChainKey): LzAddresses
   if (info.lz) return info.lz;
   if (network !== 'local') return null;
   const deployment = getDeployment(network);
-  if (!deployment) return null;
-  return { endpointV2: deployment.chains[chain].endpointV2, deadDvn: NO_DEAD_DVN };
+  const entry = deployment?.chains[chain];
+  if (!entry) return null;
+  return { endpointV2: entry.endpointV2, deadDvn: NO_DEAD_DVN };
 }
 
 /** ChainInfo dengan `lz` terisi untuk dibaca Check; null bila chain ini tidak bisa dibaca. */

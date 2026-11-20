@@ -11,8 +11,17 @@ export type ManifestState = 'none' | 'local' | 'deployed-dormant' | 'live';
 
 // Mode aplikasi (ARCHITECTURE §10.4). Klien hanya memakai mode untuk memilih tombol; validasi
 // tetap di kontrak. Alamat yang Deployed (dorman) belum Live, jadi tetap `preview` (P52).
-export function resolveMode(input: { network: Network; manifest: ManifestState }): AppMode {
+//
+// `walletConfigured = false` (build tanpa konfigurasi wallet, mis. Project ID WalletConnect kosong)
+// juga berarti preview: komponen transaksi butuh provider wallet, dan build seperti itu memang
+// tidak bisa menandatangani apa pun.
+export function resolveMode(input: {
+  network: Network;
+  manifest: ManifestState;
+  walletConfigured?: boolean;
+}): AppMode {
   if (input.manifest === 'none' || input.manifest === 'deployed-dormant') return 'preview';
+  if (input.walletConfigured === false) return 'preview';
   if (input.manifest === 'local') {
     // Manifest lokal hanya sah untuk jaringan lokal; di jaringan lain ia diabaikan.
     return input.network === 'local' ? 'simulation' : 'preview';
@@ -29,9 +38,10 @@ export interface ModeCopy {
   actionTag: string;
 }
 
-// Teks per mode (DESIGN_SYSTEM §10.2). Mode `live` FROZEN (Phase 6–7): sengaja tanpa copy,
-// supaya tidak ada klaim "live" yang lolos sebelum PM membuka phase itu.
-export function getModeCopy(mode: AppMode): ModeCopy {
+// Teks per mode (DESIGN_SYSTEM §10.2). `live` hanya punya copy untuk TESTNET: go-live Robinhood
+// testnet dibuka PM 20 Nov 2026. Mainnet (Fase 1b) masih FROZEN, jadi sengaja tetap tanpa copy,
+// supaya tidak ada klaim "live" di mainnet yang lolos sebelum PM membukanya.
+export function getModeCopy(mode: AppMode, network: Network): ModeCopy {
   switch (mode) {
     case 'preview':
       return {
@@ -47,6 +57,13 @@ export function getModeCopy(mode: AppMode): ModeCopy {
         actionTag: 'SIMULATION',
       };
     case 'live':
-      throw new Error('Mode "live" belum dibuka (Phase 6 dan 7 FROZEN).');
+      if (network === 'testnet') {
+        return {
+          noticeChip: 'TESTNET',
+          noticeText: 'LAUNCHPAD OPEN ON TESTNET · NO REAL FUNDS · UNAUDITED',
+          actionTag: 'TESTNET',
+        };
+      }
+      throw new Error('Mode "live" di mainnet belum dibuka (Fase 1b FROZEN).');
   }
 }

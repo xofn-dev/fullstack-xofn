@@ -20,6 +20,8 @@ export async function readXofnVerify(
   const deployment = getDeployment(network);
   if (!deployment) return null;
   const entry = deployment.chains[chain];
+  // Chain ini belum punya kontrak XofN (mis. chain ekspansi sebelum Fase 2).
+  if (!entry) return null;
   const client = getPublicClient(network, chain);
   const unread: XofnVerify = { status: 'unread', locked: null, tier: null, registrarKnown: null, homeToken: null };
   if (!client) return unread;

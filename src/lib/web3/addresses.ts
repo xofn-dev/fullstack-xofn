@@ -51,7 +51,11 @@ export interface ChainDeployment {
 export interface Deployment {
   network: Network;
   status: Exclude<ManifestState, 'none'>;
-  chains: Record<ChainKey, ChainDeployment>;
+  /**
+   * Chain yang punya kontrak XofN. Manifest lokal selalu lengkap; jaringan publik Fase 1 hanya
+   * punya home chain, jadi chain ekspansi bisa tidak ada (belum di-deploy).
+   */
+  chains: Partial<Record<ChainKey, ChainDeployment>>;
   /** Pengantar pesan lintas chain tiruan; hanya di Anvil. */
   localRelay: Address | null;
 }
@@ -255,8 +259,33 @@ const HOME_ONLY: Record<Network, HomeOnlyDeployment | null> = {
   mainnet: null,
 };
 
+/**
+ * Deployment Fase 1 sebagai `Deployment` dengan home chain saja, HANYA setelah live: sebelum
+ * Safe memanggil `setRegistrar`, aplikasi tetap preview dan tidak membaca token (PRD P52).
+ */
+export function homeOnlyAsDeployment(home: HomeOnlyDeployment | null): Deployment | null {
+  if (!home || home.status !== 'live') return null;
+  const chain: ChainDeployment = {
+    chain: home.chain,
+    chainId: home.chainId,
+    eid: home.eid,
+    endpointV2: home.endpointV2,
+    registry: home.contracts.registry,
+    graduator: home.contracts.graduator,
+    curveImplementation: home.contracts.curveImplementation,
+    remote: null,
+    owner: home.owner,
+    deployBlock: home.deployBlock,
+    verifiedSource: home.verifiedSource,
+    mocks: null,
+    // Tanpa router dan StateView di manifest publik: panel trading pool "not available" (P59).
+    uniswapV4: null,
+  };
+  return { network: home.network, status: home.status, chains: { [home.chain]: chain }, localRelay: null };
+}
+
 export function getDeployment(network: Network): Deployment | null {
-  return DEPLOYMENTS[network];
+  return DEPLOYMENTS[network] ?? homeOnlyAsDeployment(HOME_ONLY[network]);
 }
 
 export function getHomeOnlyDeployment(network: Network): HomeOnlyDeployment | null {
@@ -275,16 +304,21 @@ export interface HomeContracts {
 }
 
 /** Kontrak home chain. Melempar bila manifest rusak; pemanggil sudah memastikan manifest ada. */
+/** Chain yang ada di deployment, urut menurut CHAIN_KEYS. */
+export function deployedChains(deployment: Deployment): ChainDeployment[] {
+  return CHAIN_KEYS.map((key) => deployment.chains[key]).filter((chain): chain is ChainDeployment => !!chain);
+}
+
 export function homeContracts(deployment: Deployment): HomeContracts {
-  const home = CHAIN_KEYS.map((key) => deployment.chains[key]).find((chain) => chain.graduator !== null);
+  const home = deployedChains(deployment).find((chain) => chain.graduator !== null);
   if (!home || !home.graduator) throw new ManifestError('tidak ada home chain dengan Graduator.');
   return { chain: home, graduator: home.graduator, registry: home.registry };
 }
 
 export function expansionDeployments(deployment: Deployment): ChainDeployment[] {
-  return CHAIN_KEYS.map((key) => deployment.chains[key]).filter((chain) => chain.remote !== null);
+  return deployedChains(deployment).filter((chain) => chain.remote !== null);
 }
 
 export function deploymentByEid(deployment: Deployment, eid: number): ChainDeployment | undefined {
-  return CHAIN_KEYS.map((key) => deployment.chains[key]).find((chain) => chain.eid === eid);
+  return deployedChains(deployment).find((chain) => chain.eid === eid);
 }

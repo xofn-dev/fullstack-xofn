@@ -22,6 +22,6 @@
   "lpRecipient": "0x1EEF2925afb9592F3f69d56CB3aEAc1037BDb109",
   "network": "testnet",
   "owner": "0x5Bf81326c6D8C7a2d7632cD9050A660c3a088BfC",
-  "status": "deployed-dormant",
+  "status": "live",
   "verifiedSource": false
 }

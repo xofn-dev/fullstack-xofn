@@ -103,19 +103,28 @@ describe('mode', () => {
   it('manifest lokal tidak pernah menyalakan jaringan publik, dan sebaliknya', () => {
     expect(resolveMode({ network: 'mainnet', manifest: 'local' })).toBe('preview');
     expect(resolveMode({ network: 'local', manifest: 'live' })).toBe('preview');
+    // Build tanpa konfigurasi wallet tidak bisa menandatangani apa pun: tetap preview.
+    expect(resolveMode({ network: 'testnet', manifest: 'live', walletConfigured: false })).toBe('preview');
+    expect(resolveMode({ network: 'testnet', manifest: 'live', walletConfigured: true })).toBe('live');
   });
 
   it('copy preview dan simulation tidak memuat klaim live', () => {
     for (const mode of ['preview', 'simulation'] as const) {
-      const copy = getModeCopy(mode);
+      const copy = getModeCopy(mode, 'testnet');
       const text = `${copy.noticeChip} ${copy.noticeText} ${copy.actionTag}`.toLowerCase();
       expect(text).not.toMatch(/\blive on\b|unhackable|zero risk|official|partner/);
     }
-    expect(getModeCopy('preview').noticeChip).toContain('NOT LIVE');
+    expect(getModeCopy('preview', 'testnet').noticeChip).toContain('NOT LIVE');
   });
 
-  it('mode live belum dibuka (Phase 6–7 FROZEN)', () => {
-    expect(() => getModeCopy('live')).toThrow(/FROZEN/);
+  it('mode live: hanya testnet yang punya copy (go-live testnet dibuka PM 20 Nov 2026)', () => {
+    const copy = getModeCopy('live', 'testnet');
+    const text = `${copy.noticeChip} ${copy.noticeText} ${copy.actionTag}`;
+    expect(text).toMatch(/TESTNET/);
+    expect(text).toMatch(/NO REAL FUNDS/);
+    expect(text.toLowerCase()).not.toMatch(/omnichain|unhackable|zero risk|official|partner|mainnet/);
+    // Mainnet (Fase 1b) tetap FROZEN.
+    expect(() => getModeCopy('live', 'mainnet')).toThrow(/FROZEN/);
   });
 });
 

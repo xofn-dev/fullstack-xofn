@@ -11,6 +11,7 @@ import type { ChainKey } from '@/types/enums';
 
 const deployment = getDeployment('local')!;
 const home = homeContracts(deployment);
+const base = deployment.chains.base!;
 const ZERO = '0x0000000000000000000000000000000000000000';
 const TOKEN: Address = '0x00000000000000000000000000000000000000a1';
 const CURVE: Address = '0x00000000000000000000000000000000000000c1';
@@ -163,7 +164,7 @@ function fakeChain(options: {
   const client = (chain: ChainKey): ChainClient => ({
     async readContract({ address, functionName, args }) {
       calls.push(`${chain}:${functionName}`);
-      const onRemote = address === deployment.chains.base.registry || address === deployment.chains.base.remote || address === REMOTE_TOKEN || address === deployment.chains.base.endpointV2;
+      const onRemote = address === base.registry || address === base.remote || address === REMOTE_TOKEN || address === base.endpointV2;
       if (onRemote && options.failRemote) throw new Error('rpc down');
       switch (functionName) {
         case 'tokenCount':
@@ -214,7 +215,7 @@ function fakeChain(options: {
         case 'verify':
           return [address === home.registry ? options.status === 4 : (options.remoteLocked ?? false), 1, [2]];
         case 'registrar':
-          return address === home.registry ? home.graduator : deployment.chains.base.remote;
+          return address === home.registry ? home.graduator : base.remote;
         case 'owner':
         case 'delegates':
           return options.status === 4 ? ZERO : home.graduator;

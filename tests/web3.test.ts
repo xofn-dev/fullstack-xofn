@@ -22,6 +22,7 @@ import {
   expansionDeployments,
   getDeployment,
   getHomeOnlyDeployment,
+  homeOnlyAsDeployment,
   getManifestState,
   homeContracts,
   ManifestError,
@@ -66,8 +67,8 @@ describe('manifest deployment', () => {
     expect(expansionDeployments(deployment).map((chain) => chain.chain)).toEqual(['base', 'arbitrum']);
     expect(deploymentByEid(deployment, 3)?.chain).toBe('arbitrum');
     expect(deployment.localRelay).toMatch(/^0x[0-9a-f]{40}$/);
-    expect(deployment.chains.robinhood.remote).toBeNull();
-    expect(deployment.chains.base.graduator).toBeNull();
+    expect(deployment.chains.robinhood!.remote).toBeNull();
+    expect(deployment.chains.base!.graduator).toBeNull();
   });
 
   it('Uniswap v4 lokal: tiap chain punya PoolManager, hook, router uji, quoter, dan StateView sendiri', () => {
@@ -99,7 +100,7 @@ describe('manifest deployment', () => {
     asTestnet.chains.arbitrum!.eid = 40231;
     const parsed = parseManifest('testnet', asTestnet);
     expect(parsed.status).toBe('deployed-dormant');
-    expect(parsed.chains.robinhood.uniswapV4).toBeNull();
+    expect(parsed.chains.robinhood!.uniswapV4).toBeNull();
   });
 
   it('manifest testnet Fase 1a: home saja, dorman, alamat di-lowercase', () => {
@@ -121,6 +122,22 @@ describe('manifest deployment', () => {
     expect(BigInt(home!.contracts.poolGuard) & 0x3fffn).toBe(0x2000n);
     expect(getHomeOnlyDeployment('local')).toBeNull();
     expect(getHomeOnlyDeployment('mainnet')).toBeNull();
+  });
+
+  it('deployment home saja baru dibaca aplikasi setelah live; chain ekspansi tidak ada', () => {
+    const dormant = getHomeOnlyDeployment('testnet')!;
+    expect(homeOnlyAsDeployment(dormant)).toBeNull();
+    const live = homeOnlyAsDeployment({ ...dormant, status: 'live' })!;
+    expect(live.status).toBe('live');
+    expect(Object.keys(live.chains)).toEqual(['robinhood']);
+    expect(homeContracts(live).graduator).toBe(dormant.contracts.graduator);
+    expect(homeContracts(live).registry).toBe(dormant.contracts.registry);
+    expect(expansionDeployments(live)).toEqual([]);
+    expect(deploymentByEid(live, 40245)).toBeUndefined();
+    expect(deploymentByEid(live, 40451)?.chain).toBe('robinhood');
+    // Tanpa router uji dan relay: trading pool dan relay lokal tidak pernah aktif di jaringan publik.
+    expect(live.chains.robinhood!.uniswapV4).toBeNull();
+    expect(live.localRelay).toBeNull();
   });
 
   it('manifest satu chain ditolak bila jaringan, chain ID, status, atau alamatnya salah', () => {
@@ -222,9 +239,9 @@ describe('builder transaksi', () => {
     expect(expandValue({ deployFees: 5n, liquidityFees: 7n })).toBe(12n);
     expect(buildExpandAndLock(home, TOKEN, 12n)).toMatchObject({ functionName: 'expandAndLock', args: [TOKEN], value: 12n });
     expect(buildRetryRemote(home, TOKEN, 3, 9n)).toMatchObject({ address: home.graduator, functionName: 'retryRemote', args: [TOKEN, 3], value: 9n });
-    const base = getDeployment('local')!.chains.base;
+    const base = getDeployment('local')!.chains.base!;
     expect(buildReAck(base, TOKEN, 4n)).toMatchObject({ chain: 'base', address: base.remote, functionName: 'reAck', value: 4n });
-    expect(buildReAck(getDeployment('local')!.chains.robinhood, TOKEN, 4n)).toBeNull();
+    expect(buildReAck(getDeployment('local')!.chains.robinhood!, TOKEN, 4n)).toBeNull();
   });
 
   it('relay lokal: pengantaran memakai batas gas eksplisit, bukan estimasi', () => {

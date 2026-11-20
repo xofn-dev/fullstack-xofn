@@ -401,7 +401,7 @@ describe('siklus token XofN di Anvil lokal', () => {
     expect(detail.status).toBe('expanding');
 
     // Siapa pun boleh mengirim ulang ack dari chain ekspansi dan membayar fee-nya.
-    const remote = deployment.chains.base;
+    const remote = deployment.chains.base!;
     const ackFee = await publicClient.readContract({
       address: remote.remote!,
       abi: remoteAbi,

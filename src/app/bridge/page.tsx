@@ -3,9 +3,9 @@ import { BridgeWidget } from '@/components/bridge/bridge-widget';
 import { BridgeDemo } from '@/components/landing/bridge-demo';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
 import { getExpansionChains, getHomeChain } from '@/lib/chains';
-import { resolveMode } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
-import { getDeployment, getManifestState } from '@/lib/web3/addresses';
+import { currentAppMode } from '@/lib/web3/app-mode';
+import { expansionDeployments, getDeployment } from '@/lib/web3/addresses';
 
 export const metadata: Metadata = {
   title: 'Bridge',
@@ -17,10 +17,12 @@ export default function BridgePage() {
   const network = publicEnv.network;
   const home = getHomeChain(network);
   const expansions = getExpansionChains(network);
-  const mode = resolveMode({ network, manifest: getManifestState(network) });
+  const mode = currentAppMode();
   const deployment = getDeployment(network);
 
-  if (mode === 'preview' || !deployment) {
+  // Bridge hanya untuk token Locked, dan itu butuh chain ekspansi. Tanpa Remote (jaringan publik
+  // Fase 1) belum ada yang bisa di-bridge, jadi yang tampil tetap widget pratinjau.
+  if (mode === 'preview' || !deployment || expansionDeployments(deployment).length === 0) {
     return (
       <>
         <AppBackdrop />

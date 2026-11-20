@@ -7,9 +7,9 @@ import { Nav } from '@/components/layout/nav';
 import { NoticeBar } from '@/components/layout/notice-bar';
 import { OverlayProvider } from '@/components/ui/overlay-provider';
 import { Web3Provider } from '@/components/wallet/web3-provider';
-import { getModeCopy, resolveMode } from '@/lib/mode';
+import { getModeCopy } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
-import { getManifestState } from '@/lib/web3/addresses';
+import { currentAppMode } from '@/lib/web3/app-mode';
 import './globals.css';
 
 // D3 (rekomendasi, menunggu keputusan owner): Inter Tight + JetBrains Mono, fallback Arial/mono sistem.
@@ -51,11 +51,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   // Mode ditentukan di server dari jaringan aktif dan status manifest (ARCHITECTURE §10.4, P52).
-  const mode = resolveMode({
-    network: publicEnv.network,
-    manifest: getManifestState(publicEnv.network),
-  });
-  const copy = getModeCopy(mode);
+  const mode = currentAppMode();
+  const copy = getModeCopy(mode, publicEnv.network);
 
   const shell = (
     <>
