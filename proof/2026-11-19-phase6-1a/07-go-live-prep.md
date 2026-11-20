@@ -1,7 +1,12 @@
 # Go-live Robinhood testnet — persiapan (20 Nov 2026)
 
 - **Keputusan:** PM, disampaikan developer: "pm setuju aja yang penting testnet bisa launchpad jalan juga".
-- **Belum dieksekusi.** Tidak ada transaksi oleh agent. Registrar testnet asli masih `0x0` saat catatan ini ditulis.
+- **Dieksekusi developer 20 Nov 2026:** tx `0x156cf57b715fd1e109ec7e8b059404069be0d942ce096a9b578c9288f336a11b`,
+  blok L2 155929990, status sukses (`raw/tx/05_SafeGoLive-run.json`). Tidak ada transaksi oleh agent.
+- **Diverifikasi agent (read-only):** `registrar()` = Graduator `0x46E39010AFA7eE6FfBFEcc981400051e1d8929FF`;
+  nonce Safe 5; simulasi `launch()` (eth_call) berhasil; simulasi `setRegistrar` kedua oleh Safe revert
+  `RegistrarAlreadySet` (tidak bisa diganti). Manifest `status: "live"` di `main` (PR #15).
+- **Status Robinhood testnet: LIVE** (launchpad terbuka; ekspansi belum di-deploy).
 
 ## Transaksi Safe (`script/05_SafeGoLive.s.sol`, dry-run lulus)
 
