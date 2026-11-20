@@ -26,6 +26,9 @@ contract DeployRegistry is Deploy1aScript {
         vm.stopBroadcast();
 
         _logAddresses(a);
+        // Alamat hook di atas hanya perkiraan: script 03 (dengan --libraries) mengompilasi ulang
+        // dan alamat CREATE2 hook ikut berubah. Alamat final dicetak script 03.
+        console2.log("NOTE: XofNPoolGuard above is indicative; script 03 prints the final address.");
         console2.log("Registry owner      ", cfg.safe);
         console2.log("Next: script 02 (Safe allowlists the DVNs), then script 03 with:");
         console2.log(_librariesFlags(a));

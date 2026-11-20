@@ -1,0 +1,27 @@
+{
+  "amm": {
+    "poolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+    "positionManager": "0x58daec3116aae6D93017bAAea7749052E8a04fA7"
+  },
+  "chainId": 46630,
+  "contracts": {
+    "XofNCurveImplementation": "0x9E2d5326eA545ac81941Eec9C0405379F7Be5B6F",
+    "XofNGraduator": "0x46E39010AFA7eE6FfBFEcc981400051e1d8929FF",
+    "XofNPoolGuard": "0x3D245de80BaEDBF59A47209cED57FA2F059FA000",
+    "XofNRegistry": "0xba1c8dFC2aBc6Ae85ac968B4F5A4afa9BE5c3006"
+  },
+  "deployBlock": 155512843,
+  "deployer": "0x8B6C2F73bF0d2534e1E25619E2894329D67f662C",
+  "eid": 40451,
+  "endpointV2": "0x3aCAAf60502791D199a5a5F0B173D78229eBFe32",
+  "libraries": {
+    "PoolSeeder": "0xE741ea6F114b61111D795394d0917DE5107d3B1c",
+    "TierLib": "0x15b3B5908db0EB9646123fe9e062144047C9ac8c",
+    "XofNTokenDeployer": "0x381e1125c8835F16d632E762891d2A6A6c49f092"
+  },
+  "lpRecipient": "0x1EEF2925afb9592F3f69d56CB3aEAc1037BDb109",
+  "network": "testnet",
+  "owner": "0x5Bf81326c6D8C7a2d7632cD9050A660c3a088BfC",
+  "status": "deployed-dormant",
+  "verifiedSource": false
+}
