@@ -1,22 +1,24 @@
 # Draf pengumuman alamat testnet (untuk publik)
 
 Ditulis untuk publik/komunitas. Semua alamat, tx hash, dan nomor blok diambil dari catatan
-broadcast (`raw/broadcast/`) dan pembacaan on-chain. Sengaja tanpa kata "live" atau "omnichain"
-(PRD §4.3): tahap ini dorman dan baru satu chain. Perbarui baris "Source verification" setelah
+broadcast (`raw/tx/`) dan pembacaan on-chain. Sengaja tanpa klaim "omnichain" (PRD §4.3): baru satu chain. "Open on testnet" dipakai, bukan "live" tanpa keterangan. Perbarui baris "Source verification" setelah
 verifikasi Blockscout selesai.
 
 ```
-XofN on Robinhood Chain Testnet — Phase 1a: dormant deployment
+XofN on Robinhood Chain Testnet — Phase 1a: launchpad open on testnet
 
 XofN is a token launchpad on LayerZero V2 where every token carries a measured DVN security tier.
-The home-chain contracts are now deployed on Robinhood Chain Testnet in a dormant state:
-launching tokens is closed until the 2-of-3 Safe opens it. Expansion chains are not deployed yet.
-Testnet only, no real funds. Contracts are unaudited. Source verification on the explorer is pending.
+The home-chain contracts are deployed on Robinhood Chain Testnet and the 2-of-3 Safe has opened
+launching. Anyone can launch a token, trade it on its bonding curve and graduate it into a Uniswap v4
+pool on Robinhood Chain Testnet. Expansion chains are not deployed yet, so tokens stay
+"Graduated · awaiting expansion". Testnet only, no real funds. Contracts are unaudited.
+Source verification on the explorer is pending.
 
 Chain ID: 46630 (LayerZero EID 40451)
 Explorer: explorer.testnet.chain.robinhood.com
 Governance Safe Block: 155,510,363
 Deployment Blocks: 155,512,843 – 155,910,674
+Go-live Block: 155,929,990
 
 CORE CONTRACTS
 
@@ -27,7 +29,7 @@ Deploy Tx · Block 155,910,627
 explorer.testnet.chain.robinhood.com/tx/0x6c34988c15e276b29ce5fe2d7be97389aca8cf8fa177c6a9dcd3c36109e0c7a5
 
 XofNRegistry — records each token's tier and proves its lock state on-chain via verify().
-Owned by the Safe from construction. Launching stays closed until the Safe sets the registrar.
+Owned by the Safe from construction. Its registrar is the Graduator (set once by the Safe).
 explorer.testnet.chain.robinhood.com/address/0xba1c8dFC2aBc6Ae85ac968B4F5A4afa9BE5c3006
 Deploy Tx · Block 155,512,881
 explorer.testnet.chain.robinhood.com/tx/0x4033399343dba245586a1d97fed1197683601ac3a996429430231ffb1e6da7bb
@@ -75,8 +77,10 @@ Block 155,907,584 – 155,908,429
 Ownership handover — the deployer handed the Graduator's delegate and then its ownership to the Safe
 Blocks 155,910,650 and 155,910,674. The deployer holds no admin rights.
 
-Go-live — only the Safe (2 signatures) can open launching, once, by setting the Registry's registrar.
-Until then every launch() call reverts. Check registrar() on the Registry: it is still 0x0.
+Go-live — the Safe (2 signatures) set the Registry's registrar to the Graduator. This can be done only
+once and cannot be changed or undone by anyone, including the Safe. Check registrar() on the Registry.
+Go-live Tx · Block 155,929,990
+explorer.testnet.chain.robinhood.com/tx/0x156cf57b715fd1e109ec7e8b059404069be0d942ce096a9b578c9288f336a11b
 
 CANONICAL / EXTERNAL DEPENDENCIES
 

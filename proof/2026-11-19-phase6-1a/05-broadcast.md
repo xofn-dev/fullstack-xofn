@@ -40,7 +40,7 @@
 
 Persetujuan tertulis transaksi Safe (target, calldata, nonce 0-3, `safeTxHash`) dicocokkan agent sebelum ditandatangani; `safeTxHash` pertama dihitung ulang langsung dari kontrak Safe. Total biaya deploy ±0,00015 ETH.
 
-Bukti mentah: `raw/broadcast/*.json` (salinan catatan forge, tanpa RPC atau kredensial), `raw/04-verify-dormant.txt`.
+Bukti mentah: `raw/tx/*.json` (salinan catatan forge, tanpa RPC atau kredensial), `raw/04-verify-dormant.txt`.
 
 ## Verifikasi (`script/04_VerifyDormant.s.sol`, read-only) — LULUS
 

@@ -8,7 +8,7 @@ tidak dipakai. Verifikasi lewat **UI** explorer, satu kontrak per kali.
 Setiap `*.standard-input.json` di folder ini sudah dikompilasi ulang dengan solc 0.8.24 dan hasilnya
 **identik byte-per-byte dengan kode on-chain, termasuk hash metadata** (bagian immutable dinolkan di
 kedua sisi): `../raw/verify-bytecode-match.txt`. Argumen constructor diambil dari transaksi deploy
-yang sebenarnya (`../raw/broadcast/`): creation code hasil kompilasi adalah awalan persis initcode di
+yang sebenarnya (`../raw/tx/`): creation code hasil kompilasi adalah awalan persis initcode di
 transaksi, dan sisanya adalah argumen constructor. Didekode dan cocok dengan tabel parameter
 (`../03-parameters.md`).
 
