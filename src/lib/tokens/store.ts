@@ -15,6 +15,11 @@ export interface TokenIndexStore {
   upsertMeta(metas: TokenMeta[]): Promise<void>;
   getTrades(curve: Address): Promise<Trade[]>;
   appendTrades(trades: IndexedTrade[]): Promise<void>;
+  /**
+   * Mengisi waktu blok (detik Unix) trade yang SUDAH tersimpan di curve ini. Hanya trade yang
+   * waktunya masih kosong yang diisi: waktu sebuah blok tidak pernah berubah.
+   */
+  saveBlockTimes(curve: Address, times: ReadonlyMap<string, number>): Promise<void>;
   /** Blok terakhir yang sudah diindeks; null bila belum pernah. */
   getCursor(): Promise<bigint | null>;
   setCursor(block: bigint): Promise<void>;
@@ -58,6 +63,13 @@ export class MemoryTokenStore implements TokenIndexStore {
       list.push(trade);
       this.trades.set(curve, list);
     }
+  }
+
+  async saveBlockTimes(curve: Address, times: ReadonlyMap<string, number>): Promise<void> {
+    const list = this.trades.get(curve);
+    if (!list || times.size === 0) return;
+    // Array dan objek baru: pembaca yang masih memegang daftar lama tidak melihatnya berubah.
+    this.trades.set(curve, withBlockTimes(list, times));
   }
 
   async getCursor(): Promise<bigint | null> {
@@ -107,7 +119,32 @@ interface TradeRow {
   amount_token: string;
   amount_eth: string;
   eth_raised: string;
-  block_number: string;
+  /** Kolom `bigint`: PostgREST bisa mengirimnya sebagai angka JSON. */
+  block_number: string | number;
+  block_time: string | null;
+}
+
+/** Baris per permintaan saat membaca trade; sama dengan batas bawaan PostgREST. */
+const TRADE_PAGE = 1_000;
+
+/** `timestamptz` dari database → detik Unix; null bila kosong atau tidak terbaca sebagai waktu. */
+export function blockTimeToUnix(value: string | null): number | null {
+  if (value === null) return null;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) && ms > 0 ? Math.floor(ms / 1_000) : null;
+}
+
+export function unixToBlockTime(seconds: number): string {
+  return new Date(seconds * 1_000).toISOString();
+}
+
+/** Salinan daftar trade dengan waktu blok terisi; trade yang sudah punya waktu tidak disentuh. */
+function withBlockTimes(list: readonly Trade[], times: ReadonlyMap<string, number>): Trade[] {
+  return list.map((trade) => {
+    if (trade.timestamp !== null) return trade;
+    const timestamp = times.get(trade.blockNumber);
+    return timestamp === undefined ? trade : { ...trade, timestamp };
+  });
 }
 
 const CURSOR_CONTRACT = 'xofn-index';
@@ -178,23 +215,32 @@ export class SupabaseTokenStore implements TokenIndexStore {
   }
 
   async getTrades(curve: Address): Promise<Trade[]> {
-    const { data, error } = await this.client
-      .from('curve_trades')
-      .select('*')
-      .eq('curve', curve)
-      .order('block_number', { ascending: true })
-      .order('log_index', { ascending: true });
-    if (error) throw new Error(`Supabase curve_trades: ${error.message}`);
-    return (data as TradeRow[]).map((row) => ({
+    const rows: TradeRow[] = [];
+    // Dibaca per halaman: tanpa `range`, PostgREST memotong di 1000 baris dan (karena urutannya
+    // lama → baru) justru trade TERBARU yang hilang.
+    for (let from = 0; ; from += TRADE_PAGE) {
+      const { data, error } = await this.client
+        .from('curve_trades')
+        .select('*')
+        .eq('curve', curve)
+        .order('block_number', { ascending: true })
+        .order('log_index', { ascending: true })
+        .range(from, from + TRADE_PAGE - 1);
+      if (error) throw new Error(`Supabase curve_trades: ${error.message}`);
+      const page = data as TradeRow[];
+      rows.push(...page);
+      if (page.length < TRADE_PAGE) break;
+    }
+    return rows.map((row) => ({
       side: row.side === 'sell' ? 'sell' : 'buy',
       trader: row.trader as Address,
       ethAmount: row.amount_eth,
       tokenAmount: row.amount_token,
       ethRaised: row.eth_raised,
-      blockNumber: row.block_number,
+      blockNumber: String(row.block_number),
       txHash: row.tx_hash as `0x${string}`,
       logIndex: row.log_index,
-      timestamp: null,
+      timestamp: blockTimeToUnix(row.block_time),
     }));
   }
 
@@ -218,6 +264,23 @@ export class SupabaseTokenStore implements TokenIndexStore {
       .from('curve_trades')
       .upsert(rows, { onConflict: 'tx_hash,log_index', ignoreDuplicates: true });
     if (error) throw new Error(`Supabase curve_trades: ${error.message}`);
+  }
+
+  async saveBlockTimes(curve: Address, times: ReadonlyMap<string, number>): Promise<void> {
+    // Hanya kolom `block_time` yang disentuh, dan hanya baris yang masih kosong: kolom lain tidak
+    // pernah ditulis ulang dari sini. Filternya memakai index (curve, block_number, log_index).
+    const results = await Promise.all(
+      [...times].map(([block, seconds]) =>
+        this.client
+          .from('curve_trades')
+          .update({ block_time: unixToBlockTime(seconds) })
+          .eq('curve', curve)
+          .eq('block_number', block)
+          .is('block_time', null),
+      ),
+    );
+    const failed = results.find((result) => result.error);
+    if (failed?.error) throw new Error(`Supabase curve_trades: ${failed.error.message}`);
   }
 
   async getCursor(): Promise<bigint | null> {
@@ -380,6 +443,15 @@ export class CachedTokenStore implements TokenIndexStore {
     }
     // Trade baru sudah tersimpan, jadi kursor ikut disimpan pada `setCursor` berikutnya.
     this.cursorPersistedAt = 0;
+  }
+
+  async saveBlockTimes(curve: Address, times: ReadonlyMap<string, number>): Promise<void> {
+    if (times.size === 0) return;
+    // Store di belakang lebih dulu: bila tulisnya gagal, cermin tetap apa adanya dan waktu blok
+    // itu dibaca ulang nanti, bukan dianggap sudah tersimpan.
+    await this.inner.saveBlockTimes(curve, times);
+    const entry = this.entry(curve);
+    entry.list = withBlockTimes(entry.list, times);
   }
 
   async getCursor(): Promise<bigint | null> {

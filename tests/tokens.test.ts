@@ -3,7 +3,13 @@ import { createTokenService, parseTokenAddress, TokenServiceError, tokenHttpStat
 import type { ChainClient, EventLog, IndexedTrade, ReadContext, TokenMeta } from '@/lib/tokens/read';
 import { deriveStatus, isStatusFilter, matchesFilter } from '@/lib/tokens/status';
 import { expansionView } from '@/lib/tokens/steps';
-import { CachedTokenStore, MemoryTokenStore, type TokenIndexStore } from '@/lib/tokens/store';
+import {
+  blockTimeToUnix,
+  CachedTokenStore,
+  MemoryTokenStore,
+  unixToBlockTime,
+  type TokenIndexStore,
+} from '@/lib/tokens/store';
 import { getDeployment, homeContracts } from '@/lib/web3/addresses';
 import { poolIdOf } from '@/lib/web3/pool-trade';
 import type { Address, ExpansionChainState, Hex, PoolKey, VerifyReading } from '@/types/domain';
@@ -149,6 +155,7 @@ function fakeChain(options: {
   sqrtPriceX96?: bigint;
   failLiquidity?: boolean;
   failBlockTime?: boolean;
+  zeroBlockTime?: boolean;
 }) {
   const calls: string[] = [];
   const logQueries: { eventName: string; fromBlock: bigint; toBlock?: bigint }[] = [];
@@ -246,6 +253,7 @@ function fakeChain(options: {
     async getBlockTimestamp(blockNumber) {
       timeReads.push(blockNumber);
       if (options.failBlockTime) throw new Error('rpc down');
+      if (options.zeroBlockTime) return 0n;
       // Waktu tiruan: 1_700_000_000 + nomor blok.
       return 1_700_000_000n + blockNumber;
     },
@@ -267,7 +275,7 @@ function fakeChain(options: {
       transactionHash: hash,
       logIndex: 0,
     });
-  return { service, store, calls, logQueries, timeReads, statusWrites, addTrade, setBlock: (value: bigint) => (block = value), options };
+  return { service, store, ctx, calls, logQueries, timeReads, statusWrites, addTrade, setBlock: (value: bigint) => (block = value), options };
 }
 
 describe('layanan token', () => {
@@ -400,6 +408,80 @@ describe('layanan token', () => {
     expect(unread.trades[0]?.timestamp).toBeNull();
   });
 
+  it('waktu blok DISIMPAN di index: pembaca berikutnya tidak membaca chain lagi', async () => {
+    const chain = fakeChain({ status: 1 });
+    await chain.service.detail(TOKEN);
+    expect((await chain.store.getTrades(CURVE))[0]?.timestamp).toBe(1_700_000_005);
+    // Layanan baru di atas store yang sama (proses lain / setelah restart): waktu sudah ada.
+    const again = fakeChain({ status: 1 });
+    await again.store.upsertMeta(await chain.store.listMeta());
+    await again.store.appendTrades((await chain.store.getTrades(CURVE)).map((trade) => ({ ...trade, curve: CURVE })));
+    const detail = await again.service.detail(TOKEN);
+    expect(detail.trades[0]?.timestamp).toBe(1_700_000_005);
+    expect(again.timeReads).toEqual([]);
+  });
+
+  it('waktu blok 0 dari node bukan waktu: trade tetap null, tidak ditulis 1970', async () => {
+    const chain = fakeChain({ status: 1, zeroBlockTime: true });
+    const detail = await chain.service.detail(TOKEN);
+    expect(detail.trades[0]?.timestamp).toBeNull();
+    expect((await chain.store.getTrades(CURVE))[0]?.timestamp).toBeNull();
+  });
+
+  it('riwayat lama diisi bertahap, terbaru dulu, dan berhenti sebentar setelah gagal', async () => {
+    const chain = fakeChain({ status: 1 });
+    for (let index = 0; index < 40; index += 1) {
+      chain.addTrade(BigInt(100 + index), `0x${(index + 256).toString(16)}` as Hex, BigInt(index + 2) * 10n ** 15n);
+    }
+    chain.setBlock(200n);
+    const detail = await chain.service.detail(TOKEN);
+    // Di dalam permintaan detail hanya beberapa blok TERATAS yang dibaca.
+    expect(chain.timeReads).toHaveLength(8);
+    expect(chain.timeReads).toContain(139n);
+    expect(chain.timeReads).not.toContain(5n);
+    expect(detail.trades.at(-1)?.timestamp).toBe(1_700_000_139);
+    expect(detail.trades[0]?.timestamp).toBeNull();
+    // Trade terbaru sudah lebih tua dari jendela 24 jam, jadi trade lama yang belum ber-waktu
+    // tidak memengaruhi statistiknya.
+    expect(detail.market).toMatchObject({ status: 'read', volume24h: '0', trades24h: 0, reference: 'window' });
+
+    const first = await chain.service.backfillTimes(TOKEN, 20);
+    expect(first).toMatchObject({ read: 20, failed: 0, remaining: 13 });
+    const second = await chain.service.backfillTimes(TOKEN, 20);
+    expect(second).toMatchObject({ read: 13, failed: 0, remaining: 0 });
+    expect((await chain.store.getTrades(CURVE)).every((trade) => trade.timestamp !== null)).toBe(true);
+
+    // Jam yang dikendalikan tes: jeda setelah kegagalan diukur terhadap jam ini.
+    const failing = fakeChain({ status: 1, failBlockTime: true });
+    let at = 1_000_000;
+    const service = createTokenService(failing.ctx, failing.store, () => at);
+    await service.detail(TOKEN);
+    const reads = failing.timeReads.length;
+    expect(reads).toBe(1);
+    // Blok yang baru gagal tidak diminta lagi, dan pengisian riwayat lama berhenti dulu.
+    expect(await service.backfillTimes(TOKEN)).toMatchObject({ read: 0, failed: 0 });
+    expect(failing.timeReads).toHaveLength(reads);
+    at += 31_000;
+    expect(await service.backfillTimes(TOKEN)).toMatchObject({ read: 0, failed: 1 });
+    expect(failing.timeReads).toHaveLength(reads + 1);
+  });
+
+  it('riwayat chart: seluruh trade lebih dulu, lalu hanya yang baru setelah kursor', async () => {
+    const chain = fakeChain({ status: 1 });
+    await chain.service.detail(TOKEN);
+    const full = await chain.service.history(TOKEN, { after: null, timed: 0 });
+    expect(full).toMatchObject({ mode: 'full', total: 1, timed: 1 });
+    expect(full.points[0]).toMatchObject({ key: '5:0', time: 1_700_000_005, side: 'buy' });
+
+    chain.setBlock(500n);
+    chain.addTrade(450n, '0xbb', 2n * 10n ** 18n);
+    await chain.service.detail(TOKEN);
+    const delta = await chain.service.history(TOKEN, { after: '5:0', timed: 1 });
+    expect(delta).toMatchObject({ mode: 'delta', total: 2, timed: 2 });
+    expect(delta.points.map((point) => point.key)).toEqual(['450:0']);
+    await expect(chain.service.history('0x00000000000000000000000000000000000000ff', { after: null, timed: 0 })).rejects.toMatchObject({ code: 'not_found' });
+  });
+
   it('status hanya ditulis ke store saat berubah, bukan pada setiap polling', async () => {
     const chain = fakeChain({ status: 1 });
     await chain.service.detail(TOKEN);
@@ -529,6 +611,39 @@ describe('cermin memori di depan store index', () => {
     await store.cached.setCursor(14n);
     expect(store.hits.setCursor).toBe(3);
     expect(await store.inner.getCursor()).toBe(14n);
+  });
+
+  it('waktu blok: ditulis ke store lalu ke cermin; yang sudah terisi tidak ditimpa', async () => {
+    const store = counted();
+    await store.cached.appendTrades([trade(5, '0xaa'), trade(6, '0xbb')]);
+    const before = await store.cached.getTrades(CURVE);
+    await store.cached.saveBlockTimes(CURVE, new Map([['5', 1_700_000_005]]));
+    const after = await store.cached.getTrades(CURVE);
+    expect(after.map((item) => item.timestamp)).toEqual([1_700_000_005, null]);
+    // Daftar lama yang masih dipegang pembaca lain tidak berubah di tempat.
+    expect(before.map((item) => item.timestamp)).toEqual([null, null]);
+    expect((await store.inner.getTrades(CURVE)).map((item) => item.timestamp)).toEqual([1_700_000_005, null]);
+    await store.cached.saveBlockTimes(CURVE, new Map([['5', 1], ['6', 1_700_000_006]]));
+    expect((await store.cached.getTrades(CURVE)).map((item) => item.timestamp)).toEqual([1_700_000_005, 1_700_000_006]);
+  });
+
+  it('waktu blok: bila store di belakang gagal menulis, cermin tidak ikut berubah', async () => {
+    const inner = new MemoryTokenStore();
+    (inner as TokenIndexStore).saveBlockTimes = async () => {
+      throw new Error('db down');
+    };
+    const cached = new CachedTokenStore(inner, () => 0);
+    await cached.appendTrades([trade(5, '0xaa')]);
+    await expect(cached.saveBlockTimes(CURVE, new Map([['5', 1_700_000_005]]))).rejects.toThrow('db down');
+    expect((await cached.getTrades(CURVE))[0]?.timestamp).toBeNull();
+  });
+
+  it('timestamptz database ↔ detik Unix', () => {
+    expect(blockTimeToUnix(unixToBlockTime(1_700_000_005))).toBe(1_700_000_005);
+    expect(blockTimeToUnix('2023-11-14T22:13:25+00:00')).toBe(1_700_000_005);
+    expect(blockTimeToUnix(null)).toBeNull();
+    expect(blockTimeToUnix('bukan waktu')).toBeNull();
+    expect(blockTimeToUnix('1970-01-01T00:00:00Z')).toBeNull();
   });
 
   it('reset mengosongkan cermin dan store', async () => {

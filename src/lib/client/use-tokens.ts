@@ -1,10 +1,11 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { historyCursor, mergeHistory, type HistoryState } from '@/lib/tokens/history';
 import type { LaunchConfig } from '@/lib/tokens/read';
 import type { StatusFilter } from '@/lib/tokens/status';
-import type { TokenDetail, TokenSummary, Trade } from '@/types/domain';
+import type { EthUsdRate, TokenDetail, TokenSummary, Trade, TradeHistory } from '@/types/domain';
 
 // Polling data token dari API (ARCHITECTURE §11.4). API membaca chain; klien tidak menebak status.
 
@@ -104,5 +105,59 @@ export function useLaunchConfig(initial: LaunchConfig | null) {
     refetchInterval: LAUNCH_CONFIG_POLL_MS,
     staleTime: FRESH_MS,
     initialData: initial ?? undefined,
+  });
+}
+
+export const tradeHistoryKey = (address: string) => ['token-history', address] as const;
+
+// Selama masih ada trade yang waktu bloknya belum terisi, riwayat diambil ulang dengan jeda ini.
+const HISTORY_CATCH_UP_MS = 15_000;
+
+/**
+ * Riwayat trade curve untuk chart candle. Tidak punya interval sendiri: diambil ulang saat `tip`
+ * (trade terakhir menurut detail) berubah, dan hanya trade sesudah kursor yang diminta. Selama
+ * waktu blok trade lama masih diisi server, riwayat diambil ulang sesekali.
+ */
+export function useTradeHistory(address: string, tip: string, enabled = true) {
+  const queryClient = useQueryClient();
+  const query = useQuery<HistoryState>({
+    queryKey: tradeHistoryKey(address),
+    queryFn: async () => {
+      const previous = queryClient.getQueryData<HistoryState>(tradeHistoryKey(address)) ?? null;
+      const sent = historyCursor(previous);
+      const params = sent.after === null ? '' : `?after=${encodeURIComponent(sent.after)}&timed=${sent.timed}`;
+      const body = await getJson<{ history: TradeHistory }>(`/api/tokens/${address}/trades${params}`);
+      return mergeHistory(previous, body.history, sent);
+    },
+    enabled,
+    staleTime: Number.POSITIVE_INFINITY,
+    // `mergeHistory` sendiri yang menjaga objek lama bila tidak ada yang berubah.
+    structuralSharing: false,
+    refetchInterval: (current) => {
+      const data = current.state.data;
+      return data && data.timed < data.total ? HISTORY_CATCH_UP_MS : false;
+    },
+    retry: 1,
+  });
+  const seenTip = useRef(tip);
+  useEffect(() => {
+    if (seenTip.current === tip) return;
+    seenTip.current = tip;
+    void queryClient.invalidateQueries({ queryKey: tradeHistoryKey(address) });
+  }, [tip, address, queryClient]);
+  return query;
+}
+
+const ETH_USD_POLL_MS = 60_000;
+
+/** Kurs ETH/USD dari feed on-chain; `null` = tidak terbaca (tampilan USD dinonaktifkan). */
+export function useEthUsd(enabled = true) {
+  return useQuery<EthUsdRate | null>({
+    queryKey: ['eth-usd'],
+    queryFn: () => getJson<{ rate: EthUsdRate | null }>('/api/tokens/eth-usd').then((body) => body.rate),
+    refetchInterval: ETH_USD_POLL_MS,
+    staleTime: ETH_USD_POLL_MS / 2,
+    enabled,
+    retry: 1,
   });
 }

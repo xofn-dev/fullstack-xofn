@@ -14,10 +14,12 @@ import {
   type TokenChainState,
   type TokenMeta,
 } from '@/lib/tokens/read';
+import { countUntimedBlocks, untimedBlocks } from '@/lib/tokens/block-times';
+import { historyPage, type HistoryQuery } from '@/lib/tokens/history';
 import { matchesFilter, type StatusFilter } from '@/lib/tokens/status';
 import type { TokenIndexStore } from '@/lib/tokens/store';
 import { homeContracts, lc } from '@/lib/web3/addresses';
-import type { TokenDetail, TokenErrorCode, TokenSummary, Trade } from '@/types/domain';
+import type { TokenDetail, TokenErrorCode, TokenSummary, TradeHistory } from '@/types/domain';
 import type { DisplayStatus } from '@/types/enums';
 
 // Layanan token untuk route API dan RSC. Sumber kebenaran adalah chain; index hanya menyimpan
@@ -65,13 +67,29 @@ const FRESH_MS = 2_000;
 // Trade yang terbaca dua kali dibuang oleh store (kunci txHash + logIndex).
 const OVERLAP_BLOCKS = 64n;
 
-// Waktu blok hanya dibaca untuk trade terbaru (yang ditampilkan halaman token), lalu diingat:
-// waktu sebuah blok tidak pernah berubah.
-const TIMED_TRADES = 30;
-const MAX_BLOCK_TIMES = 5_000;
+// Waktu blok dibaca dari chain lalu DISIMPAN di index (kolom `block_time`): waktu sebuah blok
+// tidak pernah berubah, dan chart candle butuh waktu seluruh riwayat, bukan hanya trade terbaru.
+// Trade terbaru diisi di dalam permintaan detail, tetapi paling lama selama anggaran ini; sisanya
+// tampil sebagai "reading…" dan menyusul pada polling berikutnya.
+const TIP_BLOCKS = 8;
+const TIP_BUDGET_MS = 250;
+// Riwayat lama diisi bertahap SETELAH respons dikirim. RPC publik dibatasi rate, jadi satu
+// putaran membaca sedikit blok dan putaran berikutnya menunggu jeda ini.
+const BACKFILL_BLOCKS = 20;
+const BACKFILL_GAP_MS = 2_000;
 // Waktu blok yang gagal dibaca baru dicoba lagi setelah jeda ini, supaya RPC yang sedang
-// bermasalah tidak dibebani permintaan yang sama pada setiap polling.
+// bermasalah tidak dibebani permintaan yang sama pada setiap polling. Selama itu pengisian
+// riwayat lama juga berhenti.
 const BLOCK_TIME_RETRY_MS = 30_000;
+const MAX_RETRY_MARKS = 5_000;
+
+export interface BackfillResult {
+  /** Blok yang waktunya terbaca dan tersimpan pada putaran ini. */
+  read: number;
+  failed: number;
+  /** Blok yang waktunya masih kosong setelah putaran ini. */
+  remaining: number;
+}
 
 interface Timed<T> {
   at: number;
@@ -83,6 +101,13 @@ export interface TokenService {
   sync(): Promise<{ tokens: number; cursor: string }>;
   list(filter: StatusFilter): Promise<TokenSummary[]>;
   detail(address: Address): Promise<TokenDetail>;
+  /** Riwayat trade curve ber-waktu untuk chart; hanya membaca index, tidak membaca state chain. */
+  history(address: Address, query: HistoryQuery): Promise<TradeHistory>;
+  /**
+   * Mengisi waktu blok trade lama, satu putaran kecil. Dipanggil setelah respons dikirim dan dari
+   * cron; tidak pernah melempar. Tanpa alamat: semua token, berbagi satu jatah blok.
+   */
+  backfillTimes(address?: Address, blocks?: number): Promise<BackfillResult>;
 }
 
 export function createTokenService(ctx: ReadContext, store: TokenIndexStore, now: () => number): TokenService {
@@ -93,40 +118,81 @@ export function createTokenService(ctx: ReadContext, store: TokenIndexStore, now
   const fresh = <T>(entry: Timed<T> | null | undefined): entry is Timed<T> =>
     !!entry && now() - entry.at < FRESH_MS;
 
-  const blockTimes = new Map<string, number>();
   const blockTimeRetryAt = new Map<string, number>();
+  const filling = new Map<Address, Promise<BackfillResult>>();
+  let backfillPausedUntil = 0;
+  let lastBackfillAt = Number.NEGATIVE_INFINITY;
 
-  /** Membaca waktu blok yang belum dikenal untuk trade terbaru. Kegagalan dibiarkan: "not read". */
-  async function warmBlockTimes(trades: Trade[]): Promise<void> {
-    const client = ctx.clientFor(homeContracts(ctx.deployment).chain.chain);
-    if (!client) return;
-    const blocks = new Set(trades.slice(-TIMED_TRADES).map((trade) => trade.blockNumber));
-    const at = now();
-    const missing = [...blocks].filter(
-      (block) => !blockTimes.has(block) && (blockTimeRetryAt.get(block) ?? 0) <= at,
-    );
-    if (missing.length === 0) return;
-    if (blockTimes.size + missing.length > MAX_BLOCK_TIMES) blockTimes.clear();
-    await Promise.all(
-      missing.map(async (block) => {
-        try {
-          blockTimes.set(block, Number(await client.getBlockTimestamp(BigInt(block))));
-          blockTimeRetryAt.delete(block);
-        } catch {
-          // Waktu yang tidak terbaca tidak diisi dengan perkiraan; dicoba lagi nanti.
-          blockTimeRetryAt.set(block, at + BLOCK_TIME_RETRY_MS);
-        }
-      }),
-    );
+  /**
+   * Membaca waktu blok yang belum terisi di satu curve (terbaru dulu) lalu menyimpannya.
+   * Satu proses per curve; kegagalan dibiarkan sebagai "not read" dan tidak pernah dilempar.
+   */
+  function fillTimes(curve: Address, limit: number): Promise<BackfillResult> {
+    const running = filling.get(curve);
+    if (running) return running;
+    const run = (async (): Promise<BackfillResult> => {
+      const client = ctx.clientFor(homeContracts(ctx.deployment).chain.chain);
+      const trades = await store.getTrades(curve);
+      if (!client) return { read: 0, failed: 0, remaining: countUntimedBlocks(trades) };
+      const at = now();
+      const blocks = untimedBlocks(trades, limit, (block) => (blockTimeRetryAt.get(block) ?? 0) > at);
+      if (blocks.length === 0) return { read: 0, failed: 0, remaining: countUntimedBlocks(trades) };
+      const times = new Map<string, number>();
+      let failed = 0;
+      await Promise.all(
+        blocks.map(async (block) => {
+          try {
+            const seconds = Number(await client.getBlockTimestamp(BigInt(block)));
+            // Beberapa node mengisi 0 untuk waktu yang tidak mereka ketahui; itu bukan waktu blok.
+            if (!Number.isSafeInteger(seconds) || seconds <= 0) throw new Error('waktu blok tidak sah');
+            times.set(block, seconds);
+            blockTimeRetryAt.delete(block);
+          } catch {
+            // Waktu yang tidak terbaca tidak diisi dengan perkiraan; dicoba lagi nanti.
+            failed += 1;
+            if (blockTimeRetryAt.size >= MAX_RETRY_MARKS) blockTimeRetryAt.clear();
+            blockTimeRetryAt.set(block, at + BLOCK_TIME_RETRY_MS);
+          }
+        }),
+      );
+      if (failed > 0) backfillPausedUntil = at + BLOCK_TIME_RETRY_MS;
+      await store.saveBlockTimes(curve, times);
+      return { read: times.size, failed, remaining: countUntimedBlocks(await store.getTrades(curve)) };
+    })()
+      .catch((): BackfillResult => {
+        // Index tidak terbaca atau tidak bisa ditulis: riwayat lama berhenti dulu, tidak diulang
+        // pada setiap polling.
+        backfillPausedUntil = now() + BLOCK_TIME_RETRY_MS;
+        return { read: 0, failed: 0, remaining: 0 };
+      })
+      .finally(() => {
+        filling.delete(curve);
+      });
+    filling.set(curve, run);
+    return run;
   }
 
-  /** Trade dengan waktu bloknya; yang belum terbaca tetap null. */
-  async function withBlockTimes(trades: Trade[]): Promise<Trade[]> {
-    await warmBlockTimes(trades);
-    return trades.map((trade) => {
-      const timestamp = blockTimes.get(trade.blockNumber);
-      return timestamp === undefined ? trade : { ...trade, timestamp };
-    });
+  async function backfillTimes(address?: Address, blocks = BACKFILL_BLOCKS): Promise<BackfillResult> {
+    const total: BackfillResult = { read: 0, failed: 0, remaining: 0 };
+    const at = now();
+    if (at < backfillPausedUntil || at - lastBackfillAt < BACKFILL_GAP_MS) return total;
+    lastBackfillAt = at;
+    try {
+      const metas = address ? [await store.getMeta(address)] : await store.listMeta();
+      let budget = blocks;
+      for (const meta of metas) {
+        if (!meta) continue;
+        // Jatah habis: curve berikutnya hanya dihitung sisanya, tidak dibaca.
+        const result = await fillTimes(meta.curve, Math.max(budget, 0));
+        budget -= result.read + result.failed;
+        total.read += result.read;
+        total.failed += result.failed;
+        total.remaining += result.remaining;
+      }
+    } catch {
+      // Index tidak terbaca: tidak ada yang diisi pada putaran ini.
+    }
+    return total;
   }
 
   // Status terakhir yang sudah ditulis ke store: polling tidak menulis ulang nilai yang sama.
@@ -167,7 +233,6 @@ export function createTokenService(ctx: ReadContext, store: TokenIndexStore, now
       known = [];
       details.clear();
       savedStatus.clear();
-      blockTimes.clear();
       blockTimeRetryAt.clear();
     }
 
@@ -234,7 +299,7 @@ export function createTokenService(ctx: ReadContext, store: TokenIndexStore, now
         })
       : null;
     // Waktu blok trade yang sudah terindeks dibaca bersamaan dengan sync, bukan sesudahnya.
-    if (known) void store.getTrades(known.curve).then(warmBlockTimes, () => undefined);
+    if (known) void fillTimes(known.curve, TIP_BLOCKS);
     const shared = fresh(syncing);
     await sync();
     // Dibaca ulang setelah sync: token bisa baru saja terindeks, atau index baru saja dikosongkan.
@@ -250,14 +315,30 @@ export function createTokenService(ctx: ReadContext, store: TokenIndexStore, now
     const early = await eager;
     if (eager && !early) throw stateError;
     const state = early ?? (await readChainState(ctx, meta));
-    const detail = withTrades(state, meta, await withBlockTimes(await store.getTrades(meta.curve)));
+    // Trade yang baru terindeks: waktunya ditunggu sebentar saja, lalu respons dikirim apa adanya.
+    await withinBudget(fillTimes(meta.curve, TIP_BLOCKS), TIP_BUDGET_MS);
+    const nowSec = Math.floor(ctx.now().getTime() / 1_000);
+    const detail = withTrades(state, meta, await store.getTrades(meta.curve), nowSec);
     await rememberStatus(address, detail.status);
     return detail;
+  }
+
+  async function runHistory(address: Address, query: HistoryQuery): Promise<TradeHistory> {
+    await sync();
+    const meta = await store.getMeta(address);
+    if (!meta) throw new TokenServiceError('not_found', 'This address is not a token launched through XofN.');
+    return historyPage(await store.getTrades(meta.curve), query, ctx.now().toISOString());
   }
 
   return {
     backend: store.backend,
     sync,
+    backfillTimes,
+    history(address, query) {
+      return runHistory(address, query).catch((error: unknown) => {
+        throw toServiceError(error);
+      });
+    },
     async list(filter) {
       if (!fresh(listing)) {
         const value = runList().catch((error: unknown) => {
@@ -280,6 +361,18 @@ export function createTokenService(ctx: ReadContext, store: TokenIndexStore, now
       return value;
     },
   };
+}
+
+/** Menunggu `work` paling lama `ms`; pekerjaannya sendiri tetap berjalan sampai selesai. */
+async function withinBudget(work: Promise<unknown>, ms: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    work,
+    new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, ms);
+    }),
+  ]);
+  clearTimeout(timer);
 }
 
 /** Kegagalan RPC dilaporkan sebagai `rpc_failed` tanpa membocorkan URL RPC. */

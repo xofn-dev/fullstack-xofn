@@ -5,9 +5,12 @@ import { formatInt } from '@/lib/format';
 import { getTierInfo } from '@/lib/tiers';
 import { cn } from '@/lib/cn';
 import { useOverlay } from '@/components/ui/overlay-provider';
+import { FIXED_SUPPLY } from '@/lib/tokens/market';
 import { TIERS, type ChainKey, type Tier } from '@/types/enums';
 
-export const FIXED_SUPPLY = 999_000_000;
+// Nilainya ada di `lib/tokens/market` (dipakai juga oleh statistik pasar); diekspor ulang di sini
+// untuk pemakai lama.
+export { FIXED_SUPPLY };
 export const MAX_LOGO_BYTES = 3_000_000;
 
 export interface LaunchFieldsProps {

@@ -48,6 +48,7 @@ Semua versi adalah baseline minimum. Saat inisialisasi, **pin versi exact** di `
 | Unit test | **Vitest** (environment node, `tests/**/*.test.ts`) | latest stable | [Pola: Fademan] |
 | Script TS | `tsx` | ^4.23 | [Pola: Cognita/Assize] |
 | Font | `next/font/google` (display + mono, D3) | — | [Pola: Assize] |
+| Chart harga | `lightweight-charts` (TradingView, Apache-2.0; satu sub-dependency `fancy-canvas`) | **5.3.0** (dipin) | **Disetujui pengguna 21 Nov 2026.** Hanya diimpor `src/components/token/market-chart.tsx`, dimuat `next/dynamic({ ssr: false })`. Lisensi meminta atribusi: logo TradingView di chart dibiarkan tampil (`attributionLogo`) dan teks NOTICE ada di kepala berkas itu. Bentuk bonding curve tetap SVG tulis tangan |
 
 Tidak dipakai:
 - `motion` / `framer-motion`: cukup satu library animasi, yaitu GSAP.
@@ -395,9 +396,11 @@ Catatan baca [Phase 0, `proof/2026-11-17-phase0/03-uln-semantics.md`]:
 |---|---|---|---|
 | `/api/check/[chain]/[address]` | GET | Validasi alamat → cache Supabase (TTL, P20) → bila basi, baca RPC (+ OFT API) → simpan → kembalikan hasil + `checked_at` | Publik, rate-limited |
 | `/api/tokens` | GET | Daftar token XofN (filter `status`), dari index | Publik |
-| `/api/tokens/[address]` | GET | Detail token: status lifecycle, tier, langkah ekspansi per EID, supply per chain | Publik |
+| `/api/tokens/[address]` | GET | Detail token: status lifecycle, tier, langkah ekspansi per EID, supply per chain, statistik 24 jam (`market`). Setelah respons dikirim (`after()`), waktu blok trade lama diisi sedikit demi sedikit | Publik |
+| `/api/tokens/[address]/trades` | GET | Riwayat trade curve untuk chart (`time`, `key`, `side`, `eth`, `raised`). `?after=<blok>:<log>&timed=<n>` → hanya trade sesudah kursor. Trade tanpa waktu blok dikirim `time: null` | Publik |
+| `/api/tokens/eth-usd` | GET | Kurs ETH/USD dari feed Chainlink on-chain (Robinhood Chain mainnet) + sumber dan waktu baca; `rate: null` bila tidak terbaca atau basi. Hanya untuk tampilan USD | Publik |
 | `/api/cron/recheck` | POST | Re-check berkala token XofN dan Check populer; deteksi **Changed** | `Authorization: Bearer CRON_SECRET` |
-| `/api/cron/index-events` | POST | Indeks event Curve/Graduator/Registry/Remote per chain (cursor blok) | `CRON_SECRET` |
+| `/api/cron/index-events` | POST | Indeks event Curve/Graduator/Registry/Remote per chain (cursor blok), lalu mengisi waktu blok trade yang masih kosong (200 blok per panggilan) | `CRON_SECRET` |
 
 Aturan:
 - Format error seragam `{ error: { code, message } }` [Pola: Fademan].
@@ -416,7 +419,7 @@ Migrasi bernomor `supabase/migrations/0001_*.sql` [Pola: Cognita]. Tipe dihasilk
 | Tabel | Kolom utama | Catatan |
 |---|---|---|
 | `tokens` | `address` (pk, lowercase), `home_chain_id`, `name`, `ticker`, `image_path`, `tier` (`standard`/`fortress`), `status` (`bonding`/`graduated`/`expanding`/`locked`/`changed`), `expansion_eids int[]`, `created_tx`, `graduated_tx`, `created_at` | Diisi indexer dari event launch / graduate / expand |
-| `curve_trades` | `token`, `tx_hash`, `side`, `amount_token`, `amount_eth`, `price`, `block_time` | Untuk chart & progres |
+| `curve_trades` | `token`, `curve`, `tx_hash`, `log_index`, `side`, `trader`, `amount_token`, `amount_eth`, `eth_raised`, `block_number`, `block_time` | Untuk chart & progres. Tidak ada kolom harga: harga diturunkan dari `eth_raised` (curve tanpa fee). `block_time` diisi layanan sejak 21 Nov 2026 lewat `getBlock` (waktu di log RPC home selalu 0), terbaru dulu, tanpa migrasi baru |
 | `expansion_steps` | `token`, `eid`, `step`, `status` (`pending`/`ok`/`failed`), `tx_hash`, `lz_guid`, `updated_at` | Sumber UI progres ekspansi per chain |
 | `oft_checks` | `id`, `chain_id`, `address`, `checked_at`, `owner`, `delegate`, `overall_label`, `is_xofn`, `verify_result jsonb`, `raw jsonb` | Cache XofN Check |
 | `oft_pathways` | `check_id`, `local_eid`, `remote_eid`, `direction`, `send_lib`, `receive_lib`, `uses_default_lib`, `confirmations`, `required_dvns text[]`, `optional_dvns text[]`, `optional_threshold`, `app_config jsonb`, `label`, `status` | Satu baris per pathway per arah (efektif + mentah) |
@@ -525,9 +528,12 @@ Mode ditentukan di server dan diteruskan ke klien. Klien hanya memilih tombol ma
      - Layanan (`src/lib/tokens/service.ts`) membaca state chain **bersamaan** dengan sync index, bukan sesudahnya. Sync hangat satu putaran RPC: nomor blok, `tokenCount`, dan log sampai blok terbaru dengan tumpang-tindih 64 blok.
      - Di jaringan publik pembacaan kontrak digabung lewat Multicall3 (`src/lib/web3/public-client.ts`); Anvil lokal tetap batch JSON-RPC.
      - Store Supabase dibungkus `CachedTokenStore` (cermin memori; index hanya bertambah, chain tetap sumber kebenaran).
-     - Waktu trade dibaca dari bloknya untuk 30 trade terbaru dan diingat per blok; yang tidak terbaca tetap `null`.
+     - Waktu trade dibaca dari bloknya lalu **disimpan di index** (`curve_trades.block_time`): 8 blok teratas di dalam permintaan (batas tunggu 250 ms), sisanya 20 blok per putaran setelah respons dikirim. Yang belum terbaca tetap `null`; kegagalan menghentikan pengisian 30 dtk.
+     - `market` (volume dan harga pembanding 24 jam) dihitung server dari seluruh trade; `unread` bila ada trade tanpa waktu di jalur jendelanya.
   2. **State curve langsung dari browser** (`src/lib/client/use-curve-live.ts`, 2 dtk, hanya selama Bonding): `ethRaised`, `tokensSold`, `currentPrice`, `thresholdReached` dalam satu `eth_call`. Bila berbeda dari yang dibawa API, detail diambil ulang saat itu juga.
   3. **Trade dari receipt transaksi pengguna** (`src/lib/tokens/live.ts`): event `Bought` / `Sold` ditampilkan seketika dan disimpan terpisah sampai index server memuatnya.
+  4. **Riwayat trade untuk chart** (`/api/tokens/[address]/trades`, `useTradeHistory`): tanpa interval sendiri; diambil ulang saat trade terakhir menurut detail berubah, dan hanya trade sesudah kursor. Candle, indikator, dan satuan sumbu dibentuk di klien oleh modul murni (`src/lib/tokens/{candles,indicators,chart-scale}.ts`): bucket kosong tidak menghasilkan candle, dan hanya deret ber-waktu yang bersambung yang dipakai.
+  5. **Kurs ETH/USD** (`/api/tokens/eth-usd`, 60 dtk): feed Chainlink di Robinhood Chain mainnet (`feeds.ethUsd` di registry chain), dibaca lewat client tersendiri yang memeriksa chain ID. Di testnet dan lokal kurs ini acuan berlabel. Sumbu chart dalam USD memakai kurs saat dibaca untuk semua candle, dan menyatakannya.
 - **Halaman tidak menunggu chain.** `/t/[address]` dan `/launch` membatasi pembacaan server (±1 dtk); bila lewat, halaman dikirim dengan kerangka dan klien melanjutkan. `loading.tsx` ada untuk `/t/[address]`, `/launch`, `/check/[chain]/[address]`.
 - **Receipt transaksi** dipoll tiap 1 dtk dengan batas 90 dtk (`src/lib/web3/use-tx-flow.ts`).
 - State UI lokal: tier terpilih (dibagi antara tier card, DVN rig, dan "inside the coin") memakai satu React context kecil di landing.
@@ -632,6 +638,7 @@ Versi exact ada di `package.json`. Selisih dari baseline §1.1 atau dari rilis t
 | `vitest` | 4.1.12 | Vitest 5 butuh Node ≥ 22.12 |
 | `three`, `@types/three` | 0.187.0 | Baseline `^0.184` |
 | `gsap` / `lenis` | 3.15.1 / 1.3.27 | Baseline `^3.13` / `^1.1` |
+| `lightweight-charts` | 5.3.0 | Ditambahkan 21 Nov 2026 (disetujui pengguna); lihat §1.1 |
 
 ### Catatan implementasi Phase 2 (XofN Check, 17 Nov 2026)
 

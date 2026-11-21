@@ -13,6 +13,8 @@ export default function LaunchLoading() {
             <Skeleton width={140} height={10} />
             <Skeleton width="min(460px, 90%)" height={96} />
             <Skeleton height={64} />
+            {/* Tempat kartu pratinjau "On the board". */}
+            <Skeleton width="min(490px, 100%)" height={380} />
             <Skeleton height={120} />
           </div>
           <div className="launch-form" aria-hidden="true">

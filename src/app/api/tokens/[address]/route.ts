@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { after } from 'next/server';
 import { apiOk } from '@/lib/api-error';
 import { parseTokenAddress } from '@/lib/tokens';
 import { requireTokenService, tokenErrorResponse } from '@/lib/tokens/http';
@@ -15,7 +16,12 @@ export async function GET(_request: Request, context: { params: Promise<{ addres
   const service = requireTokenService();
   if (service instanceof Response) return service;
   try {
-    return apiOk({ token: await service.detail(parseTokenAddress(address)) });
+    const parsed = parseTokenAddress(address);
+    const token = await service.detail(parsed);
+    // Waktu blok trade lama diisi SETELAH respons dikirim; polling halaman token yang
+    // mendorongnya maju. Tidak pernah menunda jawaban ini.
+    after(() => service.backfillTimes(parsed));
+    return apiOk({ token });
   } catch (error) {
     return tokenErrorResponse(error);
   }

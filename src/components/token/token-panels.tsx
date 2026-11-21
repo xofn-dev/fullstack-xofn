@@ -1,29 +1,165 @@
 'use client';
 
-import { memo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { Component, memo, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { explorerAddressUrl, explorerTxUrl, getChain, type ChainInfo } from '@/lib/chains';
 import { cn } from '@/lib/cn';
-import { formatBps, formatEth, formatInt, formatTokens, shortAddress } from '@/lib/format';
+import { formatBps, formatEth, formatInt, formatTokens, formatUnitsFixed, shortAddress } from '@/lib/format';
 import { publicEnv } from '@/lib/public-env';
-import { FIXED_SUPPLY } from '@/components/launch/launch-fields';
-import { PriceChart, type ChartMode } from '@/components/token/price-chart';
+import {
+  TIMEFRAMES,
+  TIMEFRAME_LABEL,
+  bucketLabel,
+  candlesFor,
+  curvePriceAt,
+  priceTrades,
+  timedRun,
+  type TimeframeId,
+} from '@/lib/tokens/candles';
+import type { CurveShape } from '@/lib/tokens/chart';
+import { CHART_SCALE_LABEL, unitCaption, type ChartScale } from '@/lib/tokens/chart-scale';
+import type { HistoryState } from '@/lib/tokens/history';
+import { EMA_PERIOD, INDICATOR_WARMUP, MA_PERIOD, RSI_PERIOD } from '@/lib/tokens/indicators';
+import { FIXED_SUPPLY } from '@/lib/tokens/market';
+import type { ChartIndicators, MarketChartKind } from '@/components/token/market-chart';
+import { MarketStats, type MoneyUnit } from '@/components/token/market-stats';
+import { PriceChart } from '@/components/token/price-chart';
 import { Ago, useAgeSeconds } from '@/components/ui/ago';
 import { LiveValue } from '@/components/ui/live-value';
 import { ProgressBar } from '@/components/ui/progress-bar';
-import type { CurveParams, CurveState, Trade, VerifyReading } from '@/types/domain';
+import type { CurveParams, CurveState, EthUsdRate, MarketWindow, PoolState, Trade, VerifyReading } from '@/types/domain';
 
 const TOTAL_SUPPLY_UNITS = BigInt(FIXED_SUPPLY) * 10n ** 18n;
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-const RECENT_TRADES = 8;
+const PRICE_DIGITS = 12;
 
-/** Perubahan harga terhadap harga awal curve, dalam persen satu desimal. null bila tidak terhitung. */
-function changeFromStart(current: bigint, start: bigint): { text: string; direction: 'up' | 'down' | null } | null {
-  if (start <= 0n) return null;
-  const tenths = ((current - start) * 1_000n) / start;
-  if (tenths === 0n) return { text: 'AT START PRICE', direction: null };
-  const abs = tenths < 0n ? -tenths : tenths;
-  const text = `${tenths > 0n ? '▲ +' : '▼ −'}${abs / 10n}.${abs % 10n}% FROM START`;
-  return { text, direction: tenths > 0n ? 'up' : 'down' };
+/** Bentuk curve dari nilai teks; hanya dihitung ulang bila salah satu nilainya berubah. */
+function useCurveShape(curve: CurveState, params: CurveParams): CurveShape {
+  const { saleSupply, graduationThreshold } = curve;
+  const { virtualEth, virtualTokens } = params;
+  return useMemo(
+    () => ({
+      virtualEth: BigInt(virtualEth),
+      virtualTokens: BigInt(virtualTokens),
+      saleSupply: BigInt(saleSupply),
+      graduationThreshold: BigInt(graduationThreshold),
+    }),
+    [virtualEth, virtualTokens, saleSupply, graduationThreshold],
+  );
+}
+
+// Library chart hanya diunduh saat mode Line/Candles dibuka, dan hanya di browser.
+const MarketChartLazy = dynamic(
+  () => import('@/components/token/market-chart').then((module) => module.MarketChart),
+  { ssr: false, loading: () => <ChartPlaceholder busy>Loading the chart.</ChartPlaceholder> },
+);
+
+/** Bingkai setinggi chart untuk keadaan memuat, kosong, dan gagal: data datang tanpa menggeser layout. */
+function ChartPlaceholder({ busy = false, children }: { busy?: boolean; children: ReactNode }) {
+  return (
+    <div className="market-chart">
+      <div className="chart-legend" aria-hidden="true" />
+      {/* Setinggi chart bawaan (dengan pane volume), supaya chart yang datang tidak menggeser layout. */}
+      <div
+        className={cn('chart-frame market-frame has-volume chart-state', busy && 'skeleton')}
+        role="status"
+        aria-busy={busy || undefined}
+      >
+        <div className={cn(busy && 'sr-only')}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/** Bila bundel chart gagal dimuat, chart tulis tangan (tanpa sumbu waktu) tetap dipakai. */
+class ChartBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+
+  render(): ReactNode {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+type ViewMode = 'curve' | MarketChartKind;
+
+const VIEW_LABEL: Record<ViewMode, string> = { curve: 'Curve', line: 'Line', candles: 'Candles' };
+
+const INDICATOR_ITEMS: Array<{ key: keyof ChartIndicators; label: string; hint: string; warmup: number }> = [
+  { key: 'volume', label: 'Volume', hint: 'ETH traded per candle', warmup: 1 },
+  { key: 'ma', label: `MA ${MA_PERIOD}`, hint: 'Simple moving average of the close', warmup: INDICATOR_WARMUP.ma },
+  { key: 'ema', label: `EMA ${EMA_PERIOD}`, hint: 'Exponential moving average of the close', warmup: INDICATOR_WARMUP.ema },
+  { key: 'rsi', label: `RSI ${RSI_PERIOD}`, hint: 'Relative strength, 0 to 100', warmup: INDICATOR_WARMUP.rsi },
+];
+
+/** Menu indikator ringkas. Indikator yang datanya belum cukup tetap bisa dipilih, dengan catatannya. */
+function IndicatorMenu({
+  value,
+  onChange,
+  candleCount,
+}: {
+  value: ChartIndicators;
+  onChange: (next: ChartIndicators) => void;
+  candleCount: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const panelId = useId();
+  const active = INDICATOR_ITEMS.filter((item) => value[item.key]).length;
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="indicator-menu" ref={root}>
+      <button
+        type="button"
+        className="indicator-toggle"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((current) => !current)}
+      >
+        Indicators <b>{active}</b>
+      </button>
+      {open && (
+        <div id={panelId} className="indicator-panel" role="group" aria-label="Chart indicators">
+          {INDICATOR_ITEMS.map((item) => (
+            <label key={item.key}>
+              <input
+                type="checkbox"
+                checked={value[item.key]}
+                onChange={(event) => onChange({ ...value, [item.key]: event.target.checked })}
+              />
+              <span>
+                <b>{item.label}</b>
+                <small>
+                  {candleCount < item.warmup
+                    ? `Needs ${item.warmup} candles · this range has ${candleCount}`
+                    : item.hint}
+                </small>
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface PricePanelProps {
@@ -31,7 +167,14 @@ interface PricePanelProps {
   params: CurveParams;
   spark: string[];
   tradeCount: number;
-  startPrice: string;
+  market: MarketWindow;
+  poolState: PoolState | null;
+  /** Riwayat trade ber-waktu untuk chart; null selagi belum terbaca. */
+  history: HistoryState | null;
+  historyFailed: boolean;
+  onRetryHistory: () => void;
+  rate: EthUsdRate | null;
+  rateReading: boolean;
   /**
    * Asal angka di panel ini: `live` = state curve dibaca langsung tiap 2 detik; `polling` =
    * pembacaan langsung belum/tidak tersedia, angka dari polling API; `closed` = curve sudah
@@ -46,29 +189,163 @@ const FEED_LABEL: Record<PricePanelProps['feed'], string> = {
   closed: 'CURVE CLOSED · FINAL VALUES',
 };
 
-export const PricePanel = memo(function PricePanel({ curve, params, spark, tradeCount, startPrice, feed }: PricePanelProps) {
-  const [mode, setMode] = useState<ChartMode>('curve');
-  const price = BigInt(curve.currentPrice);
+export const PricePanel = memo(function PricePanel({
+  curve,
+  params,
+  spark,
+  tradeCount,
+  market,
+  poolState,
+  history,
+  historyFailed,
+  onRetryHistory,
+  rate,
+  rateReading,
+  feed,
+}: PricePanelProps) {
+  // Token yang sudah diperdagangkan dibuka di chart harga; yang belum, di bentuk curve-nya.
+  const [mode, setMode] = useState<ViewMode>(tradeCount > 0 ? 'candles' : 'curve');
+  const [timeframe, setTimeframe] = useState<TimeframeId>('all');
+  const [indicators, setIndicators] = useState<ChartIndicators>({ volume: true, ma: false, ema: false, rsi: false });
+  const [unit, setUnit] = useState<MoneyUnit>('eth');
+  const [scale, setScale] = useState<ChartScale>('price');
+  // Chart mengikuti sakelar ETH/USD di atas. Kurs yang dipakai adalah kurs saat dibaca, untuk
+  // semua candle; keterangannya ditulis di kaki chart.
+  const chartUsd = unit === 'usd' && rate !== null ? rate : null;
+  const shape = useCurveShape(curve, params);
+  const closed = feed === 'closed';
   const raised = BigInt(curve.ethRaised);
   const threshold = BigInt(curve.graduationThreshold);
-  const change = changeFromStart(price, BigInt(startPrice));
   const remaining = threshold > raised ? threshold - raised : 0n;
+
+  // Candle dibentuk dari trade ber-waktu yang bersambung; dihitung ulang hanya bila riwayat atau
+  // timeframe berubah, bukan pada setiap polling harga.
+  const priced = useMemo(() => (history ? priceTrades(timedRun(history.points), shape) : []), [history, shape]);
+  const { candles, view } = useMemo(() => candlesFor(priced, timeframe), [priced, timeframe]);
+  const label = bucketLabel(view.bucketSec);
+
+  const fallback = (
+    <>
+      <PriceChart mode="trades" curve={curve} params={params} spark={spark} tradeCount={tradeCount} />
+      <p className="step-note">
+        Showing the curve price after each trade, without a time axis.
+      </p>
+    </>
+  );
+
+  let chart: ReactNode;
+  if (mode === 'curve') {
+    chart = <PriceChart mode="curve" curve={curve} params={params} spark={spark} tradeCount={tradeCount} />;
+  } else if (!history) {
+    chart = historyFailed ? (
+      <ChartPlaceholder>
+        <strong>TRADE HISTORY NOT READ</strong>
+        <p>The trade history could not be read. No candles are assumed.</p>
+        <button type="button" className="btn small" onClick={onRetryHistory}>
+          Retry
+        </button>
+      </ChartPlaceholder>
+    ) : (
+      <ChartPlaceholder busy>Reading the trade history.</ChartPlaceholder>
+    );
+  } else if (history.total === 0) {
+    chart = (
+      <ChartPlaceholder>
+        <strong>NO TRADES YET</strong>
+        <p>Candles appear after the first trade on the curve. The Curve view shows the price path to graduation.</p>
+      </ChartPlaceholder>
+    );
+  } else if (priced.length === 0) {
+    // Trade sudah ada, tetapi waktu bloknya belum terbaca: tanpa waktu tidak ada candle.
+    chart = (
+      <>
+        <PriceChart mode="trades" curve={curve} params={params} spark={spark} tradeCount={tradeCount} />
+        <p className="step-note" role="status">
+          Block times for these trades are still being read, so there is no time axis yet. This view shows
+          the curve price after each trade.
+        </p>
+      </>
+    );
+  } else {
+    chart = (
+      <ChartBoundary fallback={fallback}>
+        <MarketChartLazy
+          kind={mode}
+          candles={candles}
+          indicators={indicators}
+          livePrice={closed ? null : curve.currentPrice}
+          bucketLabel={label}
+          summary={`${CHART_SCALE_LABEL[scale]} chart of curve trades, ${candles.length} ${label} candles.`}
+          scale={scale}
+          usdAnswer={chartUsd?.answer ?? null}
+          usdDecimals={chartUsd?.decimals ?? 0}
+        />
+      </ChartBoundary>
+    );
+  }
+
+  const covered = priced.length;
+  const total = history?.total ?? 0;
 
   return (
     <div className="app-panel area-chart rise" style={{ '--i': 2 } as React.CSSProperties}>
-      <div className="panel-head">
-        <h2>Bonding curve</h2>
+      <MarketStats
+        curve={curve}
+        closed={closed}
+        market={market}
+        poolState={poolState}
+        rate={rate}
+        rateReading={rateReading}
+        unit={unit}
+        onUnit={setUnit}
+      />
+      <div className="panel-head chart-head">
+        <h2>{mode === 'curve' ? 'Bonding curve' : scale === 'mcap' ? 'Market cap chart' : 'Price chart'}</h2>
         <div className="chart-tabs" role="group" aria-label="Chart view">
-          {(['curve', 'trades'] as const).map((item) => (
+          {(['curve', 'line', 'candles'] as const).map((item) => (
             <button key={item} type="button" aria-pressed={mode === item} onClick={() => setMode(item)}>
-              {item === 'curve' ? 'Curve' : 'Trades'}
+              {VIEW_LABEL[item]}
             </button>
           ))}
         </div>
       </div>
-      <PriceChart mode={mode} curve={curve} params={params} spark={spark} tradeCount={tradeCount} />
-      {mode === 'trades' && tradeCount === 0 && (
-        <p className="step-note">No trades yet. The line shows the starting price.</p>
+      {mode !== 'curve' && (
+        <div className="chart-toolbar">
+          <div className="chart-tabs is-wrap" role="group" aria-label="Chart timeframe">
+            {TIMEFRAMES.map((item) => (
+              <button key={item} type="button" aria-pressed={timeframe === item} onClick={() => setTimeframe(item)}>
+                {TIMEFRAME_LABEL[item]}
+              </button>
+            ))}
+          </div>
+          <div className="chart-toolbar-end">
+            <div className="chart-tabs" role="group" aria-label="Chart value">
+              {(['price', 'mcap'] as const).map((item) => (
+                <button key={item} type="button" aria-pressed={scale === item} onClick={() => setScale(item)}>
+                  {CHART_SCALE_LABEL[item]}
+                </button>
+              ))}
+            </div>
+            <IndicatorMenu value={indicators} onChange={setIndicators} candleCount={candles.length} />
+          </div>
+        </div>
+      )}
+      {chart}
+      {mode !== 'curve' && (
+        <div className="chart-foot">
+          <span>
+            TIMES IN UTC · BLOCK TIME · {unitCaption({ scale, usd: chartUsd ? { answer: 0n, decimals: 0 } : null })}
+            {chartUsd && ' AT THE CURRENT RATE, NOT THE RATE AT TRADE TIME'}
+            {scale === 'mcap' && ' · PRICE × FIXED SUPPLY'}
+          </span>
+          <span>
+            {closed
+              ? 'CURVE TRADES ONLY · POOL TRADES ARE NOT INDEXED'
+              : history && covered < total
+                ? `CANDLES COVER ${formatInt(covered)} OF ${formatInt(total)} TRADES · OLDER BLOCK TIMES STILL BEING READ`
+                : 'CURVE TRADES ONLY'}
+          </span>
+        </div>
       )}
       <div className="token-info">
         <span>GRADUATION</span>
@@ -79,18 +356,16 @@ export const PricePanel = memo(function PricePanel({ curve, params, spark, trade
       <ProgressBar bps={curve.progressBps} label="Progress to graduation threshold" />
       <div className="stat-row">
         <div className="stat-tile">
-          <small>PRICE</small>
-          <strong>
-            <LiveValue amount={price}>{formatEth(price, 12)}</LiveValue>
-          </strong>
-          <em className={cn(change?.direction)}>{change?.text}</em>
-        </div>
-        <div className="stat-tile">
           <small>RAISED</small>
           <strong>
             <LiveValue amount={raised}>{formatEth(raised)}</LiveValue>
           </strong>
           <em>OF {formatEth(threshold)}</em>
+        </div>
+        <div className="stat-tile">
+          <small>TO GRADUATION</small>
+          <strong>{remaining > 0n ? <LiveValue amount={remaining}>{formatEth(remaining)}</LiveValue> : 'REACHED'}</strong>
+          <em>{remaining > 0n ? 'UNTIL THE THRESHOLD' : 'THRESHOLD REACHED'}</em>
         </div>
         <div className="stat-tile">
           <small>SOLD ON CURVE</small>
@@ -104,7 +379,7 @@ export const PricePanel = memo(function PricePanel({ curve, params, spark, trade
           <strong>
             <LiveValue amount={tradeCount}>{formatInt(tradeCount)}</LiveValue>
           </strong>
-          <em>{remaining > 0n ? `${formatEth(remaining)} TO GO` : 'THRESHOLD REACHED'}</em>
+          <em>ON THE CURVE</em>
         </div>
       </div>
       <div className="panel-meta panel-foot">
@@ -217,6 +492,12 @@ export const SecurityTable = memo(function SecurityTable({
 const tradeKey = (trade: Trade) => `${trade.txHash}-${trade.logIndex}`;
 
 type TimeMode = 'age' | 'time';
+type SideFilter = 'all' | 'buy' | 'sell';
+
+// Tabel dibuka dengan beberapa trade terbaru; "Show more" menambahnya bertahap sampai semua trade
+// yang dibawa detail (detail hanya membawa trade terbaru, bukan seluruh riwayat).
+const TRADE_STEPS = [8, 25] as const;
+const SIDE_LABEL: Record<SideFilter, string> = { all: 'All', buy: 'Buys', sell: 'Sells' };
 
 const pad2 = (value: number) => String(value).padStart(2, '0');
 
@@ -259,25 +540,39 @@ function TradeTime({ timestamp, mode }: { timestamp: number | null; mode: TimeMo
 export const TradesTable = memo(function TradesTable({
   trades,
   tradeCount,
+  curve,
+  params,
   home,
 }: {
   trades: Trade[];
   tradeCount: number;
+  curve: CurveState;
+  params: CurveParams;
   home: ChainInfo;
 }) {
   // Baris yang sudah ada saat panel pertama tampil tidak dianimasikan; hanya trade yang datang
   // sesudahnya. Kunci pertama disimpan sekali lewat state awal.
   const [seen] = useState(() => new Set(trades.map(tradeKey)));
   const [timeMode, setTimeMode] = useState<TimeMode>('age');
+  const [side, setSide] = useState<SideFilter>('all');
+  const [step, setStep] = useState(0);
+  const shape = useCurveShape(curve, params);
   if (trades.length === 0) return null;
-  const recent = trades.slice(-RECENT_TRADES).reverse();
+  const matching = side === 'all' ? trades : trades.filter((trade) => trade.side === side);
+  const limit = TRADE_STEPS[step] ?? matching.length;
+  const recent = matching.slice(-limit).reverse();
+  const canShowMore = recent.length < matching.length;
   return (
     <div className="app-panel area-trades">
       <div className="panel-head">
         <h2>Recent curve trades</h2>
-        <span className="panel-meta">
-          {recent.length} OF {formatInt(tradeCount)}
-        </span>
+        <div className="chart-tabs" role="group" aria-label="Filter trades by side">
+          {(['all', 'buy', 'sell'] as const).map((item) => (
+            <button key={item} type="button" aria-pressed={side === item} onClick={() => setSide(item)}>
+              {SIDE_LABEL[item]}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="data-table-wrap">
         <table className="data-table">
@@ -300,6 +595,9 @@ export const TradesTable = memo(function TradesTable({
               </th>
               <th scope="col">SIDE</th>
               <th scope="col" className="num">
+                PRICE AFTER
+              </th>
+              <th scope="col" className="num">
                 ETH
               </th>
               <th scope="col" className="num">
@@ -310,6 +608,13 @@ export const TradesTable = memo(function TradesTable({
             </tr>
           </thead>
           <tbody>
+            {recent.length === 0 && (
+              <tr>
+                <td colSpan={7}>
+                  No {side === 'buy' ? 'buys' : 'sells'} among the latest {formatInt(trades.length)} trades.
+                </td>
+              </tr>
+            )}
             {recent.map((trade) => {
               const txUrl = explorerTxUrl(home, trade.txHash);
               const traderUrl = explorerAddressUrl(home, trade.trader);
@@ -323,6 +628,10 @@ export const TradesTable = memo(function TradesTable({
                       <span aria-hidden="true">{trade.side === 'buy' ? '▲' : '▼'}</span>
                       {trade.side === 'buy' ? 'BUY' : 'SELL'}
                     </span>
+                  </td>
+                  {/* Harga curve sesudah trade ini, diturunkan dari `ethRaised` di event-nya. */}
+                  <td className="num">
+                    {formatUnitsFixed(curvePriceAt(shape, BigInt(trade.ethRaised)), 18, PRICE_DIGITS)}
                   </td>
                   <td className="num">{formatEth(trade.ethAmount)}</td>
                   <td className="num">{formatTokens(trade.tokenAmount, 0)}</td>
@@ -349,6 +658,22 @@ export const TradesTable = memo(function TradesTable({
             })}
           </tbody>
         </table>
+      </div>
+      <div className="panel-meta panel-foot trades-foot">
+        <span>
+          SHOWING {formatInt(recent.length)} OF {formatInt(matching.length)} LOADED · {formatInt(tradeCount)} TOTAL ON THE CURVE
+        </span>
+        {canShowMore ? (
+          <button type="button" className="link-btn" onClick={() => setStep((current) => current + 1)}>
+            Show more
+          </button>
+        ) : (
+          step > 0 && (
+            <button type="button" className="link-btn" onClick={() => setStep(0)}>
+              Show fewer
+            </button>
+          )
+        )}
       </div>
     </div>
   );

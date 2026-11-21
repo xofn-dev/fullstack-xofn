@@ -13,6 +13,15 @@ export interface LzAddresses {
   deadDvn: Address;
 }
 
+export interface PriceFeeds {
+  /**
+   * Proxy feed Chainlink ETH / USD (8 desimal). Dipakai hanya untuk menampilkan nilai USD.
+   * Sumber: direktori feed Chainlink untuk chain ini, dicocokkan dengan pembacaan on-chain
+   * `description()` dan `decimals()` (proof/2026-11-21-token-launch-ui/notes.md).
+   */
+  ethUsd: Address;
+}
+
 export interface ChainInfo {
   key: ChainKey;
   role: ChainRole;
@@ -29,6 +38,8 @@ export interface ChainInfo {
   publicRpc: string | null;
   /** Kontrak LayerZero V2 di chain ini; null untuk jaringan lokal. */
   lz: LzAddresses | null;
+  /** Feed harga on-chain di chain ini; null bila tidak ada yang terverifikasi. */
+  feeds: PriceFeeds | null;
 }
 
 type Registry = Record<ChainKey, ChainInfo>;
@@ -47,6 +58,7 @@ const MAINNET: Registry = {
       endpointV2: '0x6f475642a6e85809b1c36fa62763669b1b48dd5b',
       deadDvn: '0x6788f52439aca6bff597d3eec2dc9a44b8fee842',
     },
+    feeds: { ethUsd: '0x78f3556b67e17df817d51ef5a990cdaf09e8d3a9' },
   },
   base: {
     key: 'base',
@@ -61,6 +73,7 @@ const MAINNET: Registry = {
       endpointV2: '0x1a44076050125825900e736c501f859c50fe728c',
       deadDvn: '0x6498b0632f3834d7647367334838111c8c889703',
     },
+    feeds: null,
   },
   arbitrum: {
     key: 'arbitrum',
@@ -75,6 +88,7 @@ const MAINNET: Registry = {
       endpointV2: '0x1a44076050125825900e736c501f859c50fe728c',
       deadDvn: '0x758c419533ad64ce9d3413bc8d3a97b026098ec1',
     },
+    feeds: null,
   },
 };
 
@@ -92,6 +106,7 @@ const TESTNET: Registry = {
       endpointV2: '0x3acaaf60502791d199a5a5f0b173d78229ebfe32',
       deadDvn: '0x88b27057a9e00c5f05dda29241027aff63f9e6e0',
     },
+    feeds: null,
   },
   base: {
     key: 'base',
@@ -106,6 +121,7 @@ const TESTNET: Registry = {
       endpointV2: '0x6edce65403992e310a62460808c4b910d972f10f',
       deadDvn: '0x78551adc2553ef1858a558f5300f7018aad2fa7e',
     },
+    feeds: null,
   },
   arbitrum: {
     key: 'arbitrum',
@@ -120,6 +136,7 @@ const TESTNET: Registry = {
       endpointV2: '0x6edce65403992e310a62460808c4b910d972f10f',
       deadDvn: '0xa85be08a6ce2771c730661766aacf2c8bb24c611',
     },
+    feeds: null,
   },
 };
 
@@ -129,9 +146,9 @@ const TESTNET: Registry = {
 // `lz` tetap null: endpoint tiruan dibaca dari manifest, bukan dari registry ini.
 const LOCAL_RPC = 'http://127.0.0.1:8545';
 const LOCAL: Registry = {
-  robinhood: { ...MAINNET.robinhood, chainId: 31337, eid: 1, explorer: null, publicRpc: LOCAL_RPC, lz: null },
-  base: { ...MAINNET.base, chainId: 31337, eid: 2, explorer: null, publicRpc: LOCAL_RPC, lz: null },
-  arbitrum: { ...MAINNET.arbitrum, chainId: 31337, eid: 3, explorer: null, publicRpc: LOCAL_RPC, lz: null },
+  robinhood: { ...MAINNET.robinhood, chainId: 31337, eid: 1, explorer: null, publicRpc: LOCAL_RPC, lz: null, feeds: null },
+  base: { ...MAINNET.base, chainId: 31337, eid: 2, explorer: null, publicRpc: LOCAL_RPC, lz: null, feeds: null },
+  arbitrum: { ...MAINNET.arbitrum, chainId: 31337, eid: 3, explorer: null, publicRpc: LOCAL_RPC, lz: null, feeds: null },
 };
 
 const REGISTRIES: Record<Network, Registry> = {

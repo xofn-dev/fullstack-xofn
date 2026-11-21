@@ -177,6 +177,65 @@ export interface Trade {
 }
 
 /**
+ * Satu trade curve dalam bentuk ringkas untuk chart. Harga tidak ikut dikirim: diturunkan dari
+ * `raised` dan parameter curve, sama seperti di kontrak.
+ */
+export interface TradePoint {
+  /** Waktu blok (detik Unix); null = belum terbaca, tidak pernah diperkirakan. */
+  time: number | null;
+  /** `<nomor blok>:<indeks log>`: kunci urut dan unik di satu chain. */
+  key: string;
+  side: TradeSide;
+  /** ETH yang dipakai/diterima, dalam wei. */
+  eth: string;
+  /** `ethRaised` curve setelah trade ini, dalam wei. */
+  raised: string;
+}
+
+/** Jawaban `GET /api/tokens/[address]/trades`. */
+export interface TradeHistory {
+  /** `full` = seluruh riwayat; `delta` = hanya trade setelah kursor yang dikirim klien. */
+  mode: 'full' | 'delta';
+  points: TradePoint[];
+  /** Jumlah seluruh trade curve yang terindeks. */
+  total: number;
+  /** Berapa di antaranya yang waktu bloknya sudah terbaca. */
+  timed: number;
+  checkedAt: string;
+}
+
+/**
+ * Ringkasan 24 jam dari trade curve yang terindeks. `unread` = ada trade di dalam jendela yang
+ * waktu bloknya belum terbaca, jadi angkanya tidak dihitung (bukan ditebak).
+ */
+export interface MarketWindow {
+  status: 'read' | 'unread';
+  /** Detik Unix saat jendela ini dihitung. */
+  asOf: number;
+  /** Volume ETH trade curve dalam 24 jam terakhir (wei); null bila `unread`. */
+  volume24h: string | null;
+  trades24h: number | null;
+  /**
+   * Harga curve tepat 24 jam lalu (wei per token); null bila `unread`. Bila token berumur kurang
+   * dari 24 jam, ini harga awal curve dan `reference` = `start`.
+   */
+  price24hAgo: string | null;
+  reference: 'window' | 'start';
+}
+
+/** Kurs ETH/USD dari feed Chainlink on-chain. Selalu membawa sumber dan waktu bacanya. */
+export interface EthUsdRate {
+  /** Jawaban feed sebagai bilangan bulat ber-`decimals` desimal. */
+  answer: string;
+  decimals: number;
+  /** `updatedAt` putaran feed (detik Unix). */
+  updatedAt: number;
+  /** Kapan aplikasi membacanya (ISO). */
+  readAt: string;
+  source: { network: Network; chain: ChainKey; feed: Address };
+}
+
+/**
  * Pembacaan `verify()` Registry di satu chain.
  * `absent` = token belum ada di chain itu (ekspansi belum sampai); `unread` = RPC gagal.
  */
@@ -282,6 +341,8 @@ export interface TokenDetail extends TokenSummary {
   trades: Trade[];
   /** Jumlah seluruh trade curve yang terindeks; bisa lebih besar daripada `trades.length`. */
   tradeCount: number;
+  /** Volume dan harga pembanding 24 jam, dihitung server dari seluruh trade terindeks. */
+  market: MarketWindow;
   expansion: ExpansionChainState[];
   /** DVN per pathway sesuai tier. Sebelum ekspansi ini baru rencana ("applied at expansion"). */
   pathways: TokenPathway[];

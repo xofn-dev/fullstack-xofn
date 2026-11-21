@@ -867,7 +867,7 @@ button {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-/* ---- Chart halaman token (SVG tulis tangan; tanpa library) ---- */
+/* ---- Chart halaman token: bentuk curve = SVG tulis tangan; chart harga = Lightweight Charts ---- */
 .chart-tabs {
   display: inline-grid;
   grid-auto-flow: column;
@@ -896,7 +896,7 @@ button {
 }
 .chart-frame {
   position: relative;
-  height: 250px;
+  height: var(--chart-h, 250px);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
   background:
@@ -1057,6 +1057,279 @@ button {
 .stat-tile em.down {
   color: var(--color-danger-text);
 }
+/* ---- Statistik pasar di kepala panel harga: market cap menonjol, sisanya tile biasa ---- */
+.market {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-line-2);
+}
+.market-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 18px;
+}
+.market-cap {
+  min-width: 0;
+}
+.market-cap small {
+  display: block;
+  font: 9px var(--mono);
+  letter-spacing: 0.09em;
+  color: var(--color-muted);
+}
+.market-cap strong {
+  display: block;
+  margin: 8px 0 6px;
+  font: 600 31px/1.1 var(--display);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+.market-cap em {
+  display: block;
+  font: normal 9px/1.5 var(--mono);
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+.unit-switch {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+.unit-note,
+.rate-note {
+  font: 9px/1.6 var(--mono);
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+/* `!important`: aturan paragraf panel (ukuran huruf badan) kalau tidak ikut menimpa catatan ini. */
+.rate-note {
+  margin: 12px 0 0 !important;
+  font: 9px/1.6 var(--mono) !important;
+}
+/* ---- Chart harga (Lightweight Charts): toolbar, legenda OHLC, bingkai ---- */
+.area-chart {
+  --chart-h: 300px;
+}
+.chart-head {
+  margin-bottom: 12px;
+}
+.chart-tabs button {
+  min-height: 26px;
+}
+.chart-tabs button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.chart-tabs.is-wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+.chart-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+.chart-toolbar-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.indicator-menu {
+  position: relative;
+}
+.indicator-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-bg) 60%, transparent);
+  color: var(--color-muted);
+  font: 9px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+.indicator-toggle:hover,
+.indicator-toggle[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--color-mint-2) 60%, var(--color-line));
+  color: var(--color-text);
+}
+.indicator-toggle b {
+  min-width: 17px;
+  padding: 2px 5px;
+  border-radius: var(--radius-xs);
+  background: var(--color-ok-bg);
+  color: var(--color-ok-text);
+  font-weight: 500;
+  text-align: center;
+}
+.indicator-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  width: min(270px, calc(100vw - 64px));
+  padding: 6px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-panel);
+}
+.indicator-panel label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 9px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.indicator-panel label:hover {
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+.indicator-panel input {
+  margin: 2px 0 0;
+  accent-color: var(--color-mint);
+}
+.indicator-panel b {
+  display: block;
+  font: 500 10px var(--mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+.indicator-panel small {
+  display: block;
+  margin-top: 3px;
+  font: 9px/1.5 var(--mono);
+  color: var(--color-muted);
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  /* Tinggi dua baris disediakan sejak awal: legenda yang terisi tidak menggeser chart. */
+  min-height: 30px;
+  margin-bottom: 8px;
+  font: 9px/1.6 var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+.chart-legend i {
+  font-style: normal;
+  color: var(--color-muted);
+}
+.chart-legend .chart-legend-time {
+  flex-basis: 100%;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+.chart-legend .up {
+  color: var(--color-ok-text);
+}
+.chart-legend .down {
+  color: var(--color-danger-text);
+}
+/* Kisi digambar chart sendiri; bingkainya polos. Tinggi tetap, jadi data tidak menggeser layout. */
+.chart-frame.market-frame {
+  background: color-mix(in srgb, var(--color-bg) 72%, transparent);
+}
+/* Pane volume dan RSI menambah tinggi bingkai, jadi pane harga tidak menyusut saat dinyalakan. */
+.chart-frame.market-frame {
+  height: calc(var(--chart-h, 250px) + var(--volume-h, 0px) + var(--rsi-h, 0px));
+}
+.chart-frame.market-frame.has-volume {
+  --volume-h: 56px;
+}
+.chart-frame.market-frame.has-rsi {
+  --rsi-h: 84px;
+}
+.market-canvas {
+  position: absolute;
+  inset: 0;
+  font-family: var(--mono);
+}
+.chart-zoom {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+}
+.chart-zoom button {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  color: var(--color-muted);
+  font: 10px var(--mono);
+  letter-spacing: 0.05em;
+}
+.chart-zoom button:hover {
+  border-color: color-mix(in srgb, var(--color-mint-2) 60%, var(--color-line));
+  color: var(--color-text);
+}
+.chart-frame.chart-state {
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  text-align: center;
+  font: 11px/1.7 var(--mono);
+  color: var(--color-muted);
+}
+.chart-state strong {
+  display: block;
+  color: var(--color-text);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+.chart-state p {
+  max-width: 420px;
+  margin: 6px auto 12px;
+  font: inherit;
+}
+.trades-foot {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 14px;
+  white-space: normal;
+}
+.link-btn {
+  border: 0;
+  background: none;
+  padding: 6px 0;
+  color: var(--color-mint);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.token-meta a.chip.is-link {
+  color: var(--color-mint);
+  transition: border-color 0.2s;
+}
+.token-meta a.chip.is-link:hover {
+  border-color: color-mix(in srgb, var(--color-mint-2) 60%, var(--color-line));
+}
 .quote-list {
   margin: 14px 0;
   display: grid;
@@ -1215,6 +1488,59 @@ button {
 }
 .app-page .launch-layout {
   align-items: start;
+}
+/* ---- /launch: kolom kiri = pengantar, kartu pratinjau "On the board", lalu langkah ---- */
+.launch-side {
+  display: grid;
+  gap: 26px;
+  min-width: 0;
+}
+.launch-side .launch-intro > p:not(.preview-note) {
+  margin-bottom: 0;
+}
+.launch-side .launch-steps .preview-note {
+  margin-top: 26px;
+}
+.launch-preview {
+  max-width: 490px;
+}
+.launch-preview .panel-head {
+  margin-bottom: 18px;
+}
+.launch-preview .token-id {
+  min-width: 0;
+}
+.launch-preview .token-id h3,
+.launch-preview .token-id p {
+  overflow-wrap: anywhere;
+}
+.launch-preview .token-glyph {
+  flex: none;
+  overflow: hidden;
+}
+.launch-preview .token-glyph img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.launch-preview .is-placeholder {
+  color: var(--color-dim);
+}
+.launch-preview .field-reason {
+  margin: 10px 0 0;
+}
+.preview-tier {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  margin: 18px 0;
+}
+.preview-tier small {
+  font: 9px/1.6 var(--mono);
+  color: var(--color-muted);
+}
+.launch-preview .quote-list {
+  margin-bottom: 0;
 }
 .choose-tier label.is-disabled,
 .check-group label.is-disabled {
@@ -1870,6 +2196,24 @@ select option {
   .stage-rail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  /* Satu kolom: pengantar, langkah, FORM, lalu pratinjau. Pratinjau tidak punya elemen yang
+     bisa difokus, jadi urutan tab tidak berubah. */
+  .launch-side {
+    display: contents;
+  }
+  .launch-side > .launch-intro {
+    order: 1;
+  }
+  .launch-side > .launch-steps {
+    order: 2;
+  }
+  .app-page .launch-layout > .launch-form {
+    order: 3;
+  }
+  .launch-side > .launch-preview {
+    order: 4;
+    max-width: none;
+  }
 }
 @media (max-width: 640px) {
   .app-panel {
@@ -1891,7 +2235,29 @@ select option {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .chart-frame {
-    height: 210px;
+    height: var(--chart-h, 210px);
+  }
+  .area-chart {
+    --chart-h: 250px;
+  }
+  .market-cap strong {
+    font-size: 25px;
+  }
+  /* Delapan timeframe tetap satu baris: lebarnya dibagi rata. */
+  .chart-toolbar > .chart-tabs.is-wrap {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+  }
+  .chart-toolbar > .chart-tabs.is-wrap button {
+    flex: 1 1 0;
+    padding: 6px 2px;
+  }
+  .chart-toolbar-end {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+  .unit-switch {
+    justify-items: start;
   }
   .amount-field input {
     font-size: 19px;

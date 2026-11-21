@@ -13,6 +13,7 @@ import {
 } from '@/lib/web3/addresses';
 import { priceAtRaised, progressBps } from '@/lib/web3/curve-trade';
 import { isXofnPoolKey, poolIdOf } from '@/lib/web3/pool-trade';
+import { market24h } from '@/lib/tokens/market';
 import { deriveStatus } from '@/lib/tokens/status';
 import type {
   CurveState,
@@ -226,7 +227,8 @@ export async function readTrades(
       blockNumber: log.blockNumber.toString(),
       txHash: log.transactionHash,
       logIndex: log.logIndex,
-      // Log tidak membawa waktu; layanan mengisinya dari blok saat detail diminta.
+      // Waktu di log tidak dipakai (RPC home mengisinya 0); layanan membacanya dari blok lalu
+      // menyimpannya di index.
       timestamp: null,
     };
   };
@@ -568,20 +570,30 @@ export async function readSummary(ctx: ReadContext, meta: TokenMeta, trades: Tra
 export const MAX_DETAIL_TRADES = 200;
 
 /** Semua pembacaan chain untuk detail token; tidak bergantung pada index trade. */
-export type TokenChainState = Omit<TokenDetail, 'spark' | 'trades' | 'tradeCount'>;
+export type TokenChainState = Omit<TokenDetail, 'spark' | 'trades' | 'tradeCount' | 'market'>;
 
-/** Detail = pembacaan chain + trade dari index. Murni: tidak ada panggilan jaringan. */
-export function withTrades(state: TokenChainState, meta: TokenMeta, trades: Trade[]): TokenDetail {
+/**
+ * Detail = pembacaan chain + trade dari index. Murni: tidak ada panggilan jaringan. Statistik
+ * 24 jam dihitung di sini dari SELURUH trade (bukan hanya yang dikirim), pada waktu `nowSec`.
+ */
+export function withTrades(state: TokenChainState, meta: TokenMeta, trades: Trade[], nowSec: number): TokenDetail {
+  const shape = {
+    virtualEth: BigInt(meta.virtualEth),
+    virtualTokens: BigInt(meta.virtualTokens),
+    saleSupply: BigInt(meta.saleSupply),
+    graduationThreshold: BigInt(meta.graduationThreshold),
+  };
   return {
     ...state,
     spark: sparkFromTrades(meta, trades),
     trades: trades.length > MAX_DETAIL_TRADES ? trades.slice(trades.length - MAX_DETAIL_TRADES) : trades,
     tradeCount: trades.length,
+    market: market24h(trades, shape, nowSec),
   };
 }
 
 export async function readDetail(ctx: ReadContext, meta: TokenMeta, trades: Trade[]): Promise<TokenDetail> {
-  return withTrades(await readChainState(ctx, meta), meta, trades);
+  return withTrades(await readChainState(ctx, meta), meta, trades, Math.floor(ctx.now().getTime() / 1_000));
 }
 
 export async function readChainState(ctx: ReadContext, meta: TokenMeta): Promise<TokenChainState> {

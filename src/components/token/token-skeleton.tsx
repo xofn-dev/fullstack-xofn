@@ -23,10 +23,14 @@ export function TokenSkeleton({ note = 'Reading the token from the chain.' }: { 
       </div>
       <div className="token-layout" aria-hidden="true">
         <div className="app-panel area-chart">
+          {/* Urutan dan tinggi mengikuti panel aslinya: market cap, tile statistik, chart, tile curve. */}
           <div className="skeleton-stack">
+            <Skeleton width={170} height={9} />
+            <Skeleton width="min(260px, 70%)" height={34} />
+            <Skeleton height={72} />
             <Skeleton width={130} height={11} />
-            <Skeleton height={250} />
-            <Skeleton height={62} />
+            <span className="skeleton chart-frame" aria-hidden="true" />
+            <Skeleton height={72} />
           </div>
         </div>
         <div className="app-panel area-trade">
