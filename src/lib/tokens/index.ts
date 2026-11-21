@@ -1,14 +1,17 @@
 import 'server-only';
 
+import { createPublicClient, http } from 'viem';
 import { getChain } from '@/lib/chains';
 import { serverEnv } from '@/lib/env';
 import { publicEnv } from '@/lib/public-env';
 import { createServiceClient } from '@/lib/supabase/server';
+import { readEthUsd, type FeedReader, type FeedSource } from '@/lib/tokens/eth-usd';
 import { readLaunchConfig, toChainClient, type ChainClient, type LaunchConfig, type ReadContext } from '@/lib/tokens/read';
 import { createTokenService, type TokenService } from '@/lib/tokens/service';
 import { CachedTokenStore, MemoryTokenStore, SupabaseTokenStore, type TokenIndexStore } from '@/lib/tokens/store';
 import { getDeployment, homeContracts } from '@/lib/web3/addresses';
 import { getPublicClient } from '@/lib/web3/public-client';
+import type { EthUsdRate } from '@/types/domain';
 import type { ChainKey } from '@/types/enums';
 
 // Perakitan layanan token untuk jaringan aktif (env + manifest + RPC). Logikanya sendiri ada di
@@ -87,4 +90,57 @@ export function getLaunchConfig(): Promise<LaunchConfig | null> {
   const value = readLaunchConfig(ctx).catch(() => null);
   launchConfig = { at: Date.now(), value };
   return value;
+}
+
+// ───────────────────────── Kurs ETH/USD (tampilan USD) ─────────────────────────
+// Sumbernya feed Chainlink di Robinhood Chain MAINNET, juga saat aplikasi berjalan di testnet
+// atau lokal: di sana kurs ini hanya acuan berlabel (ETH uji tidak punya nilai pasar). Client-nya
+// sengaja terpisah dari `getPublicClient`, yang di build testnet menunjuk RPC testnet.
+const ETH_USD_SOURCE_NETWORK = 'mainnet' as const;
+const ETH_USD_SOURCE_CHAIN = 'robinhood' as const;
+// Feed berubah paling cepat saat harga bergeser 0,5%; dibaca ulang paling sering semenit sekali.
+const ETH_USD_TTL_MS = 60_000;
+// Pembacaan yang gagal dicoba lagi lebih cepat daripada yang berhasil.
+const ETH_USD_RETRY_MS = 10_000;
+
+let ethUsdReader: Promise<{ reader: FeedReader; source: FeedSource } | null> | undefined;
+let ethUsd: { at: number; value: Promise<EthUsdRate | null> } | null = null;
+
+function getEthUsdReader(): Promise<{ reader: FeedReader; source: FeedSource } | null> {
+  ethUsdReader ??= (async () => {
+    const info = getChain(ETH_USD_SOURCE_NETWORK, ETH_USD_SOURCE_CHAIN);
+    if (!info.feeds || !info.publicRpc) return null;
+    const client = createPublicClient({ transport: http(info.publicRpc, { timeout: 8_000, retryCount: 1 }) });
+    // RPC itu harus benar-benar chain tempat feed berada; kalau tidak, alamat feed tidak berarti.
+    if ((await client.getChainId()) !== info.chainId) return null;
+    const reader: FeedReader = {
+      readContract: (call) => client.readContract(call as Parameters<typeof client.readContract>[0]),
+    };
+    return {
+      reader,
+      source: { network: ETH_USD_SOURCE_NETWORK, chain: ETH_USD_SOURCE_CHAIN, feed: info.feeds.ethUsd },
+    };
+  })().catch(() => {
+    // RPC tidak terjangkau: dicoba lagi pada permintaan berikutnya.
+    ethUsdReader = undefined;
+    return null;
+  });
+  return ethUsdReader;
+}
+
+/** Kurs ETH/USD terakhir yang terbaca; null bila feed tidak terbaca atau jawabannya basi. */
+export function getEthUsd(): Promise<EthUsdRate | null> {
+  const at = Date.now();
+  if (ethUsd && at - ethUsd.at < ETH_USD_TTL_MS) return ethUsd.value;
+  const entry = {
+    at,
+    value: getEthUsdReader()
+      .then((ready) => (ready ? readEthUsd(ready.reader, ready.source, new Date()) : null))
+      .catch(() => null),
+  };
+  void entry.value.then((rate) => {
+    if (rate === null) entry.at = at - ETH_USD_TTL_MS + ETH_USD_RETRY_MS;
+  });
+  ethUsd = entry;
+  return entry.value;
 }

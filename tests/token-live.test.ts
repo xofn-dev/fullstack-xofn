@@ -69,6 +69,7 @@ function detail(trades: Trade[], ethRaised = 0n): TokenDetail {
     curveParams: { virtualEth: SHAPE.virtualEth.toString(), virtualTokens: SHAPE.virtualTokens.toString() },
     trades,
     tradeCount: trades.length,
+    market: { status: 'read', asOf: 0, volume24h: '0', trades24h: 0, price24hAgo: start.toString(), reference: 'start' },
     expansion: [],
     pathways: [],
     verify: [],

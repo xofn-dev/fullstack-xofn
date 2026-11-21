@@ -15,7 +15,7 @@ import type { DisplayStatus, GraduatorStatus } from '@/types/enums';
 
 type HeadToken = Pick<
   TokenDetail,
-  'name' | 'symbol' | 'address' | 'creator' | 'tier' | 'status' | 'pathways' | 'verify'
+  'name' | 'symbol' | 'address' | 'creator' | 'curve' | 'tier' | 'status' | 'pathways' | 'verify'
 >;
 
 /** Kepala halaman token: nama, ticker, alamat, dan TierBadge yang selalu bersama statusnya. */
@@ -32,6 +32,7 @@ export const TokenHead = memo(function TokenHead({ token, home }: { token: HeadT
   }, []);
   const tokenUrl = explorerAddressUrl(home, token.address);
   const creatorUrl = explorerAddressUrl(home, token.creator);
+  const curveUrl = explorerAddressUrl(home, token.curve);
 
   return (
     <div className="token-head rise">
@@ -69,6 +70,20 @@ export const TokenHead = memo(function TokenHead({ token, home }: { token: HeadT
                 <b>{shortAddress(token.creator)}</b>
               )}
             </span>
+            <span className="chip">
+              CURVE{' '}
+              {curveUrl ? (
+                <a href={curveUrl} target="_blank" rel="noreferrer noopener">
+                  {shortAddress(token.curve)} ↗
+                </a>
+              ) : (
+                <b>{shortAddress(token.curve)}</b>
+              )}
+            </span>
+            {/* Konfigurasi DVN token ini bisa dibaca siapa pun di XofN Check, tanpa mempercayai halaman ini. */}
+            <Link className="chip is-link" href={`/check/${home.key}/${token.address}`}>
+              XOFN CHECK ↗
+            </Link>
           </div>
         </div>
       </div>

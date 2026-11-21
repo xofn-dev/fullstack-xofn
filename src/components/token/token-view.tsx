@@ -6,7 +6,14 @@ import { useEffect, useMemo } from 'react';
 import { getChain } from '@/lib/chains';
 import { publicEnv } from '@/lib/public-env';
 import { useCurveLive } from '@/lib/client/use-curve-live';
-import { ApiError, tokenDetailKey, useLocalTrades, useTokenDetail } from '@/lib/client/use-tokens';
+import {
+  ApiError,
+  tokenDetailKey,
+  useEthUsd,
+  useLocalTrades,
+  useTokenDetail,
+  useTradeHistory,
+} from '@/lib/client/use-tokens';
 import { mergeLocalTrades, pendingLocalTrades, withLiveCurve } from '@/lib/tokens/live';
 import { homeContracts, type Deployment } from '@/lib/web3/addresses';
 import { ExpansionPanel } from '@/components/expansion/expansion-panel';
@@ -22,10 +29,12 @@ import type { TokenDetail } from '@/types/domain';
 // diambil ulang dengan jeda ini, bukan menunggu polling berikutnya dan bukan secepat mungkin.
 const CATCH_UP_MS = 1_200;
 
-// Halaman token (USER_FLOWS Flow G). Tiga sumber, semuanya pembacaan chain:
-// 1. detail dari API (tabel security, langkah ekspansi, riwayat trade), dipoll;
+// Halaman token (USER_FLOWS Flow G). Sumbernya semua pembacaan chain:
+// 1. detail dari API (tabel security, langkah ekspansi, trade terbaru, statistik 24 jam), dipoll;
 // 2. state curve dibaca langsung tiap 2 detik selama bonding, supaya harga dan progres realtime;
-// 3. trade dari receipt transaksi pengguna sendiri, sampai index server memuatnya.
+// 3. trade dari receipt transaksi pengguna sendiri, sampai index server memuatnya;
+// 4. riwayat trade ber-waktu untuk chart candle, diambil ulang hanya saat ada trade baru;
+// 5. kurs ETH/USD dari feed on-chain, untuk tampilan USD saja.
 // Kegagalan baca ditampilkan sebagai "not read", tidak ditebak.
 export function TokenView({
   address,
@@ -43,6 +52,13 @@ export function TokenView({
   const home = homeContracts(deployment);
   const homeInfo = getChain(publicEnv.network, home.chain.chain);
   const local = useLocalTrades(address);
+  // Riwayat chart mengikuti trade terakhir MENURUT INDEX (bukan receipt lokal): berubah saat ada
+  // trade baru terindeks atau saat waktu blok trade terakhir terisi.
+  const lastIndexed = api?.trades.at(-1);
+  const tip = api ? `${api.tradeCount}:${lastIndexed?.txHash ?? ''}:${lastIndexed?.timestamp ?? 'untimed'}` : '';
+  const history = useTradeHistory(address, tip, !!api);
+  const rate = useEthUsd(!!api);
+  const retryHistory = history.refetch;
 
   const bonding = api?.graduatorStatus === 'bonding';
   const live = useCurveLive(api?.curve ?? home.graduator, homeInfo.chainId, !!api && bonding);
@@ -112,7 +128,13 @@ export function TokenView({
           params={token.curveParams}
           spark={token.spark}
           tradeCount={token.tradeCount}
-          startPrice={token.economics.startPrice}
+          market={token.market}
+          poolState={token.poolState}
+          history={history.data ?? null}
+          historyFailed={history.isError}
+          onRetryHistory={retryHistory}
+          rate={rate.data ?? null}
+          rateReading={rate.isPending}
           feed={!bonding ? 'closed' : live ? 'live' : 'polling'}
         />
         <div className="area-trade rise" style={{ '--i': 3 } as React.CSSProperties}>
@@ -128,7 +150,13 @@ export function TokenView({
           <ExpansionPanel token={token} deployment={deployment} />
         </div>
         <SecurityTable verify={token.verify} checkedAt={token.checkedAt} stale={query.isError} />
-        <TradesTable trades={token.trades} tradeCount={token.tradeCount} home={homeInfo} />
+        <TradesTable
+          trades={token.trades}
+          tradeCount={token.tradeCount}
+          curve={token.curveState}
+          params={token.curveParams}
+          home={homeInfo}
+        />
       </div>
     </>
   );

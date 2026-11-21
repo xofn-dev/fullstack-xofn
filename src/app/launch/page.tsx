@@ -62,36 +62,6 @@ export default async function LaunchPage({
       <AppBackdrop />
       <main className="app-page is-transactional" id="top">
         <div className="container launch-layout">
-          <div className="launch-intro rise">
-            <div className="section-label">CREATE A TOKEN</div>
-            <h1 className="h2">
-              Build a token. <span className="accent">Set the standard.</span>
-            </h1>
-            <p>
-              Create once on {home.name} with fixed supply and a committed security tier. When the
-              curve reaches its threshold, anyone can graduate the token on {home.name}. Expansion
-              and locking are a separate step.
-            </p>
-            <div className="steps-mini">
-              <div>
-                <i>01</i> Define identity and token metadata
-              </div>
-              <div>
-                <i>02</i> Choose Standard or Fortress
-              </div>
-              <div>
-                <i>03</i> Select expansion networks
-              </div>
-              <div>
-                <i>04</i> Review and sign on {home.name}
-              </div>
-            </div>
-            <p className="preview-note">
-              {mode === 'simulation'
-                ? '◈ LOCAL SIMULATION: transactions go to a local test node with mock LayerZero endpoints and mock DVNs. No real funds are used and nothing is deployed to a public network.'
-                : `◈ TESTNET: transactions go to ${home.name}. Testnet ETH only, no real funds. Contracts are unaudited. Expansion chains are not deployed yet, so a token can graduate on ${home.name} but cannot expand or lock.`}
-            </p>
-          </div>
           <LaunchForm
             home={home}
             expansions={expansions}
@@ -99,6 +69,42 @@ export default async function LaunchPage({
             config={config}
             actionTag={getModeCopy(mode, network).actionTag}
             draft={draft}
+            intro={
+              <div className="launch-intro rise">
+                <div className="section-label">CREATE A TOKEN</div>
+                <h1 className="h2">
+                  Build a token. <span className="accent">Set the standard.</span>
+                </h1>
+                <p>
+                  Create once on {home.name} with fixed supply and a committed security tier. When the
+                  curve reaches its threshold, anyone can graduate the token on {home.name}. Expansion
+                  and locking are a separate step.
+                </p>
+              </div>
+            }
+            steps={
+              <div className="launch-intro launch-steps">
+                <div className="steps-mini">
+                  <div>
+                    <i>01</i> Define identity and token metadata
+                  </div>
+                  <div>
+                    <i>02</i> Choose Standard or Fortress
+                  </div>
+                  <div>
+                    <i>03</i> Select expansion networks
+                  </div>
+                  <div>
+                    <i>04</i> Review and sign on {home.name}
+                  </div>
+                </div>
+                <p className="preview-note">
+                  {mode === 'simulation'
+                    ? '◈ LOCAL SIMULATION: transactions go to a local test node with mock LayerZero endpoints and mock DVNs. No real funds are used and nothing is deployed to a public network.'
+                    : `◈ TESTNET: transactions go to ${home.name}. Testnet ETH only, no real funds. Contracts are unaudited. Expansion chains are not deployed yet, so a token can graduate on ${home.name} but cannot expand or lock.`}
+                </p>
+              </div>
+            }
           />
         </div>
       </main>

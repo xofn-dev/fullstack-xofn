@@ -540,6 +540,7 @@ Item `[Belum]` diputuskan owner atau desainer. Sampai diputuskan, pakai rekomend
 | 3D hero / arch / galaxy | **Selesai (Phase 1, 17 Nov 2026).** three 0.187, lifecycle + dispose, fallback statis, galaxy mati di ≤860px (D5), mekanisme *split* (D2) |
 | Intro loader + status muat hero (D19) | **Selesai (18 Nov 2026).** `src/components/landing/intro-loader.tsx`, `src/app/styles/intro-loader.css`, sinyal `src/lib/client/intro.ts`; kilasan fallback hero saat first load diperbaiki (§8.2) |
 | Polish halaman aplikasi | **Selesai (21 Nov 2026).** Panel glass, halaman token baru, anggaran performa halaman transaksi, loading skeleton. Rincian di catatan "polish halaman aplikasi" di bawah |
+| Chart trading + statistik pasar + pratinjau launch | **Selesai (21 Nov 2026).** `/t/[address]`: statistik pasar (market cap menonjol, sakelar ETH / USD), chart harga Lightweight Charts (Curve / Line / Candles, 8 timeframe, Price / Market cap, indikator Volume / MA / EMA / RSI), tabel trade berfilter. `/launch`: kartu pratinjau "On the board". Rincian di catatan "chart trading dan pratinjau launch" di bawah |
 | Halaman aplikasi (§6.2) | **`/check` dan `/check/[chain]/[address]` selesai (Phase 2, 17 Nov 2026)**, termasuk kartu OG. **`/launch`, `/t/[address]`, `/bridge`, `/contracts`, `/proof` selesai (Phase 4, 17 Nov 2026)** untuk mode simulation; di preview halaman itu memakai section landing berlabel |
 
 Catatan implementasi Phase 1:
@@ -576,5 +577,20 @@ Catatan polish halaman aplikasi (21 Nov 2026, bukti `proof/2026-11-21-app-polish
 - **Penyimpangan dari rencana:** garis chart tidak digambar masuk dengan GSAP (bukan `transform`/`opacity`; dibuang demi anggaran performa halaman transaksi).
 - Token baru di `@theme`: `--shadow-panel`, `--shadow-lift`, `--ease-out-soft`. Tidak ada hex baru di luar `@theme`.
 - Tanpa overflow horizontal di 360 / 390 / 768 / 1280 / 1680px (emulasi viewport CDP); 0 konteks WebGL di halaman aplikasi; semua animasi baru mati di `prefers-reduced-motion`.
+
+Catatan chart trading dan pratinjau launch (21 Nov 2026, bukti `proof/2026-11-21-token-launch-ui/notes.md`):
+- **Statistik pasar** (`.market`): market cap paling besar (31px display, `FULLY DILUTED · PRICE × 999,000,000 FIXED SUPPLY`), lalu tile PRICE (+ perubahan 24 jam), 24H VOLUME, CURVE RESERVE / POOL LIQUIDITY, TOTAL SUPPLY. Sakelar `ETH | USD` memakai gaya `.chart-tabs`; tanpa kurs, USD nonaktif dengan alasan tertulis. Nilai yang tidak terbaca ditulis `NOT READ`.
+- **Chart harga** memakai Lightweight Charts (canvas), dimuat hanya saat mode Line / Candles dibuka. Mode `Curve` tetap SVG tulis tangan; chart tulis tangan per trade menjadi cadangan bila belum ada trade ber-waktu atau bundel chart gagal dimuat.
+  - Warna dibaca dari token `@theme` saat runtime: naik `mint-2`, turun `danger`, MA `ice`, EMA `violet` (putus-putus), RSI `caution`, garis `NOW` `orange`. Body candle terisi penuh; arah juga ditulis di legenda (`▲ +9.0%`) dan tabel pembaca layar, jadi tidak bergantung warna saja.
+  - **Volume di pane sendiri** di bawah harga (rasio 300 : 56; RSI 84), pemisah transparan: candle tidak bisa masuk ke area volume walau sumbu digeser. Batang volume memakai warna candle-nya dengan alpha 0,28 dan tanpa angka sumbu.
+  - Candle ramping walau datanya sedikit (`maxBarSpacing: 16`). Roda mouse dan geser vertikal tetap menggulir halaman; zoom lewat tombol `−` / `+` / `FIT` dan cubit.
+  - Harga sangat kecil ditulis ringkas dengan hitungan nol (`0.0₈34626` = delapan nol), di sumbu, legenda, dan tile PRICE; USD ringkas `$5.66K`.
+  - Tinggi bingkai tetap (`--chart-h` 300px, 250px di ≤640px; pane volume dan RSI menambah tinggi), jadi data yang datang tidak menggeser layout. Keadaan memuat / kosong / gagal memakai bingkai setinggi yang sama.
+  - Logo TradingView di chart dibiarkan tampil (syarat lisensi).
+- **Toolbar chart:** timeframe (`1M`–`ALL`), `Price | Market cap`, dan menu `Indicators` semuanya `aria-pressed` / checkbox; di ≤640px delapan timeframe tetap satu baris.
+- **Tabel trade:** kolom `PRICE AFTER`, filter `All / Buys / Sells`, `Show more` (8 → 25 → semua yang dibawa detail).
+- **Kepala token:** chip alamat curve dan tautan `XOFN CHECK ↗`.
+- **Pratinjau launch** (`.launch-preview`): kartu di kolom kiri `/launch` yang mengikuti form (logo, nama, ticker, tier + ringkasan DVN, chain ekspansi, ambang graduation), selalu berlabel `PREVIEW · NOT DEPLOYED`. Di ≤900px urutannya pengantar, langkah, form, pratinjau.
+- Tidak ada token baru di `@theme` dan tidak ada hex baru di komponen. Tanpa overflow horizontal di 390 / 768 / 1280 / 1440 / 1680px (emulasi CDP).
 
 Perbarui tabel ini di akhir setiap task UI, lengkap dengan tanggal.

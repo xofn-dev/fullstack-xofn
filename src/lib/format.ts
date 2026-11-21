@@ -65,12 +65,91 @@ export function formatUnitsFixed(value: bigint | string, decimals = 18, maxFract
   return negative ? `-${text}` : text;
 }
 
+const SUBSCRIPT_DIGITS = '₀₁₂₃₄₅₆₇₈₉';
+
+/**
+ * Jumlah sangat kecil ditulis ringkas dengan `significant` angka penting: nol di depan yang
+ * panjang diganti hitungannya, mis. 0.0000000015012 → "0.0₈15012" (₈ = delapan nol). Dipakai di
+ * sumbu chart, tempat pemotongan desimal biasa membuat label yang berdekatan tampak sama.
+ */
+export function formatCompactUnits(value: bigint | string, decimals = 18, significant = 5): string {
+  const raw = typeof value === 'string' ? BigInt(value) : value;
+  const negative = raw < 0n;
+  const abs = negative ? -raw : raw;
+  const base = 10n ** BigInt(decimals);
+  const whole = abs / base;
+  const fraction = (abs % base).toString().padStart(decimals, '0');
+  let text: string;
+  if (whole > 0n) {
+    const rest = fraction.slice(0, significant).replace(/0+$/, '');
+    text = rest ? `${groupThousands(whole.toString())}.${rest}` : groupThousands(whole.toString());
+  } else {
+    const lead = fraction.search(/[1-9]/);
+    if (lead === -1) return '0';
+    const digits = fraction.slice(lead, lead + significant).replace(/0+$/, '');
+    const zeros =
+      lead < 4 ? '0'.repeat(lead) : `0${[...String(lead)].map((digit) => SUBSCRIPT_DIGITS[Number(digit)]).join('')}`;
+    text = `0.${zeros}${digits}`;
+  }
+  return negative ? `-${text}` : text;
+}
+
 export function formatEth(wei: bigint | string, maxFraction = 5): string {
   return `${formatUnitsFixed(wei, 18, maxFraction)} ETH`;
 }
 
 export function formatTokens(units: bigint | string, maxFraction = 2): string {
   return formatUnitsFixed(units, 18, maxFraction);
+}
+
+/**
+ * USD ber-18 desimal → teks. Nilai ≥ $1 memakai dua desimal tetap; di bawah itu ditulis sampai
+ * empat angka penting, karena harga per token bisa jauh di bawah satu sen.
+ */
+export function formatUsd(usd18: bigint | string): string {
+  const raw = typeof usd18 === 'string' ? BigInt(usd18) : usd18;
+  const negative = raw < 0n;
+  const abs = negative ? -raw : raw;
+  const base = 10n ** 18n;
+  const whole = abs / base;
+  const fraction = (abs % base).toString().padStart(18, '0');
+  let text: string;
+  if (whole > 0n) {
+    text = `${groupThousands(whole.toString())}.${fraction.slice(0, 2)}`;
+  } else {
+    const lead = fraction.search(/[1-9]/);
+    text = lead === -1 ? '0' : `0.${fraction.slice(0, Math.min(18, lead + 4)).replace(/0+$/, '')}`;
+  }
+  return `${negative ? '-' : ''}$${text}`;
+}
+
+const USD_STEPS: Array<[bigint, string]> = [
+  [10n ** 9n, 'B'],
+  [10n ** 6n, 'M'],
+  [10n ** 3n, 'K'],
+];
+
+/**
+ * USD ber-18 desimal → teks ringkas untuk sumbu chart: "$11.6K", "$1.25M"; di bawah seribu dua
+ * desimal; di bawah satu dolar memakai bentuk ringkas nol-berhitung ("$0.0₅2456").
+ */
+export function formatCompactUsd(usd18: bigint | string): string {
+  const raw = typeof usd18 === 'string' ? BigInt(usd18) : usd18;
+  const negative = raw < 0n;
+  const abs = negative ? -raw : raw;
+  const base = 10n ** 18n;
+  const whole = abs / base;
+  let text: string | null = null;
+  for (const [step, suffix] of USD_STEPS) {
+    if (whole < step) continue;
+    // Dua desimal, dipotong (bukan dibulatkan), nol di belakang dibuang.
+    const hundredths = abs / ((step * base) / 100n);
+    const fraction = (hundredths % 100n).toString().padStart(2, '0').replace(/0+$/, '');
+    text = `${hundredths / 100n}${fraction ? `.${fraction}` : ''}${suffix}`;
+    break;
+  }
+  text ??= whole > 0n ? `${whole}.${(abs % base).toString().padStart(18, '0').slice(0, 2)}` : formatCompactUnits(abs, 18, 4);
+  return `${negative ? '-' : ''}$${text}`;
 }
 
 /** Basis poin → persen satu desimal, mis. 2500 → "25.0%". */

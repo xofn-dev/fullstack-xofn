@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { keccak256 } from 'viem';
 import type { ChainInfo } from '@/lib/chains';
 import { formatEth, formatInt } from '@/lib/format';
@@ -16,6 +16,7 @@ import { useDialogFocus } from '@/components/ui/overlay-provider';
 import { TxStatus } from '@/components/ui/tx-status';
 import { NetworkGuard } from '@/components/wallet/network-guard';
 import { FIXED_SUPPLY, LaunchFields } from '@/components/launch/launch-fields';
+import { LaunchPreview } from '@/components/launch/launch-preview';
 import type { Hex } from '@/types/domain';
 import type { ChainKey, Tier } from '@/types/enums';
 import { cn } from '@/lib/cn';
@@ -32,11 +33,24 @@ interface LaunchFormProps {
   actionTag: string;
   /** Nilai awal dari form pratinjau di landing (query string). Tetap divalidasi di sini. */
   draft?: LaunchDraft;
+  /** Judul dan pengantar halaman (markup server), di atas kartu pratinjau. */
+  intro: ReactNode;
+  /** Langkah dan catatan mode (markup server), di bawah kartu pratinjau. */
+  steps: ReactNode;
 }
 
 // Form launch sungguhan (USER_FLOWS Flow D). Satu tanda tangan di home chain; token lahir sebagai
 // OFT dengan owner dan delegate = Graduator. Ekspansi dan penguncian adalah langkah terpisah.
-export function LaunchForm({ home, expansions, deployment, config: initialConfig, actionTag, draft }: LaunchFormProps) {
+export function LaunchForm({
+  home,
+  expansions,
+  deployment,
+  config: initialConfig,
+  actionTag,
+  draft,
+  intro,
+  steps,
+}: LaunchFormProps) {
   const router = useRouter();
   const tx = useTxFlow();
   const configQuery = useLaunchConfig(initialConfig);
@@ -150,6 +164,21 @@ export function LaunchForm({ home, expansions, deployment, config: initialConfig
 
   return (
     <>
+      {/* Kolom kiri: pengantar, lalu kartu pratinjau yang mengikuti state form di bawah ini. */}
+      <div className="launch-side">
+        {intro}
+        <LaunchPreview
+          name={name}
+          ticker={ticker}
+          logoUrl={logoUrl}
+          tier={tier}
+          home={home}
+          networks={networks.join(', ')}
+          threshold={config?.graduationThreshold ?? null}
+          thresholdReading={configReading}
+        />
+        {steps}
+      </div>
       <form className="launch-form" noValidate onSubmit={onSubmit}>
         <div className="form-header">
           <h3>Create a launch</h3>
