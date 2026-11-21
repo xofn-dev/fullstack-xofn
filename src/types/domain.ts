@@ -149,6 +149,15 @@ export interface CurveState {
   progressBps: number;
 }
 
+/**
+ * Parameter curve yang tetap sejak launch (dibaca dari kontrak curve). Dipakai untuk menggambar
+ * bentuk bonding curve; harga tetap selalu dibaca dari kontrak.
+ */
+export interface CurveParams {
+  virtualEth: string;
+  virtualTokens: string;
+}
+
 export interface Trade {
   side: TradeSide;
   trader: Address;
@@ -160,6 +169,11 @@ export interface Trade {
   blockNumber: string;
   txHash: Hex;
   logIndex: number;
+  /**
+   * Waktu blok trade ini (detik Unix), dibaca dari chain. null = belum/tidak terbaca; tidak
+   * pernah diisi dengan perkiraan.
+   */
+  timestamp: number | null;
 }
 
 /**
@@ -263,7 +277,11 @@ export interface TokenDetail extends TokenSummary {
    */
   poolState: PoolState | null;
   tokensPerChain: string;
+  curveParams: CurveParams;
+  /** Trade curve terbaru (paling banyak `MAX_DETAIL_TRADES`), urut lama → baru. */
   trades: Trade[];
+  /** Jumlah seluruh trade curve yang terindeks; bisa lebih besar daripada `trades.length`. */
+  tradeCount: number;
   expansion: ExpansionChainState[];
   /** DVN per pathway sesuai tier. Sebelum ekspansi ini baru rencana ("applied at expansion"). */
   pathways: TokenPathway[];

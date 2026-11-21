@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { BridgeWidget } from '@/components/bridge/bridge-widget';
 import { BridgeDemo } from '@/components/landing/bridge-demo';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
+import { AppMotion } from '@/components/layout/app-motion';
 import { getExpansionChains, getHomeChain } from '@/lib/chains';
 import { getModeCopy } from '@/lib/mode';
 import { publicEnv } from '@/lib/public-env';
@@ -38,7 +39,8 @@ export default function BridgePage() {
       <AppBackdrop />
       <main className="app-page" id="top">
         <div className="container">
-          <div className="app-head">
+          <AppMotion />
+          <div className="app-head rise">
             <div className="section-label">BRIDGE · {getModeCopy(mode, network).actionTag}</div>
             <h1>
               Move a locked token <span className="accent">between its chains.</span>

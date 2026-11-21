@@ -5,7 +5,7 @@ import { defineChain, type Chain, type Transport } from 'viem';
 import { getChains, getHomeChain, type ChainInfo } from '@/lib/chains';
 import { publicEnv } from '@/lib/public-env';
 import { devAccountConnector } from '@/lib/web3/dev-account';
-import { rpcUrlFor } from '@/lib/web3/public-client';
+import { multicallContracts, rpcUrlFor } from '@/lib/web3/public-client';
 import type { Network } from '@/types/enums';
 
 // Konfigurasi wagmi/AppKit (ARCHITECTURE §10.1). Modul ini tidak memakai hook, jadi tanpa
@@ -21,6 +21,9 @@ function toViemChain(network: Network, info: ChainInfo, rpcUrl: string): Chain {
     nativeCurrency: NATIVE,
     rpcUrls: { default: { http: [rpcUrl] } },
     blockExplorers: info.explorer ? { default: { name: 'Explorer', url: info.explorer } } : undefined,
+    // Dengan Multicall3 terdaftar, pembacaan wagmi yang berjalan bersamaan (saldo, allowance,
+    // quote, state curve) digabung menjadi satu `eth_call` alih-alih satu permintaan per nilai.
+    contracts: multicallContracts(network),
   });
 }
 

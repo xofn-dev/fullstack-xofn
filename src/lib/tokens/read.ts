@@ -60,9 +60,12 @@ export interface ChainClient {
     abi: Abi;
     eventName: string;
     fromBlock: bigint;
-    toBlock: bigint;
+    /** Tanpa nilai = blok terbaru menurut node. */
+    toBlock?: bigint;
   }): Promise<EventLog[]>;
   getBlockNumber(): Promise<bigint>;
+  /** Waktu sebuah blok dalam detik Unix. */
+  getBlockTimestamp(blockNumber: bigint): Promise<bigint>;
 }
 
 /** Membungkus PublicClient viem menjadi antarmuka kecil di atas. */
@@ -76,6 +79,7 @@ export function toChainClient(client: PublicClient): ChainClient {
       return logs as unknown as EventLog[];
     },
     getBlockNumber: () => client.getBlockNumber(),
+    getBlockTimestamp: async (blockNumber) => (await client.getBlock({ blockNumber })).timestamp,
   };
 }
 
@@ -191,14 +195,18 @@ export interface IndexedTrade extends Trade {
   curve: Address;
 }
 
-/** Trade curve dari event `Bought`/`Sold`, urut menurut blok lalu indeks log. */
+/**
+ * Trade curve dari event `Bought`/`Sold`, urut menurut blok lalu indeks log. `toBlock` kosong
+ * berarti sampai blok terbaru menurut node (dipakai sync hangat, yang membaca log bersamaan
+ * dengan nomor blok alih-alih menunggunya).
+ */
 export async function readTrades(
   ctx: ReadContext,
   curves: Address[],
   fromBlock: bigint,
-  toBlock: bigint,
+  toBlock?: bigint,
 ): Promise<IndexedTrade[]> {
-  if (curves.length === 0 || fromBlock > toBlock) return [];
+  if (curves.length === 0 || (toBlock !== undefined && fromBlock > toBlock)) return [];
   const { client } = homeClient(ctx);
   const query = { address: curves, abi: curveAbi as Abi, fromBlock, toBlock };
   const [bought, sold] = await Promise.all([
@@ -218,6 +226,8 @@ export async function readTrades(
       blockNumber: log.blockNumber.toString(),
       txHash: log.transactionHash,
       logIndex: log.logIndex,
+      // Log tidak membawa waktu; layanan mengisinya dari blok saat detail diminta.
+      timestamp: null,
     };
   };
   return [...bought, ...sold].map(toTrade).sort((a, b) => {
@@ -554,11 +564,27 @@ export async function readSummary(ctx: ReadContext, meta: TokenMeta, trades: Tra
   };
 }
 
-export async function readDetail(
-  ctx: ReadContext,
-  meta: TokenMeta,
-  trades: Trade[],
-): Promise<TokenDetail> {
+/** Batas trade yang dikirim di detail: halaman hanya menampilkan yang terbaru dan chart 60 titik. */
+export const MAX_DETAIL_TRADES = 200;
+
+/** Semua pembacaan chain untuk detail token; tidak bergantung pada index trade. */
+export type TokenChainState = Omit<TokenDetail, 'spark' | 'trades' | 'tradeCount'>;
+
+/** Detail = pembacaan chain + trade dari index. Murni: tidak ada panggilan jaringan. */
+export function withTrades(state: TokenChainState, meta: TokenMeta, trades: Trade[]): TokenDetail {
+  return {
+    ...state,
+    spark: sparkFromTrades(meta, trades),
+    trades: trades.length > MAX_DETAIL_TRADES ? trades.slice(trades.length - MAX_DETAIL_TRADES) : trades,
+    tradeCount: trades.length,
+  };
+}
+
+export async function readDetail(ctx: ReadContext, meta: TokenMeta, trades: Trade[]): Promise<TokenDetail> {
+  return withTrades(await readChainState(ctx, meta), meta, trades);
+}
+
+export async function readChainState(ctx: ReadContext, meta: TokenMeta): Promise<TokenChainState> {
   const expansionChains = meta.eids
     .map((eid) => deploymentByEid(ctx.deployment, eid))
     .filter((chain): chain is ChainDeployment => chain !== undefined);
@@ -584,12 +610,11 @@ export async function readDetail(
     status: deriveStatus(graduatorStatus, verify),
     graduatorStatus,
     progressBps: curveState.progressBps,
-    spark: sparkFromTrades(meta, trades),
     curveState,
     pool,
     poolState: pool ? await readPoolState(ctx, meta.address, pool) : null,
     tokensPerChain: launch.tokensPerChain.toString(),
-    trades,
+    curveParams: { virtualEth: meta.virtualEth, virtualTokens: meta.virtualTokens },
     expansion,
     pathways,
     verify,

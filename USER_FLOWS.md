@@ -329,3 +329,9 @@ Edge case:
 | I Contracts & Proof | `/contracts` dan `/proof`: semua NOT DEPLOYED / PLANNED | **Selesai** (Phase 4): `/contracts` dari manifest ("LOCAL SIMULATION ONLY · SOURCE NOT VERIFIED"), `/proof` checklist `verify()`, milestone PLANNED, batas P38/P13/P45 | **Testnet**: `/contracts` alamat home dari manifest + copy live; `/proof` milestone 1a LIVE ON TESTNET, invarian "NOT SHOWN YET"; ekspansi PLANNED |
 
 Perbarui tabel ini di akhir setiap task yang menyentuh sebuah flow.
+
+Catatan 21 Nov 2026 (polish + realtime, bukti `proof/2026-11-21-app-polish/notes.md`):
+- **D Launch:** form langsung bisa diisi; konfigurasi launch dibaca tanpa memblokir halaman dan diperbarui tiap 15 dtk. Diuji lewat UI di simulasi lokal (isi form → review → tanda tangan → redirect ke `/t/[address]`).
+- **E Trading:** quote di-debounce 250 ms, chip pecahan saldo, tombol selalu menyebut alasannya saat tidak bisa ditekan, toggle Buy/Sell terkunci selama transaksi berjalan, trade tampil seketika dari receipt. Buy, approve, dan sell diuji lewat UI di simulasi lokal. **Di testnet belum diuji dengan wallet** (agent tidak memanggil fungsi produk di jaringan publik).
+- **F.1 / F.2:** tombol Graduate dan Expand terkunci setelah berhasil sampai status terbaca ulang; fee yang gagal dibaca dibedakan dari fitur yang belum dibuka dan bisa dibaca ulang; Retry / Re-ack menyatakan alasannya bila tidak tersedia. Siklus penuh lulus di `npm run test:anvil`. Tombol Retry / Re-ack **tidak diklik lewat UI** pada uji ini.
+- **G Halaman token:** state curve realtime (2 dtk) selama Bonding, kolom Age / Time pada trade, tautan explorer untuk token, creator, trader, dan tx.

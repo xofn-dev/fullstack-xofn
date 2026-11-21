@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { currentBuildNote } from '@/lib/web3/app-mode';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
+import { AppMotion } from '@/components/layout/app-motion';
 import { ContractTable } from '@/components/proof/contract-table';
 import { publicEnv } from '@/lib/public-env';
 import { getHomeChain } from '@/lib/chains';
@@ -22,7 +23,8 @@ export default function ContractsPage() {
       <AppBackdrop />
       <main className="app-page" id="top">
         <div className="container">
-          <div className="app-head">
+          <AppMotion />
+          <div className="app-head rise">
             <div className="section-label">CONTRACTS</div>
             <h1>
               Transparent <span className="accent">by design.</span>
@@ -37,7 +39,7 @@ export default function ContractsPage() {
                     : 'No XofN contract is deployed on a public network yet. Addresses appear here only after they are published in the deployment manifest.'}
             </p>
           </div>
-          <div className="app-stack">
+          <div className="app-stack rise" style={{ '--i': 1 } as React.CSSProperties}>
             <ContractTable network={network} deployment={deployment} homeOnly={homeOnly} />
             <p className="preview-note">
               {homeOnly

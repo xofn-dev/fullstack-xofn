@@ -25,11 +25,15 @@ export function SimulationRelay({
 
   const deliver = async (count: number) => {
     setDelivering(true);
-    for (let index = 0; index < count; index += 1) {
-      // Pengantaran yang gagal menghentikan antrean: pesan itu tetap di kepala antrean.
-      if (!(await tx.run(buildDeliverNext(homeChain, relay)))) break;
+    try {
+      for (let index = 0; index < count; index += 1) {
+        // Pengantaran yang gagal menghentikan antrean: pesan itu tetap di kepala antrean.
+        if (!(await tx.run(buildDeliverNext(homeChain, relay)))) break;
+      }
+    } finally {
+      // Tombol tidak boleh tetap terkunci bila ada yang melempar di tengah antrean.
+      setDelivering(false);
     }
-    setDelivering(false);
   };
 
   return (

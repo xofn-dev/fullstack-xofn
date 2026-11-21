@@ -7,6 +7,7 @@ import { formatEth } from '@/lib/format';
 import { publicEnv } from '@/lib/public-env';
 import { expansionView } from '@/lib/tokens/steps';
 import { graduatorAbi, remoteAbi } from '@/lib/web3/abi/xofn';
+import { findRevertData, knownRevertMessage } from '@/lib/web3/decode-revert';
 import { homeContracts, type ChainDeployment, type Deployment } from '@/lib/web3/addresses';
 import { buildExpandAndLock, expandValue } from '@/lib/web3/expand-and-lock';
 import { buildReAck, buildRetryRemote } from '@/lib/web3/retry-remote';
@@ -61,6 +62,11 @@ function ChainSteps({
         ))}
       </ul>
       <p className="step-note">{view.note}</p>
+      {view.action === 'retry-remote' && retryFee === 0n && (
+        // Catatan di atas menyebut bisa diulang, tetapi fee-nya tidak terbaca: tombol tidak bisa
+        // dibuat tanpa menebak nilainya, jadi alasannya dinyatakan.
+        <p className="step-note">Retry fee could not be read from the chain. The retry button appears once it is read.</p>
+      )}
       {view.action === 'retry-remote' && retryFee > 0n && (
         <NetworkGuard chain={home.chain.chain}>
           <button
@@ -73,7 +79,13 @@ function ChainSteps({
           </button>
         </NetworkGuard>
       )}
-      {view.action === 're-ack' && (
+      {view.action === 're-ack' && remote.remote === null && (
+        <p className="step-note">
+          The Remote contract for {chain.name} is not in this network&apos;s manifest, so the
+          acknowledgement cannot be re-sent from here.
+        </p>
+      )}
+      {view.action === 're-ack' && remote.remote !== null && (
         <NetworkGuard chain={state.chain}>
           <button
             className="btn secondary"
@@ -85,9 +97,18 @@ function ChainSteps({
             }}
           >
             Re-send acknowledgement
-            {ackQuote.data !== undefined ? ` · ${formatEth(ackQuote.data)}` : ' · fee not read'}{' '}
+            {ackQuote.data !== undefined
+              ? ` · ${formatEth(ackQuote.data)}`
+              : ackQuote.isError
+                ? ' · fee not read'
+                : ' · reading fee…'}{' '}
             <span className="arr">↗</span>
           </button>
+          {ackQuote.isError && (
+            <button className="btn ghost" type="button" onClick={() => void ackQuote.refetch()}>
+              Read the fee again
+            </button>
+          )}
         </NetworkGuard>
       )}
       <TxStatus state={tx.state} chain={state.chain} success="Retry sent." />
@@ -121,11 +142,18 @@ export function ExpansionPanel({ token, deployment }: { token: TokenDetail; depl
   });
   const total = quote.data ? expandValue({ deployFees: quote.data[0], liquidityFees: quote.data[1] }) : null;
   const simulation = publicEnv.network === 'local';
+  // Kontrak yang menolak memberi quote (infrastruktur ekspansi belum aktif) dibedakan dari
+  // pembacaan yang gagal: yang kedua bisa dicoba lagi dan bukan berarti fiturnya belum dibuka.
+  const quoteRejected = quote.isError && findRevertData(quote.error) !== null;
+  const quoteRevert = quote.isError ? knownRevertMessage(quote.error) : null;
 
   if (status === 'bonding') {
     return (
       <div className="app-panel">
-        <h2>Expansion &amp; lock · stage 2</h2>
+        <div className="panel-head">
+          <h2>Expansion &amp; lock · stage 2</h2>
+          <span className="panel-meta">○ AFTER GRADUATION</span>
+        </div>
         <p>
           Opens after graduation. Planned chains: {destinations.join(', ') || 'none'}. Until then the
           tier is committed and its DVN configuration is not applied yet.
@@ -136,7 +164,18 @@ export function ExpansionPanel({ token, deployment }: { token: TokenDetail; depl
 
   return (
     <div className="app-panel">
-      <h2>Expansion &amp; lock · stage 2</h2>
+      <div className="panel-head">
+        <h2>Expansion &amp; lock · stage 2</h2>
+        <span className="panel-meta">
+          {token.status === 'locked'
+            ? '● LOCKED'
+            : token.status === 'changed'
+              ? '✕ CHANGED'
+              : status === 'expanding'
+                ? '○ EXPANDING'
+                : '○ AWAITING EXPANSION'}
+        </span>
+      </div>
       {status === 'graduated' && expansionUnavailable && (
         <p>
           Expansion to {destinations.join(' and ')} is not deployed on this network yet. The token stays
@@ -153,26 +192,43 @@ export function ExpansionPanel({ token, deployment }: { token: TokenDetail; depl
           <dl className="quote-list">
             <div>
               <dt>{simulation ? 'FEE · SIMULATION QUOTE (MOCK ENDPOINTS)' : 'FEE · LAYERZERO QUOTE'}</dt>
-              <dd>{total !== null ? formatEth(total) : quote.isError ? 'NOT AVAILABLE' : 'Reading…'}</dd>
+              <dd>
+                {total !== null ? formatEth(total) : quote.isError ? (quoteRejected ? 'NOT AVAILABLE' : 'NOT READ') : 'Reading…'}
+              </dd>
             </div>
           </dl>
-          {quote.isError ? (
-            <p>Expansion opens in a later release: the expansion infrastructure is not active yet.</p>
+          {quote.isError && quoteRejected ? (
+            <p>
+              {quoteRevert ?? 'Expansion opens in a later release: the expansion infrastructure is not active yet.'}
+            </p>
+          ) : quote.isError ? (
+            <>
+              <p>The expansion fee could not be read from the chain. No fee is assumed.</p>
+              <button className="btn secondary" type="button" onClick={() => void quote.refetch()} disabled={quote.isFetching}>
+                {quote.isFetching ? 'Reading…' : 'Read the fee again'}
+              </button>
+            </>
           ) : (
             <NetworkGuard chain={home.chain.chain}>
               <button
                 className="btn primary"
                 type="button"
-                disabled={tx.busy || total === null}
+                disabled={tx.busy || total === null || tx.state.phase === 'success'}
                 onClick={() => {
                   if (total !== null) void tx.run(buildExpandAndLock(home, token.address, total));
                 }}
               >
-                {tx.state.phase === 'wallet'
-                  ? 'Confirm in wallet…'
-                  : tx.state.phase === 'pending'
-                    ? 'Pending…'
-                    : 'Expand & lock'}{' '}
+                {tx.state.phase === 'simulating'
+                  ? 'Checking…'
+                  : tx.state.phase === 'wallet'
+                    ? 'Confirm in wallet…'
+                    : tx.state.phase === 'pending'
+                      ? 'Pending…'
+                      : tx.state.phase === 'success'
+                        ? 'Started · reading status…'
+                        : total === null
+                          ? 'Reading fee…'
+                          : 'Expand & lock'}{' '}
                 <span className="arr">↗</span>
               </button>
             </NetworkGuard>

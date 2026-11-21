@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { CheckForm } from '@/components/check/check-form';
 import { CheckResultView } from '@/components/check/check-result';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
+import { AppMotion } from '@/components/layout/app-motion';
 import { runCheck } from '@/lib/check';
 import { getChain, getChains, isChainKey } from '@/lib/chains';
 import { shortAddress } from '@/lib/format';
@@ -46,6 +47,7 @@ export default async function CheckResultPage({ params }: { params: Params }) {
       <AppBackdrop />
       <main className="app-page" id="top">
         <div className="container">
+          <AppMotion />
           <div className="app-head">
             <div className="section-label">
               <Link href="/check">XOFN CHECK</Link> / RESULT

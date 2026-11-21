@@ -194,6 +194,7 @@ export class SupabaseTokenStore implements TokenIndexStore {
       blockNumber: row.block_number,
       txHash: row.tx_hash as `0x${string}`,
       logIndex: row.log_index,
+      timestamp: null,
     }));
   }
 
@@ -249,5 +250,161 @@ export class SupabaseTokenStore implements TokenIndexStore {
 
   async reset(): Promise<void> {
     // Index di database tidak pernah dihapus otomatis; reset hanya relevan untuk Anvil.
+  }
+}
+
+const tradeKey = (trade: Pick<Trade, 'txHash' | 'logIndex'>) => `${trade.txHash}:${trade.logIndex}`;
+
+function byBlockThenLog(a: Trade, b: Trade): number {
+  const blockDiff = BigInt(a.blockNumber) - BigInt(b.blockNumber);
+  if (blockDiff !== 0n) return blockDiff < 0n ? -1 : 1;
+  return a.logIndex - b.logIndex;
+}
+
+interface CurveTrades {
+  /** Sudah digabung dengan isi store di belakangnya. */
+  loaded: boolean;
+  list: Trade[];
+  keys: Set<string>;
+}
+
+// Kursor ditulis ke store paling sering sekali per jeda ini. Kursor yang tertinggal hanya
+// membuat proses berikutnya membaca ulang rentang log yang lebih panjang; tidak ada yang hilang.
+const CURSOR_PERSIST_MS = 30_000;
+
+/**
+ * Cermin memori di depan store yang lambat (Supabase: satu round trip jaringan per panggilan).
+ * Isi index hanya bertambah (metadata launch, trade) dan chain tetap sumber kebenarannya, jadi
+ * aman dibaca dari memori proses: metadata dan kursor dimuat sekali, trade per curve dimuat saat
+ * pertama diminta, dan penulisan hanya diteruskan bila memang ada data baru. Tanpa ini satu
+ * polling halaman token menghabiskan sekitar enam round trip store sebelum menjawab.
+ */
+export class CachedTokenStore implements TokenIndexStore {
+  private metas: Map<Address, TokenMeta> | null = null;
+  private order: Address[] = [];
+  private loadingMetas: Promise<void> | null = null;
+  private trades = new Map<Address, CurveTrades>();
+  private loadingTrades = new Map<Address, Promise<void>>();
+  private cursor: bigint | null | undefined = undefined;
+  private cursorPersistedAt = 0;
+
+  constructor(
+    private readonly inner: TokenIndexStore,
+    private readonly now: () => number,
+  ) {}
+
+  get backend(): 'memory' | 'supabase' {
+    return this.inner.backend;
+  }
+
+  private async loadMetas(): Promise<Map<Address, TokenMeta>> {
+    if (this.metas) return this.metas;
+    this.loadingMetas ??= this.inner
+      .listMeta()
+      .then((metas) => {
+        this.metas = new Map(metas.map((meta) => [meta.address, meta]));
+        this.order = metas.map((meta) => meta.address);
+      })
+      .finally(() => {
+        this.loadingMetas = null;
+      });
+    await this.loadingMetas;
+    return this.metas ?? new Map();
+  }
+
+  async listMeta(): Promise<TokenMeta[]> {
+    const metas = await this.loadMetas();
+    return this.order.map((address) => metas.get(address)).filter((meta): meta is TokenMeta => !!meta);
+  }
+
+  async getMeta(address: Address): Promise<TokenMeta | null> {
+    return (await this.loadMetas()).get(address) ?? null;
+  }
+
+  async upsertMeta(metas: TokenMeta[]): Promise<void> {
+    if (metas.length === 0) return;
+    const known = await this.loadMetas();
+    await this.inner.upsertMeta(metas);
+    for (const meta of metas) {
+      if (!known.has(meta.address)) this.order.push(meta.address);
+      known.set(meta.address, meta);
+    }
+  }
+
+  private entry(curve: Address): CurveTrades {
+    let entry = this.trades.get(curve);
+    if (!entry) {
+      entry = { loaded: false, list: [], keys: new Set() };
+      this.trades.set(curve, entry);
+    }
+    return entry;
+  }
+
+  async getTrades(curve: Address): Promise<Trade[]> {
+    const entry = this.entry(curve);
+    if (!entry.loaded) {
+      let loading = this.loadingTrades.get(curve);
+      if (!loading) {
+        loading = this.inner
+          .getTrades(curve)
+          .then((stored) => {
+            // Trade yang diindeks proses ini sebelum curve-nya dimuat ikut digabung.
+            for (const trade of stored) {
+              if (entry.keys.has(tradeKey(trade))) continue;
+              entry.keys.add(tradeKey(trade));
+              entry.list.push(trade);
+            }
+            entry.list.sort(byBlockThenLog);
+            entry.loaded = true;
+          })
+          .finally(() => {
+            this.loadingTrades.delete(curve);
+          });
+        this.loadingTrades.set(curve, loading);
+      }
+      await loading;
+    }
+    return entry.list;
+  }
+
+  async appendTrades(trades: IndexedTrade[]): Promise<void> {
+    // Sync membaca ulang beberapa blok terakhir setiap kali; yang sudah dikenal tidak ditulis lagi.
+    const fresh = trades.filter((trade) => !this.entry(trade.curve).keys.has(tradeKey(trade)));
+    if (fresh.length === 0) return;
+    await this.inner.appendTrades(fresh);
+    for (const { curve, ...trade } of fresh) {
+      const entry = this.entry(curve);
+      entry.keys.add(tradeKey(trade));
+      // Array baru: pembaca yang masih memegang daftar lama tidak melihatnya berubah di tengah jalan.
+      entry.list = [...entry.list, trade].sort(byBlockThenLog);
+    }
+    // Trade baru sudah tersimpan, jadi kursor ikut disimpan pada `setCursor` berikutnya.
+    this.cursorPersistedAt = 0;
+  }
+
+  async getCursor(): Promise<bigint | null> {
+    if (this.cursor === undefined) this.cursor = await this.inner.getCursor();
+    return this.cursor;
+  }
+
+  async setCursor(block: bigint): Promise<void> {
+    this.cursor = block;
+    const at = this.now();
+    if (at - this.cursorPersistedAt < CURSOR_PERSIST_MS) return;
+    this.cursorPersistedAt = at;
+    await this.inner.setCursor(block);
+  }
+
+  saveStatus(address: Address, status: DisplayStatus): Promise<void> {
+    return this.inner.saveStatus(address, status);
+  }
+
+  async reset(): Promise<void> {
+    await this.inner.reset();
+    this.metas = new Map();
+    this.order = [];
+    this.trades.clear();
+    this.cursor = null;
+    this.cursorPersistedAt = 0;
   }
 }

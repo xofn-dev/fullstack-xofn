@@ -1,4 +1,5 @@
 import { explorerAddressUrl, getChains, type ChainInfo } from '@/lib/chains';
+import { CopyButton } from '@/components/ui/copy-button';
 import type { ChainDeployment, Deployment, HomeOnlyDeployment } from '@/lib/web3/addresses';
 import type { Network } from '@/types/enums';
 
@@ -97,7 +98,7 @@ export function ContractTable({
         const deployed = deployment?.chains[chain.key] ?? null;
         const home = chain.role === 'home' ? homeOnly : null;
         return (
-          <div className="app-panel" key={chain.key}>
+          <div className="app-panel" key={chain.key} data-reveal="">
             <h2>
               {chain.name} · {chain.role === 'home' ? 'home chain' : 'expansion chain'}
               {chain.eid !== null ? ` · EID ${chain.eid}` : ''}
@@ -130,6 +131,12 @@ export function ContractTable({
                               </a>
                             ) : (
                               <span className="mono">{row.address}</span>
+                            )}
+                            {row.address && (
+                              <>
+                                {' '}
+                                <CopyButton value={row.address} what="Contract address" />
+                              </>
                             )}
                           </td>
                           <td>

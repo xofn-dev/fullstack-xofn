@@ -4,7 +4,7 @@ import { getChain } from '@/lib/chains';
 import { shortAddress } from '@/lib/format';
 import { publicEnv } from '@/lib/public-env';
 import { tierDvnSummary } from '@/lib/tiers';
-import { useOverlay } from '@/components/ui/overlay-provider';
+import { CopyButton } from '@/components/ui/copy-button';
 import type { Address, TokenPathway, VerifyReading } from '@/types/domain';
 import type { Tier } from '@/types/enums';
 
@@ -23,25 +23,15 @@ export function DvnList({
   /** true bila konfigurasi tier sudah dipasang (token Locked). */
   applied: boolean;
 }) {
-  const { toast } = useOverlay();
   const local = publicEnv.network === 'local';
   const operatorNote = local ? 'local mock DVN' : 'operator to be confirmed';
   const home = verify[0];
-
-  const copy = (address: Address) => {
-    void navigator.clipboard?.writeText(address).then(
-      () => toast('Address copied.'),
-      () => toast('Could not copy the address.'),
-    );
-  };
 
   const dvnRow = (address: Address) => (
     <li key={address}>
       <b>{shortAddress(address)}</b>
       <span>{operatorNote}</span>
-      <button type="button" className="copy-btn" onClick={() => copy(address)}>
-        copy
-      </button>
+      <CopyButton value={address} what="DVN address" />
     </li>
   );
 
