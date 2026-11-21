@@ -67,6 +67,12 @@
   --radius-2xl: 17px;
   --radius-pill: 40px;
 
+  /* Halaman aplikasi: bayangan panel dan kurva gerak (DESIGN_SYSTEM §2.3, §7). */
+  --shadow-panel: 0 18px 48px color-mix(in srgb, var(--color-bg) 62%, transparent);
+  --shadow-lift: 0 26px 70px color-mix(in srgb, var(--color-bg) 70%, transparent),
+    0 0 42px color-mix(in srgb, var(--color-mint-2) 9%, transparent);
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+
   --font-sans: var(--font-display), Arial, system-ui, sans-serif;
   --font-mono: var(--font-mono-face), ui-monospace, 'SFMono-Regular', Consolas, monospace;
 }
@@ -543,11 +549,109 @@ button {
   min-width: 0;
 }
 .app-panel {
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg);
-  background: var(--color-panel);
-  padding: 20px 22px;
+  position: relative;
+  isolation: isolate;
+  border: 1px solid color-mix(in srgb, var(--color-line) 82%, transparent);
+  border-radius: var(--radius-xl);
+  /* Glass yang sama dengan panel landing, diturunkan dari token. */
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--color-panel-2) 70%, transparent),
+    color-mix(in srgb, var(--color-bg-2) 78%, transparent)
+  );
+  backdrop-filter: blur(14px) saturate(1.25);
+  box-shadow: var(--shadow-panel);
+  padding: 22px 24px;
   min-width: 0;
+  transition:
+    border-color 0.25s,
+    box-shadow 0.25s;
+}
+/* Garis cahaya tipis di tepi atas panel. */
+.app-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 18px auto;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-mint) 55%, transparent),
+    transparent
+  );
+  opacity: 0.55;
+  pointer-events: none;
+}
+/* Sorotan mengikuti pointer (variabel diisi `attachSpotlight`); tanpa itu tetap di tengah. */
+.app-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    340px circle at var(--spotX, 50%) var(--spotY, 0%),
+    color-mix(in srgb, var(--color-mint-2) 11%, transparent),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+.app-panel:hover {
+  border-color: color-mix(in srgb, var(--color-mint-2) 34%, var(--color-line));
+}
+.app-panel:hover::after {
+  opacity: 1;
+}
+/*
+ * Halaman transaksi (/t, /launch): tanpa backdrop-filter. Blur di atas latar yang bergerak
+ * dihitung ulang tiap frame, dan di halaman ini kelancaran mengetik dan menandatangani lebih
+ * penting daripada efeknya. Gradien yang lebih pekat memberi tampilan serupa tanpa biaya itu.
+ */
+.app-page.is-transactional .app-panel,
+.app-page.is-transactional .token-head,
+.app-page.is-transactional .launch-form {
+  backdrop-filter: none;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--color-panel-2) 93%, transparent),
+    color-mix(in srgb, var(--color-bg-2) 95%, transparent)
+  );
+}
+/* Panel yang sedang diisi pengguna: tanpa sorotan pointer, supaya tidak ada repaint saat mengetik. */
+.app-panel.is-quiet::after {
+  display: none;
+}
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin: 0 0 16px;
+}
+.panel-head > h2,
+.panel-head > h3 {
+  margin: 0;
+  font: 500 11px var(--mono);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+.panel-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: 9px/1.4 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.panel-meta.panel-foot {
+  display: flex;
+  margin-top: 14px;
 }
 .app-panel > h2,
 .app-panel > h3 {
@@ -563,7 +667,8 @@ button {
   line-height: 1.7;
   margin: 0 0 12px;
 }
-.app-panel .btn {
+/* `.iconOnly` (mis. tombol tukar arah bridge) mempertahankan lebarnya sendiri. */
+.app-panel .btn:not(.iconOnly) {
   width: 100%;
   justify-content: center;
 }
@@ -571,19 +676,95 @@ button {
   margin-top: 9px;
 }
 .token-head {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 14px 24px;
-  margin-bottom: 26px;
+  gap: 16px 24px;
+  margin-bottom: 18px;
+  padding: 26px 28px;
+  border: 1px solid color-mix(in srgb, var(--color-line) 82%, transparent);
+  border-radius: var(--radius-2xl);
+  background:
+    radial-gradient(
+      110% 150% at 0% 0%,
+      color-mix(in srgb, var(--color-mint-2) 13%, transparent),
+      transparent 56%
+    ),
+    radial-gradient(90% 130% at 100% 0%, color-mix(in srgb, var(--color-blue) 13%, transparent), transparent 60%),
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--color-panel-2) 70%, transparent),
+      color-mix(in srgb, var(--color-bg-2) 78%, transparent)
+    );
+  backdrop-filter: blur(14px) saturate(1.25);
+  box-shadow: var(--shadow-panel);
+}
+/* Grid tipis seperti di hero landing, memudar ke kanan bawah. */
+.token-head::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(120% 120% at 0% 0%, black 12%, transparent 70%);
+  pointer-events: none;
+}
+.token-id {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+.token-coin {
+  --c3d-size: 68px;
+  flex: none;
+}
+.token-id-text {
+  min-width: 0;
+}
+.token-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font: 10px/1.5 var(--mono);
+  color: var(--color-muted);
+}
+.token-meta .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-bg) 55%, transparent);
+  min-width: 0;
+}
+.token-meta .chip b {
+  color: var(--color-text);
+  font-weight: 500;
+}
+.token-meta .chip a {
+  color: var(--color-mint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.token-meta .chip .address-full {
+  overflow-wrap: anywhere;
 }
 .token-head h1 {
   font-size: clamp(30px, 4.4vw, 52px);
   line-height: 1.04;
   letter-spacing: -0.06em;
   font-weight: 600;
-  margin: 12px 0 8px;
+  margin: 10px 0 12px;
   overflow-wrap: anywhere;
 }
 .token-head .mono {
@@ -642,6 +823,26 @@ button {
   padding: 14px 16px;
   max-width: 520px;
 }
+/* Di kepala halaman token rincian DVN terbuka sebagai lapisan di bawah badge: membukanya tidak
+   mendorong chart dan panel trade ke bawah. Di layar sempit tetap mengalir biasa. */
+.token-head {
+  z-index: 2;
+}
+.token-head .tier-badge {
+  position: relative;
+}
+@media (min-width: 761px) {
+  .token-head .tier-badge-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 3;
+    width: min(520px, 80vw);
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
+    box-shadow: var(--shadow-lift);
+  }
+}
 .tier-badge-panel .pathway-note {
   margin: 0 0 6px;
 }
@@ -666,22 +867,195 @@ button {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.price-chart {
-  width: 100%;
-  height: 190px;
-  display: block;
+/* ---- Chart halaman token (SVG tulis tangan; tanpa library) ---- */
+.chart-tabs {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-bg) 60%, transparent);
+}
+.chart-tabs button {
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  padding: 6px 11px;
+  color: var(--color-muted);
+  font: 9px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.chart-tabs button[aria-pressed='true'] {
+  background: var(--color-ok-bg);
+  color: var(--color-ok-text);
+}
+.chart-frame {
+  position: relative;
+  height: 250px;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
-  background: var(--color-bg);
+  background:
+    linear-gradient(color-mix(in srgb, var(--color-text) 4%, transparent) 1px, transparent 1px) 0 0 / 100% 25%,
+    color-mix(in srgb, var(--color-bg) 72%, transparent);
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.chart-frame svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.chart-line {
+  fill: none;
+  stroke: var(--color-mint);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.chart-line.is-ghost {
+  stroke: color-mix(in srgb, var(--color-ice) 38%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 5;
+}
+.chart-area-ghost {
+  opacity: 0.38;
+}
+.chart-axis {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 10px;
+  font: 9px/1.3 var(--mono);
+  color: var(--color-muted);
+  pointer-events: none;
+}
+.chart-axis span {
+  padding: 2px 5px;
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
+  width: max-content;
+}
+.chart-mark,
+.chart-cross {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  pointer-events: none;
+}
+.chart-mark {
+  border-left: 1px dashed color-mix(in srgb, var(--color-orange) 62%, transparent);
+}
+.chart-mark span {
+  position: absolute;
+  top: 8px;
+  right: 6px;
+  white-space: nowrap;
+  font: 9px/1.3 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--color-warn-text);
+}
+.chart-cross {
+  border-left: 1px solid color-mix(in srgb, var(--color-mint) 45%, transparent);
+}
+.chart-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: var(--color-mint);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-mint) 22%, transparent);
+  pointer-events: none;
+}
+.chart-dot.is-now::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid var(--color-mint);
+  animation: app-pulse 2.2s var(--ease-out-soft) infinite;
+}
+.chart-dot.is-hover {
+  background: var(--color-text);
+}
+.chart-tip {
+  position: absolute;
+  top: 8px;
+  z-index: 1;
+  display: grid;
+  gap: 2px;
+  padding: 7px 9px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  font: 9px/1.5 var(--mono);
+  color: var(--color-muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.chart-tip b {
+  color: var(--color-text);
+  font-weight: 500;
+}
+.chart-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin: 8px 0 16px;
+  font: 9px/1.5 var(--mono);
+  color: var(--color-muted);
 }
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
-  margin-top: 12px;
+  margin-top: 14px;
 }
-.stat-row .drawer-kv strong {
+.stat-tile {
+  padding: 14px 15px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-bg) 46%, transparent);
+  min-width: 0;
+}
+.stat-tile small {
+  display: block;
+  margin-bottom: 8px;
+  font: 9px var(--mono);
+  letter-spacing: 0.07em;
+  color: var(--color-muted);
+}
+.stat-tile strong {
+  display: block;
+  font: 500 13px/1.35 var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
   overflow-wrap: anywhere;
+}
+.stat-tile em {
+  display: block;
+  margin-top: 5px;
+  font: normal 9px/1.4 var(--mono);
+  color: var(--color-dim);
+  min-height: 13px;
+}
+.stat-tile em.up {
+  color: var(--color-ok-text);
+}
+.stat-tile em.down {
+  color: var(--color-danger-text);
 }
 .quote-list {
   margin: 14px 0;
@@ -703,6 +1077,7 @@ button {
   color: var(--color-text);
   text-align: right;
   overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
 }
 .tx-status {
   display: flex;
@@ -906,9 +1281,594 @@ button {
   color: var(--color-text);
   font-weight: 500;
 }
+/* ---------- Dropdown (select) di seluruh situs ----------
+   Panah bawaan browser menempel ke tepi dan berbeda di tiap OS. Diganti chevron dari dua
+   gradien bertoken, dengan ruang kanan yang tetap, supaya rapi dan seragam. */
+select,
+select.field,
+select.form-control,
+.transfer-main select {
+  --chevron: var(--color-muted);
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 44px;
+  padding: 11px 44px 11px 15px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background-color: color-mix(in srgb, var(--color-panel-2) 82%, transparent);
+  background-image:
+    linear-gradient(45deg, transparent 42%, var(--chevron) 42%, var(--chevron) 58%, transparent 58%),
+    linear-gradient(-45deg, transparent 42%, var(--chevron) 42%, var(--chevron) 58%, transparent 58%);
+  background-size: 7px 7px;
+  background-position:
+    right 23px center,
+    right 16px center;
+  background-repeat: no-repeat;
+  color: var(--color-text);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+}
+select:hover,
+select:focus {
+  --chevron: var(--color-mint);
+  border-color: color-mix(in srgb, var(--color-mint-2) 58%, var(--color-line));
+}
+select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+/* Daftar pilihan mengikuti tema gelap di browser yang mengizinkannya. */
+select option {
+  background: var(--color-panel);
+  color: var(--color-text);
+}
+
+/* ---------- Polish halaman aplikasi: gerak, status hidup, skeleton ---------- */
+@keyframes app-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes app-pulse {
+  0% {
+    opacity: 0.85;
+    transform: scale(0.6);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+@keyframes app-flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes app-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+@keyframes app-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Masuk sekali saat mount; urutan lewat `--i`. Murni CSS, jadi tidak pernah menunda interaksi. */
+.rise {
+  animation: app-rise 0.55s var(--ease-out-soft) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-mint);
+}
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--color-mint);
+  animation: app-pulse 2.2s var(--ease-out-soft) infinite;
+}
+.live-dot.is-stale {
+  background: var(--color-caution);
+}
+.live-dot.is-stale::after {
+  display: none;
+}
+/* Nilai yang berubah berkedip sebentar; kedipannya lapisan opacity, bukan perubahan layout. */
+.live-value {
+  position: relative;
+  display: inline-block;
+}
+.live-value.flash-up::after,
+.live-value.flash-down::after {
+  content: '';
+  position: absolute;
+  inset: -3px -6px;
+  border-radius: var(--radius-xs);
+  animation: app-flash 0.7s ease-out both;
+  pointer-events: none;
+}
+.live-value.flash-up::after {
+  background: color-mix(in srgb, var(--color-mint) 26%, transparent);
+}
+.live-value.flash-down::after {
+  background: color-mix(in srgb, var(--color-danger) 26%, transparent);
+}
+.skeleton {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-line) 50%, transparent) 25%,
+      color-mix(in srgb, var(--color-line) 95%, transparent) 37%,
+      color-mix(in srgb, var(--color-line) 50%, transparent) 63%
+    )
+    0 0 / 400% 100%;
+  animation: app-shimmer 1.4s ease infinite;
+}
+
+/* ---- Rel lifecycle token: Bonding → Graduated → Expanding → Locked ---- */
+.stage-rail {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  counter-reset: stage;
+}
+.stage-rail li {
+  position: relative;
+  counter-increment: stage;
+  padding: 13px 15px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-bg-2) 72%, transparent);
+  min-width: 0;
+}
+.stage-rail li::before {
+  content: '0' counter(stage);
+  display: block;
+  margin-bottom: 7px;
+  font: 9px var(--mono);
+  letter-spacing: 0.1em;
+  color: var(--color-dim);
+}
+.stage-rail strong {
+  display: block;
+  font: 500 12px/1.35 var(--display);
+  color: var(--color-muted);
+}
+.stage-rail small {
+  display: block;
+  margin-top: 6px;
+  font: 9px/1.4 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--color-dim);
+}
+.stage-rail li.is-done {
+  border-color: var(--color-ok-line);
+}
+.stage-rail li.is-done strong,
+.stage-rail li.is-current strong {
+  color: var(--color-text);
+}
+.stage-rail li.is-done small {
+  color: var(--color-ok-text);
+}
+.stage-rail li.is-current {
+  border-color: color-mix(in srgb, var(--color-mint) 60%, var(--color-line));
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--color-ok-bg) 88%, transparent),
+    color-mix(in srgb, var(--color-bg-2) 80%, transparent)
+  );
+  box-shadow: 0 0 34px color-mix(in srgb, var(--color-mint-2) 10%, transparent);
+}
+.stage-rail li.is-current small {
+  color: var(--color-mint);
+}
+.stage-rail li.is-alert {
+  border-color: var(--color-danger-line);
+  background: color-mix(in srgb, var(--color-danger-bg) 70%, transparent);
+}
+.stage-rail li.is-alert small {
+  color: var(--color-danger-text);
+}
+.stage-rail li.is-unread small {
+  color: var(--color-caution-text);
+}
+
+/* ---- Tata letak halaman token: urutan DOM = urutan mobile; panel trade menempel di desktop ---- */
+.token-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  grid-template-areas:
+    'chart trade'
+    'stages trade'
+    'security trade'
+    'trades trade';
+  gap: 18px;
+  align-items: start;
+}
+.token-layout > .area-chart {
+  grid-area: chart;
+}
+.token-layout > .area-trade {
+  grid-area: trade;
+  position: sticky;
+  top: 96px;
+}
+.token-layout > .area-stages {
+  grid-area: stages;
+}
+.token-layout > .area-security {
+  grid-area: security;
+}
+.token-layout > .area-trades {
+  grid-area: trades;
+}
+.token-layout > * {
+  min-width: 0;
+}
+.stage-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+/* ---- Panel trade ---- */
+.side-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-bg) 60%, transparent);
+}
+.side-toggle button {
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted);
+  font: 600 13px var(--display);
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+}
+.side-toggle button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.side-toggle button.is-buy[aria-pressed='true'] {
+  background: var(--color-ok-bg);
+  border-color: var(--color-ok-line);
+  color: var(--color-ok-text);
+}
+/* Jual = merah. Memakai turunan `danger` yang redup supaya tidak bertabrakan dengan latar navy
+   panel; arah trade selalu juga ditulis sebagai teks dan panah, tidak lewat warna saja. */
+.side-toggle button.is-sell[aria-pressed='true'] {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-line);
+  color: var(--color-danger-text);
+}
+/* Tombol kirim mengikuti sisi trade: hijau untuk beli, merah untuk jual. */
+.trade-panel .btn.is-buy,
+.trade-panel .btn.is-sell {
+  border-color: transparent;
+  color: var(--color-bg);
+  transition:
+    transform 0.2s var(--ease-out-soft),
+    box-shadow 0.2s,
+    opacity 0.2s;
+}
+.trade-panel .btn.is-buy {
+  background: linear-gradient(135deg, var(--color-mint), var(--color-mint-2));
+  box-shadow: 0 8px 34px color-mix(in srgb, var(--color-mint-2) 20%, transparent);
+}
+.trade-panel .btn.is-sell {
+  background: linear-gradient(135deg, var(--color-danger-text), var(--color-danger));
+  box-shadow: 0 8px 34px color-mix(in srgb, var(--color-danger) 20%, transparent);
+}
+.trade-panel .btn.is-buy:hover:not(:disabled) {
+  box-shadow: 0 12px 46px color-mix(in srgb, var(--color-mint-2) 34%, transparent);
+  transform: translateY(-2px);
+}
+.trade-panel .btn.is-sell:hover:not(:disabled) {
+  box-shadow: 0 12px 46px color-mix(in srgb, var(--color-danger) 34%, transparent);
+  transform: translateY(-2px);
+}
+.trade-panel .btn.is-buy:disabled,
+.trade-panel .btn.is-sell:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.amount-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin: 18px 0 9px;
+  font: 10px var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+}
+.amount-head .field-label {
+  margin: 0;
+}
+.amount-head span {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.amount-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
+  transition: border-color 0.2s;
+}
+.amount-field:focus-within {
+  border-color: var(--color-mint);
+}
+.amount-field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 15px 0;
+  color: var(--color-text);
+  font: 500 22px/1.2 var(--mono);
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.amount-field input::placeholder {
+  color: var(--color-dim);
+}
+.amount-field b {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 11px var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+.chip-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+.chip-row.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+.chip-row button {
+  min-height: 34px;
+  padding: 0 4px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-panel) 70%, transparent);
+  color: var(--color-muted);
+  font: 10px var(--mono);
+  letter-spacing: 0.04em;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
+}
+.chip-row button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-mint-2) 60%, var(--color-line));
+  color: var(--color-text);
+}
+.chip-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.chip-row button[aria-pressed='true'] {
+  border-color: var(--color-ok-line);
+  background: var(--color-ok-bg);
+  color: var(--color-ok-text);
+}
+.chip-label {
+  display: block;
+  margin: 16px 0 0;
+  font: 9px var(--mono);
+  letter-spacing: 0.07em;
+  color: var(--color-muted);
+}
+/* Kotak hasil ber-tinggi tetap: quote yang datang dan pergi tidak menggeser tombol di bawahnya. */
+.receive-box {
+  margin-top: 16px;
+  padding: 14px 15px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-bg) 46%, transparent);
+}
+.receive-box small {
+  display: block;
+  font: 9px var(--mono);
+  letter-spacing: 0.07em;
+  color: var(--color-muted);
+}
+.receive-box strong {
+  display: block;
+  margin-top: 8px;
+  min-height: 26px;
+  font: 500 20px/1.3 var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+.receive-box strong.is-idle {
+  color: var(--color-dim);
+}
+.trade-panel .quote-list {
+  margin: 14px 0 4px;
+}
+.trade-panel .error-msg {
+  margin-top: 6px;
+}
+
+/* ---- Tabel data: tautan dan baris baru ---- */
+.data-table a {
+  color: var(--color-mint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* Badge sisi trade di tabel: hijau beli, merah jual, selalu dengan panah dan teksnya. */
+.side-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--color-ok-line);
+  border-radius: var(--radius-xs);
+  background: var(--color-ok-bg);
+  color: var(--color-ok-text);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+.side-badge.is-sell {
+  border-color: var(--color-danger-line);
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+/* Sakelar AGE / TIME di kepala kolom waktu tabel trade. */
+.time-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.time-switch button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--color-dim);
+}
+.time-switch button + button::before {
+  content: '/';
+  margin-right: 8px;
+  color: var(--color-dim);
+}
+.time-switch button[aria-pressed='true'] {
+  color: var(--color-mint);
+}
+.data-table td.num-left {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+.data-table tr.is-new {
+  animation: app-row-in 0.45s var(--ease-out-soft) both;
+}
+.data-table td.num,
+.data-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.error-msg.is-info {
+  color: var(--color-muted);
+}
+
+/* ---- Halaman lain ---- */
+.app-page .app-head {
+  position: relative;
+}
+.app-page .app-head h1 .accent {
+  background: linear-gradient(100deg, var(--color-mint), var(--color-ice));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* Section landing yang dipakai ulang di dalam halaman aplikasi (mode preview) tidak menambah
+   padding section di atas padding `.app-page`. */
+.app-page > section.section {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.proof-list li {
+  align-items: baseline;
+}
+.proof-list li > b::before {
+  content: '◆';
+  margin-right: 9px;
+  font-size: 8px;
+  color: var(--color-mint-2);
+}
+.skeleton-stack {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 1150px) {
+  .stage-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 @media (max-width: 900px) {
   .app-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .token-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'chart'
+      'trade'
+      'stages'
+      'security'
+      'trades';
+  }
+  .token-layout > .area-trade {
+    position: static;
+  }
+  .stage-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 640px) {
@@ -918,6 +1878,73 @@ button {
   .bridge-row {
     grid-template-columns: 1fr;
   }
+  .token-head {
+    padding: 18px 16px;
+  }
+  .token-coin {
+    --c3d-size: 52px;
+  }
+  .token-id {
+    gap: 13px;
+  }
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chart-frame {
+    height: 210px;
+  }
+  .amount-field input {
+    font-size: 19px;
+  }
+}
+@media (max-width: 430px) {
+  .stage-rail li {
+    padding: 11px 12px;
+  }
+  .chip-row button {
+    font-size: 9px;
+  }
+}
+/* Hasil XofN Check muncul berurutan: ringkasan dulu, lalu tiap pathway (DESIGN_SYSTEM §7.3). */
+.check-results .result-main,
+.check-results .pathway-card {
+  animation: app-rise 0.55s var(--ease-out-soft) both;
+}
+.check-results .pathway-card:nth-of-type(1) {
+  animation-delay: 0.12s;
+}
+.check-results .pathway-card:nth-of-type(2) {
+  animation-delay: 0.24s;
+}
+.check-results .pathway-card:nth-of-type(3) {
+  animation-delay: 0.36s;
+}
+.check-results .pathway-card:nth-of-type(n + 4) {
+  animation-delay: 0.48s;
+}
+/* Kartu token kerangka di Explore selagi daftar dibaca. */
+.token-card.is-skeleton {
+  display: grid;
+  gap: 14px;
+  pointer-events: none;
+}
+/* Sorotan pointer hanya untuk perangkat ber-pointer halus. */
+@media (hover: none) {
+  .app-panel::after {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .check-results .result-main,
+  .check-results .pathway-card,
+  .data-table tr.is-new,
+  .skeleton,
+  .live-dot::after,
+  .chart-dot.is-now::after,
+  .live-value::after {
+    animation: none !important;
+  }
 }
 
 /* Reduced motion: marquee berhenti (HTML hanya memendekkan durasi animasi). */
@@ -926,4 +1953,9 @@ button {
   .v3-transmission-track {
     animation: none !important;
   }
+}
+
+/* Koin CSS di kepala halaman token berhenti berputar saat tergulir keluar layar. */
+.is-paused .c3d-spin {
+  animation-play-state: paused;
 }

@@ -539,6 +539,7 @@ Item `[Belum]` diputuskan owner atau desainer. Sampai diputuskan, pakai rekomend
 | Section landing 1–16 | **Selesai (Phase 1, 17 Nov 2026)**, mode preview. Copy home chain D15, status D16, copy operator D17 |
 | 3D hero / arch / galaxy | **Selesai (Phase 1, 17 Nov 2026).** three 0.187, lifecycle + dispose, fallback statis, galaxy mati di ≤860px (D5), mekanisme *split* (D2) |
 | Intro loader + status muat hero (D19) | **Selesai (18 Nov 2026).** `src/components/landing/intro-loader.tsx`, `src/app/styles/intro-loader.css`, sinyal `src/lib/client/intro.ts`; kilasan fallback hero saat first load diperbaiki (§8.2) |
+| Polish halaman aplikasi | **Selesai (21 Nov 2026).** Panel glass, halaman token baru, anggaran performa halaman transaksi, loading skeleton. Rincian di catatan "polish halaman aplikasi" di bawah |
 | Halaman aplikasi (§6.2) | **`/check` dan `/check/[chain]/[address]` selesai (Phase 2, 17 Nov 2026)**, termasuk kartu OG. **`/launch`, `/t/[address]`, `/bridge`, `/contracts`, `/proof` selesai (Phase 4, 17 Nov 2026)** untuk mode simulation; di preview halaman itu memakai section landing berlabel |
 
 Catatan implementasi Phase 1:
@@ -560,5 +561,20 @@ Catatan implementasi Phase 4:
 - TierBadge berupa tombol (`aria-expanded`) yang membuka DvnList di bawahnya, bukan popover. Status transaksi berupa teks (`Confirm in wallet…`, `Pending…`) di wilayah `aria-live`.
 - Tabel lebar (`.data-table`) bergulir di dalam panelnya; tidak ada overflow horizontal di 390/768/1280/1680px (diukur lewat emulasi viewport CDP).
 - Kontrol relay lokal memakai warna `caution` dan label SIMULATION supaya tidak tertukar dengan langkah protokol.
+
+Catatan polish halaman aplikasi (21 Nov 2026, bukti `proof/2026-11-21-app-polish/notes.md`):
+- **Panel glass.** `.app-panel` memakai glass yang diturunkan dari token (`color-mix`), garis cahaya atas, dan sorotan pointer. `.token-head` menjadi band hero-ringan dengan grid bermasker.
+- **Halaman transaksi (`.app-page.is-transactional`: `/t/[address]`, `/launch`) tanpa `backdrop-filter`.** Di sana realtime dan kelancaran buy / sell / launch lebih penting daripada efek. Animasi hanya `transform` / `opacity`, masuk sekali saat mount (`.rise`, murni CSS), tanpa ScrollTrigger. Panel trade tanpa sorotan pointer (`.is-quiet`).
+- **Langit halaman aplikasi kini benar-benar statis** (D6): `mountCosmosFallback(canvas, { still: true })`.
+- **Halaman token:** kepala dengan `Coin3D` (D21) + chip alamat/creator, rel lifecycle 4 tahap (teks + glyph, bukan warna saja), chart SVG tulis tangan dengan tab Curve / Trades, stat tile yang berkedip saat berubah, panel trade menempel di desktop. Urutan DOM = urutan mobile: Chart → Trade → Graduation → Expansion → Security → Trades.
+- **Rincian DVN di TierBadge** tetap dibuka lewat tombol (`aria-expanded`); di kepala halaman token panelnya kini melayang di bawah badge (≥761px) sehingga tidak menggeser chart dan panel trade.
+- **Warna sisi trade:** beli hijau (`ok-*`, mint), jual merah (`danger-*`). Selalu bersama teks dan panah. Berlaku di toggle Buy/Sell, tombol kirim, dan badge tabel trade.
+- **Tabel trade:** kolom waktu dengan sakelar `AGE` / `TIME (UTC)`; waktu dibaca dari blok, yang belum terbaca ditulis `reading…`.
+- **Dropdown (`select`) seluruh situs:** panah bawaan diganti chevron dari gradien bertoken, ruang kanan 44px, tinggi minimum 44px.
+- **Halaman lain** (`/check`, `/bridge`, `/proof`, `/contracts`): `AppMotion` (sorotan pointer + panel di bawah lipatan naik saat tergulir, lewat `useGsap`); hasil Check muncul berurutan per pathway (§7.3).
+- **Loading:** `loading.tsx` + `Skeleton` untuk `/t/[address]`, `/launch`, `/check/[chain]/[address]`; kartu kerangka di Explore.
+- **Penyimpangan dari rencana:** garis chart tidak digambar masuk dengan GSAP (bukan `transform`/`opacity`; dibuang demi anggaran performa halaman transaksi).
+- Token baru di `@theme`: `--shadow-panel`, `--shadow-lift`, `--ease-out-soft`. Tidak ada hex baru di luar `@theme`.
+- Tanpa overflow horizontal di 360 / 390 / 768 / 1280 / 1680px (emulasi viewport CDP); 0 konteks WebGL di halaman aplikasi; semua animasi baru mati di `prefers-reduced-motion`.
 
 Perbarui tabel ini di akhir setiap task UI, lengkap dengan tanggal.

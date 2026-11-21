@@ -6,6 +6,7 @@ import { publicEnv } from '@/lib/public-env';
 import { homeContracts, type Deployment } from '@/lib/web3/addresses';
 import { buildGraduate } from '@/lib/web3/graduate';
 import { useTxFlow } from '@/lib/web3/use-tx-flow';
+import { LiveValue } from '@/components/ui/live-value';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { TxStatus } from '@/components/ui/tx-status';
 import { NetworkGuard } from '@/components/wallet/network-guard';
@@ -22,12 +23,17 @@ export function GraduationPanel({ token, deployment }: { token: TokenDetail; dep
 
   return (
     <div className="app-panel">
-      <h2>Graduation · stage 1</h2>
+      <div className="panel-head">
+        <h2>Graduation · stage 1</h2>
+        <span className="panel-meta">{bonding ? (curve.thresholdReached ? '● READY' : '○ BONDING') : '✓ DONE'}</span>
+      </div>
       {bonding ? (
         <>
           <div className="token-info">
             <span>PROGRESS TO THRESHOLD</span>
-            <strong>{formatBps(curve.progressBps)}</strong>
+            <strong>
+              <LiveValue amount={curve.progressBps}>{formatBps(curve.progressBps)}</LiveValue>
+            </strong>
           </div>
           <ProgressBar bps={curve.progressBps} label="Progress to graduation threshold" />
           <dl className="quote-list">
@@ -53,14 +59,20 @@ export function GraduationPanel({ token, deployment }: { token: TokenDetail; dep
                 <button
                   className="btn primary"
                   type="button"
-                  disabled={tx.busy}
+                  // Setelah berhasil tombol tetap terkunci sampai status token terbaca ulang
+                  // (panel ini lalu berganti ke "pool created"); graduate kedua pasti revert.
+                  disabled={tx.busy || tx.state.phase === 'success'}
                   onClick={() => void tx.run(buildGraduate(home, token.address))}
                 >
-                  {tx.state.phase === 'wallet'
-                    ? 'Confirm in wallet…'
-                    : tx.state.phase === 'pending'
-                      ? 'Pending…'
-                      : 'Graduate'}{' '}
+                  {tx.state.phase === 'simulating'
+                    ? 'Checking…'
+                    : tx.state.phase === 'wallet'
+                      ? 'Confirm in wallet…'
+                      : tx.state.phase === 'pending'
+                        ? 'Pending…'
+                        : tx.state.phase === 'success'
+                          ? 'Graduated · reading status…'
+                          : 'Graduate'}{' '}
                   <span className="arr">↗</span>
                 </button>
               </NetworkGuard>

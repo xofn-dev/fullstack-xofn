@@ -520,6 +520,16 @@ Mode ditentukan di server dan diteruskan ke klien. Klien hanya memilih tombol ma
 
 ### 11.4 State
 - State server diambil lewat RSC + react-query untuk polling (status lifecycle, langkah ekspansi, verify).
+- **Alur data halaman token (21 Nov 2026).** Tiga sumber, semuanya pembacaan chain:
+  1. **Detail dari API** (`/api/tokens/[address]`, polling 4 dtk): tabel security, langkah ekspansi, riwayat trade.
+     - Layanan (`src/lib/tokens/service.ts`) membaca state chain **bersamaan** dengan sync index, bukan sesudahnya. Sync hangat satu putaran RPC: nomor blok, `tokenCount`, dan log sampai blok terbaru dengan tumpang-tindih 64 blok.
+     - Di jaringan publik pembacaan kontrak digabung lewat Multicall3 (`src/lib/web3/public-client.ts`); Anvil lokal tetap batch JSON-RPC.
+     - Store Supabase dibungkus `CachedTokenStore` (cermin memori; index hanya bertambah, chain tetap sumber kebenaran).
+     - Waktu trade dibaca dari bloknya untuk 30 trade terbaru dan diingat per blok; yang tidak terbaca tetap `null`.
+  2. **State curve langsung dari browser** (`src/lib/client/use-curve-live.ts`, 2 dtk, hanya selama Bonding): `ethRaised`, `tokensSold`, `currentPrice`, `thresholdReached` dalam satu `eth_call`. Bila berbeda dari yang dibawa API, detail diambil ulang saat itu juga.
+  3. **Trade dari receipt transaksi pengguna** (`src/lib/tokens/live.ts`): event `Bought` / `Sold` ditampilkan seketika dan disimpan terpisah sampai index server memuatnya.
+- **Halaman tidak menunggu chain.** `/t/[address]` dan `/launch` membatasi pembacaan server (±1 dtk); bila lewat, halaman dikirim dengan kerangka dan klien melanjutkan. `loading.tsx` ada untuk `/t/[address]`, `/launch`, `/check/[chain]/[address]`.
+- **Receipt transaksi** dipoll tiap 1 dtk dengan batas 90 dtk (`src/lib/web3/use-tx-flow.ts`).
 - State UI lokal: tier terpilih (dibagi antara tier card, DVN rig, dan "inside the coin") memakai satu React context kecil di landing.
 - Tidak ada store global baru.
 

@@ -3,7 +3,7 @@
 import { getPublicClient, getWalletClient } from '@wagmi/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import type { Hex, TransactionReceipt } from 'viem';
+import { WaitForTransactionReceiptTimeoutError, type Hex, type TransactionReceipt } from 'viem';
 import { useConfig } from 'wagmi';
 import { getChain } from '@/lib/chains';
 import { publicEnv } from '@/lib/public-env';
@@ -22,6 +22,15 @@ export interface TxState {
 }
 
 const IDLE: TxState = { phase: 'idle', hash: null, error: null };
+
+const isBusy = (phase: TxPhase) => phase === 'simulating' || phase === 'wallet' || phase === 'pending';
+
+// Receipt dipoll tiap detik: blok chain ini jauh lebih cepat daripada bawaan viem (4 detik),
+// dan tombol trading tetap terkunci selama menunggu.
+const RECEIPT_POLL_MS = 1_000;
+// Setelah ini status berhenti menunggu dan menyuruh pengguna memeriksa explorer; transaksinya
+// sendiri tidak dibatalkan.
+const RECEIPT_TIMEOUT_MS = 90_000;
 
 export const TX_PHASE_LABEL: Record<TxPhase, string | null> = {
   idle: null,
@@ -57,7 +66,11 @@ export function useTxFlow() {
         setState({ phase: 'wallet', hash: null, error: null });
         const hash = await walletClient.writeContract(prepared);
         setState({ phase: 'pending', hash, error: null });
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        const receipt = await publicClient.waitForTransactionReceipt({
+          hash,
+          pollingInterval: RECEIPT_POLL_MS,
+          timeout: RECEIPT_TIMEOUT_MS,
+        });
         if (receipt.status !== 'success') {
           setState({ phase: 'error', hash, error: 'Transaction reverted on-chain.' });
           return null;
@@ -67,14 +80,23 @@ export function useTxFlow() {
         void queryClient.invalidateQueries();
         return receipt;
       } catch (error) {
-        setState((current) => ({ phase: 'error', hash: current.hash, error: describeTxError(error) }));
+        setState((current) => ({
+          phase: 'error',
+          hash: current.hash,
+          error:
+            error instanceof WaitForTransactionReceiptTimeoutError
+              ? 'Still pending after 90 seconds. Check the transaction before sending it again.'
+              : describeTxError(error),
+        }));
         return null;
       }
     },
     [config, queryClient],
   );
 
-  const reset = useCallback(() => setState(IDLE), []);
-  const busy = state.phase === 'simulating' || state.phase === 'wallet' || state.phase === 'pending';
+  // Transaksi yang sedang berjalan tidak bisa di-reset: tombolnya akan aktif lagi dan pengguna
+  // bisa mengirim dua kali.
+  const reset = useCallback(() => setState((current) => (isBusy(current.phase) ? current : IDLE)), []);
+  const busy = isBusy(state.phase);
   return { state, run, reset, busy };
 }

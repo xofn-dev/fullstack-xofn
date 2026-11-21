@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { currentBuildNote } from '@/lib/web3/app-mode';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
+import { AppMotion } from '@/components/layout/app-motion';
 import { getExpansionChains, getHomeChain } from '@/lib/chains';
 import { publicEnv } from '@/lib/public-env';
 import { getHomeOnlyDeployment, getManifestState } from '@/lib/web3/addresses';
@@ -59,7 +60,8 @@ export default function ProofPage() {
       <AppBackdrop />
       <main className="app-page" id="top">
         <div className="container">
-          <div className="app-head">
+          <AppMotion />
+          <div className="app-head rise">
             <div className="section-label">PROOF</div>
             <h1>
               Graduate on proof, <span className="accent">not promises.</span>
@@ -72,7 +74,7 @@ export default function ProofPage() {
             </p>
           </div>
           <div className="app-stack">
-            <div className="app-panel">
+            <div className="app-panel rise" style={{ '--i': 1 } as React.CSSProperties} data-reveal="">
               <h2>What verify() checks on each chain</h2>
               <ul className="proof-list">
                 {INVARIANTS.map((item) => (
@@ -87,7 +89,7 @@ export default function ProofPage() {
                 it lives on. Before expansion completes, verify() is false by design.
               </p>
             </div>
-            <div className="app-panel">
+            <div className="app-panel rise" style={{ '--i': 2 } as React.CSSProperties} data-reveal="">
               <h2>Milestones</h2>
               <ul className="proof-list">
                 {milestones.map(([id, label, status]) => (
@@ -100,7 +102,7 @@ export default function ProofPage() {
                 ))}
               </ul>
             </div>
-            <div className="app-panel">
+            <div className="app-panel rise" style={{ '--i': 3 } as React.CSSProperties} data-reveal="">
               <h2>Limits stated plainly</h2>
               <ul className="proof-list">
                 <li>
@@ -131,7 +133,7 @@ export default function ProofPage() {
                 </li>
               </ul>
             </div>
-            <div className="app-panel">
+            <div className="app-panel rise" style={{ '--i': 4 } as React.CSSProperties} data-reveal="">
               <h2>Evidence folders in the repository</h2>
               <ul className="proof-list">
                 {EVIDENCE.map(([path, note]) => (

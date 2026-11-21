@@ -21,10 +21,15 @@ interface Star {
  * Langit 2D di `#cosmosCanvas`: fallback untuk browser tanpa WebGL dan untuk layar sempit (D5).
  * Berhenti sendiri selama `html.galaxy-on` terpasang (CSS juga menyembunyikan canvas-nya).
  */
-export function mountCosmosFallback(canvas: HTMLCanvasElement): CosmosController | null {
+export function mountCosmosFallback(
+  canvas: HTMLCanvasElement,
+  options: { still?: boolean } = {},
+): CosmosController | null {
   const g = canvas.getContext('2d');
   if (!g) return null;
-  const reduced = prefersReducedMotion();
+  // `still`: langit digambar sekali dan tidak bergerak (halaman aplikasi, D6). Panel glass di
+  // atas langit yang diam tidak perlu menghitung ulang blur-nya setiap frame.
+  const reduced = prefersReducedMotion() || options.still === true;
   const on3d = () => document.documentElement.classList.contains('galaxy-on');
   let W = 0;
   let H = 0;

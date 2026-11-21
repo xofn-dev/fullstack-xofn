@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { currentBuildNote } from '@/lib/web3/app-mode';
 import { CheckForm } from '@/components/check/check-form';
 import { AppBackdrop } from '@/components/landing/scene-loaders';
+import { AppMotion } from '@/components/layout/app-motion';
 import { checkLzAddresses } from '@/lib/check/local-lz';
 import { getChains } from '@/lib/chains';
 import { publicEnv } from '@/lib/public-env';
@@ -25,7 +26,8 @@ export default function CheckPage() {
       <AppBackdrop />
       <main className="app-page" id="top">
         <div className="container">
-          <div className="app-head">
+          <AppMotion />
+          <div className="app-head rise">
             <div className="section-label">XOFN CHECK</div>
             <h1>
               What does a token <span className="accent">actually trust?</span>
@@ -36,7 +38,7 @@ export default function CheckPage() {
               read, and shows them as facts with the time of the read.
             </p>
           </div>
-          <div className="terminal">
+          <div className="terminal rise" style={{ '--i': 1 } as React.CSSProperties}>
             <div className="terminal-head">
               <div className="window-dots">
                 <i />

@@ -8,13 +8,15 @@ import type { Tier } from '@/types/enums';
 
 export interface GalaxyLayerProps {
   tier: Tier;
+  /** Langit 2D digambar sekali dan diam (halaman aplikasi, D6). */
+  stillSky?: boolean;
 }
 
 /**
  * Lapisan langit di belakang halaman: heat glow CSS, langit 2D fallback, dan (bila diizinkan)
  * canvas WebGL galaxy yang dibuat scene sendiri di awal `<body>` lalu dihapus saat dispose.
  */
-export function GalaxyLayer({ tier }: GalaxyLayerProps) {
+export function GalaxyLayer({ tier, stillSky = false }: GalaxyLayerProps) {
   const heatRef = useRef<HTMLDivElement>(null);
   const cosmosRef = useRef<HTMLCanvasElement>(null);
   const controllerRef = useRef<GalaxyController | null>(null);
@@ -26,7 +28,7 @@ export function GalaxyLayer({ tier }: GalaxyLayerProps) {
   }, [tier]);
 
   useEffect(() => {
-    const cosmos = cosmosRef.current ? mountCosmosFallback(cosmosRef.current) : null;
+    const cosmos = cosmosRef.current ? mountCosmosFallback(cosmosRef.current, { still: stillSky }) : null;
     const narrow = window.matchMedia(GALAXY_OFF_QUERY);
     let galaxy: GalaxyController | null = null;
     let failed = false;
@@ -52,7 +54,7 @@ export function GalaxyLayer({ tier }: GalaxyLayerProps) {
       controllerRef.current = null;
       cosmos?.dispose();
     };
-  }, []);
+  }, [stillSky]);
 
   return (
     <>

@@ -19,6 +19,9 @@ export const metadata: Metadata = {
 // Konfigurasi launch dibaca dari chain pada saat halaman diminta.
 export const dynamic = 'force-dynamic';
 
+// Batas tunggu pembacaan chain di server sebelum halaman dikirim tanpa konfigurasi awal.
+const SSR_BUDGET_MS = 1_000;
+
 // "/launch" — USER_FLOWS Flow D. Mode preview memakai form pratinjau landing (tanpa transaksi);
 // mode simulation menandatangani launch di Anvil lokal.
 export default async function LaunchPage({
@@ -43,7 +46,12 @@ export default async function LaunchPage({
     );
   }
 
-  const config = await getLaunchConfig();
+  // Dibatasi waktu: bila chain lambat, form dikirim tanpa konfigurasi dan membacanya sendiri.
+  // Form tetap bisa diisi selagi menunggu; hanya tombol launch yang menunggu pembacaan itu.
+  const config = await Promise.race([
+    getLaunchConfig(),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), SSR_BUDGET_MS)),
+  ]);
   // Draft dari form pratinjau di landing; hanya nilai awal, validasi tetap di form dan kontrak.
   const draft = parseLaunchDraft(
     await searchParams,
@@ -52,9 +60,9 @@ export default async function LaunchPage({
   return (
     <>
       <AppBackdrop />
-      <main className="app-page" id="top">
+      <main className="app-page is-transactional" id="top">
         <div className="container launch-layout">
-          <div className="launch-intro">
+          <div className="launch-intro rise">
             <div className="section-label">CREATE A TOKEN</div>
             <h1 className="h2">
               Build a token. <span className="accent">Set the standard.</span>

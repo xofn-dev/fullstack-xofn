@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createTokenService, parseTokenAddress, TokenServiceError, tokenHttpStatus } from '@/lib/tokens/service';
-import type { ChainClient, EventLog, ReadContext } from '@/lib/tokens/read';
+import type { ChainClient, EventLog, IndexedTrade, ReadContext, TokenMeta } from '@/lib/tokens/read';
 import { deriveStatus, isStatusFilter, matchesFilter } from '@/lib/tokens/status';
 import { expansionView } from '@/lib/tokens/steps';
-import { MemoryTokenStore } from '@/lib/tokens/store';
+import { CachedTokenStore, MemoryTokenStore, type TokenIndexStore } from '@/lib/tokens/store';
 import { getDeployment, homeContracts } from '@/lib/web3/addresses';
 import { poolIdOf } from '@/lib/web3/pool-trade';
 import type { Address, ExpansionChainState, Hex, PoolKey, VerifyReading } from '@/types/domain';
@@ -148,8 +148,11 @@ function fakeChain(options: {
   positionManager?: Address;
   sqrtPriceX96?: bigint;
   failLiquidity?: boolean;
+  failBlockTime?: boolean;
 }) {
   const calls: string[] = [];
+  const logQueries: { eventName: string; fromBlock: bigint; toBlock?: bigint }[] = [];
+  const timeReads: bigint[] = [];
   let block = 10n;
   const trades: EventLog[] = [
     {
@@ -232,17 +235,39 @@ function fakeChain(options: {
       }
     },
     async getContractEvents({ eventName, fromBlock, toBlock }) {
-      return trades.filter((log) => log.eventName === eventName && log.blockNumber >= fromBlock && log.blockNumber <= toBlock);
+      logQueries.push({ eventName, fromBlock, toBlock });
+      return trades.filter(
+        (log) => log.eventName === eventName && log.blockNumber >= fromBlock && (toBlock === undefined || log.blockNumber <= toBlock),
+      );
     },
     async getBlockNumber() {
       return block;
+    },
+    async getBlockTimestamp(blockNumber) {
+      timeReads.push(blockNumber);
+      if (options.failBlockTime) throw new Error('rpc down');
+      // Waktu tiruan: 1_700_000_000 + nomor blok.
+      return 1_700_000_000n + blockNumber;
     },
   });
   const ctx: ReadContext = { deployment, clientFor: client, now: () => new Date('2026-11-17T00:00:00Z') };
   let clock = 0;
   const store = new MemoryTokenStore();
+  const statusWrites: string[] = [];
+  (store as TokenIndexStore).saveStatus = async (address, status) => {
+    statusWrites.push(`${address}:${status}`);
+  };
   const service = createTokenService(ctx, store, () => (clock += 10_000));
-  return { service, store, calls, setBlock: (value: bigint) => (block = value), options };
+  const addTrade = (blockNumber: bigint, hash: Hex, ethRaised: bigint) =>
+    trades.push({
+      address: CURVE,
+      eventName: 'Bought',
+      args: { buyer: '0x00000000000000000000000000000000000000d1', ethIn: 1n, tokensOut: 1n, ethRaised },
+      blockNumber,
+      transactionHash: hash,
+      logIndex: 0,
+    });
+  return { service, store, calls, logQueries, timeReads, statusWrites, addTrade, setBlock: (value: bigint) => (block = value), options };
 }
 
 describe('layanan token', () => {
@@ -325,6 +350,78 @@ describe('layanan token', () => {
     expect(await chain.store.listMeta()).toEqual([]);
   });
 
+  it('sync hangat: log dibaca sampai blok terbaru dengan tumpang-tindih, tanpa trade ganda', async () => {
+    const chain = fakeChain({ status: 1 });
+    await chain.service.detail(TOKEN);
+    // Sync pertama (index dingin) memindai dari blok deploy sampai blok yang baru dibaca.
+    expect(chain.logQueries[0]).toMatchObject({ fromBlock: home.chain.deployBlock, toBlock: 10n });
+
+    chain.logQueries.length = 0;
+    chain.setBlock(500n);
+    chain.addTrade(450n, '0xbb', 2n * 10n ** 18n);
+    const detail = await chain.service.detail(TOKEN);
+    // Rentangnya mundur dari cursor (10) dan tidak menunggu nomor blok (toBlock kosong).
+    expect(chain.logQueries.every((query) => query.toBlock === undefined)).toBe(true);
+    expect(chain.logQueries[0]?.fromBlock).toBe(home.chain.deployBlock);
+    expect(detail.trades.map((trade) => trade.txHash)).toEqual(['0xaa', '0xbb']);
+    expect(await chain.store.getCursor()).toBe(500n);
+
+    // Blok 450 masuk lagi ke rentang sync berikutnya (500 + 1 - 64 = 437): tidak tercatat dua kali.
+    chain.logQueries.length = 0;
+    chain.setBlock(510n);
+    const again = await chain.service.detail(TOKEN);
+    expect(chain.logQueries[0]?.fromBlock).toBe(437n);
+    expect(again.tradeCount).toBe(2);
+  });
+
+  it('detail: trade dibatasi ke yang terbaru, jumlah seluruhnya tetap dilaporkan', async () => {
+    const chain = fakeChain({ status: 1 });
+    for (let index = 0; index < 230; index += 1) {
+      chain.addTrade(6n, `0x${(index + 256).toString(16)}` as Hex, BigInt(index + 2) * 10n ** 15n);
+    }
+    const detail = await chain.service.detail(TOKEN);
+    expect(detail.tradeCount).toBe(231);
+    expect(detail.trades).toHaveLength(200);
+    // Yang dipertahankan adalah ujung terbaru.
+    expect(detail.trades.at(-1)?.txHash).toBe(`0x${(229 + 256).toString(16)}`);
+    expect(detail.curveParams).toEqual({ virtualEth: (10n ** 18n).toString(), virtualTokens: (10n ** 27n).toString() });
+  });
+
+  it('waktu trade dibaca dari bloknya, sekali per blok; yang tidak terbaca tetap null', async () => {
+    const chain = fakeChain({ status: 1 });
+    const first = await chain.service.detail(TOKEN);
+    expect(first.trades[0]?.timestamp).toBe(1_700_000_005);
+    await chain.service.detail(TOKEN);
+    await chain.service.detail(TOKEN);
+    // Blok 5 hanya dibaca sekali walau detail diminta tiga kali.
+    expect(chain.timeReads).toEqual([5n]);
+
+    const unread = await fakeChain({ status: 1, failBlockTime: true }).service.detail(TOKEN);
+    expect(unread.trades[0]?.timestamp).toBeNull();
+  });
+
+  it('status hanya ditulis ke store saat berubah, bukan pada setiap polling', async () => {
+    const chain = fakeChain({ status: 1 });
+    await chain.service.detail(TOKEN);
+    await chain.service.detail(TOKEN);
+    await chain.service.list('all');
+    expect(chain.statusWrites).toEqual([`${TOKEN}:bonding`]);
+    chain.options.status = 2;
+    await chain.service.detail(TOKEN);
+    expect(chain.statusWrites).toEqual([`${TOKEN}:bonding`, `${TOKEN}:graduated`]);
+  });
+
+  it('token yang sudah dikenal: state chain dibaca bersamaan dengan sync, bukan sesudahnya', async () => {
+    const chain = fakeChain({ status: 1 });
+    await chain.service.detail(TOKEN);
+    chain.calls.length = 0;
+    await chain.service.detail(TOKEN);
+    // `currentPrice` (state token) sudah diminta sebelum sync mulai membaca `tokenCount`.
+    expect(chain.calls.indexOf('robinhood:currentPrice')).toBeLessThan(chain.calls.indexOf('robinhood:tokenCount'));
+    expect(chain.calls.filter((call) => call === 'robinhood:currentPrice')).toHaveLength(1);
+    expect(chain.calls.filter((call) => call === 'robinhood:tokenCount')).toHaveLength(1);
+  });
+
   it('alamat tak dikenal → not_found; alamat rusak → invalid_address; kode HTTP sesuai', async () => {
     const chain = fakeChain({ status: 1 });
     await expect(chain.service.detail('0x00000000000000000000000000000000000000ff')).rejects.toMatchObject({ code: 'not_found' });
@@ -335,5 +432,112 @@ describe('layanan token', () => {
     expect(tokenHttpStatus('not_found')).toBe(404);
     expect(tokenHttpStatus('rpc_failed')).toBe(502);
     expect(tokenHttpStatus('network_unavailable')).toBe(503);
+  });
+});
+
+describe('cermin memori di depan store index', () => {
+  const meta: TokenMeta = {
+    address: TOKEN,
+    name: 'Fake',
+    symbol: 'FAKE',
+    tier: 'standard',
+    creator: ZERO,
+    curve: CURVE,
+    eids: [2],
+    virtualEth: '1',
+    virtualTokens: '1',
+    saleSupply: '1',
+    graduationThreshold: '1',
+  };
+  const trade = (blockNumber: number, txHash: Hex): IndexedTrade => ({
+    curve: CURVE,
+    side: 'buy',
+    trader: ZERO,
+    ethAmount: '1',
+    tokenAmount: '1',
+    ethRaised: String(blockNumber),
+    blockNumber: String(blockNumber),
+    txHash,
+    logIndex: 0,
+    timestamp: null,
+  });
+
+  // Store di belakang yang menghitung setiap panggilan, seperti round trip ke database.
+  function counted() {
+    const inner = new MemoryTokenStore();
+    const hits: Record<string, number> = {};
+    const proxy = new Proxy(inner, {
+      get(target, property, receiver) {
+        const value: unknown = Reflect.get(target, property, receiver);
+        if (typeof value !== 'function') return value;
+        return (...args: unknown[]) => {
+          hits[String(property)] = (hits[String(property)] ?? 0) + 1;
+          return (value as (...input: unknown[]) => unknown).apply(target, args);
+        };
+      },
+    });
+    let clock = 0;
+    const cached = new CachedTokenStore(proxy, () => clock);
+    return { inner, hits, cached, advance: (ms: number) => (clock += ms) };
+  }
+
+  it('metadata, kursor, dan trade dibaca dari store sekali saja', async () => {
+    const store = counted();
+    await store.inner.upsertMeta([meta]);
+    await store.inner.appendTrades([trade(5, '0xaa')]);
+    await store.inner.setCursor(9n);
+    for (let round = 0; round < 3; round += 1) {
+      expect(await store.cached.listMeta()).toEqual([meta]);
+      expect(await store.cached.getMeta(TOKEN)).toEqual(meta);
+      expect(await store.cached.getCursor()).toBe(9n);
+      expect(await store.cached.getTrades(CURVE)).toHaveLength(1);
+    }
+    expect(store.hits).toMatchObject({ listMeta: 1, getCursor: 1, getTrades: 1 });
+    expect(store.hits.getMeta).toBeUndefined();
+  });
+
+  it('trade yang terbaca ulang tidak ditulis lagi; trade baru ditulis dan tetap terurut', async () => {
+    const store = counted();
+    await store.cached.appendTrades([trade(8, '0xbb')]);
+    await store.cached.appendTrades([trade(8, '0xbb')]);
+    expect(store.hits.appendTrades).toBe(1);
+    await store.cached.appendTrades([trade(8, '0xbb'), trade(6, '0xcc')]);
+    expect(store.hits.appendTrades).toBe(2);
+    expect((await store.cached.getTrades(CURVE)).map((item) => item.txHash)).toEqual(['0xcc', '0xbb']);
+    expect((await store.inner.getTrades(CURVE)).map((item) => item.txHash).sort()).toEqual(['0xbb', '0xcc']);
+  });
+
+  it('trade yang sudah ada di store digabung dengan yang diindeks sebelum curve-nya dimuat', async () => {
+    const store = counted();
+    await store.inner.appendTrades([trade(5, '0xaa')]);
+    await store.cached.appendTrades([trade(7, '0xdd')]);
+    expect((await store.cached.getTrades(CURVE)).map((item) => item.txHash)).toEqual(['0xaa', '0xdd']);
+  });
+
+  it('kursor disimpan paling sering sekali per jeda, kecuali ada trade baru', async () => {
+    const store = counted();
+    store.advance(60_000);
+    await store.cached.setCursor(10n);
+    await store.cached.setCursor(11n);
+    await store.cached.setCursor(12n);
+    expect(store.hits.setCursor).toBe(1);
+    expect(await store.cached.getCursor()).toBe(12n);
+    await store.cached.appendTrades([trade(12, '0xee')]);
+    await store.cached.setCursor(13n);
+    expect(store.hits.setCursor).toBe(2);
+    store.advance(60_000);
+    await store.cached.setCursor(14n);
+    expect(store.hits.setCursor).toBe(3);
+    expect(await store.inner.getCursor()).toBe(14n);
+  });
+
+  it('reset mengosongkan cermin dan store', async () => {
+    const store = counted();
+    await store.cached.upsertMeta([meta]);
+    await store.cached.appendTrades([trade(5, '0xaa')]);
+    await store.cached.reset();
+    expect(await store.cached.listMeta()).toEqual([]);
+    expect(await store.cached.getTrades(CURVE)).toEqual([]);
+    expect(await store.cached.getCursor()).toBeNull();
   });
 });

@@ -18,6 +18,9 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
+// Batas tunggu pembacaan chain di server sebelum halaman dikirim tanpa data awal.
+const SSR_BUDGET_MS = 1_200;
+
 // "/t/[address]" — USER_FLOWS Flow G. Alamat divalidasi dan di-lowercase di batas input.
 // Alamat yang bukan token XofN diarahkan ke XofN Check.
 export default async function TokenPage({ params }: { params: Promise<{ address: string }> }) {
@@ -30,20 +33,26 @@ export default async function TokenPage({ params }: { params: Promise<{ address:
 
   let initial: TokenDetail | undefined;
   if (service) {
-    try {
-      initial = await service.detail(address);
-    } catch (error) {
-      if (error instanceof TokenServiceError && error.code === 'not_found') {
-        redirect(`/check/${getHomeChain(network).key}/${address}`);
-      }
-      // Kegagalan RPC: halaman tetap tampil dan klien mencoba lagi; tidak ada data yang dikarang.
+    // Pembacaan server dibatasi waktu: bila chain lambat, halaman dikirim dengan kerangka dan
+    // klien melanjutkan pembacaan yang SAMA (layanan membagi promise-nya selama dua detik).
+    const read = service.detail(address).then(
+      (token) => ({ token, error: null }),
+      (error: unknown) => ({ token: undefined, error }),
+    );
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), SSR_BUDGET_MS));
+    const outcome = await Promise.race([read, timeout]);
+    if (outcome?.error instanceof TokenServiceError && outcome.error.code === 'not_found') {
+      redirect(`/check/${getHomeChain(network).key}/${address}`);
     }
+    // Kegagalan RPC atau waktu habis: halaman tetap tampil dan klien membaca; tidak ada data
+    // yang dikarang. Alamat yang ternyata bukan token XofN diarahkan klien ke XofN Check.
+    initial = outcome?.token;
   }
 
   return (
     <>
       <AppBackdrop />
-      <main className="app-page" id="top">
+      <main className="app-page is-transactional" id="top">
         <div className="container">
           {deployment && service ? (
             <TokenView address={address} initial={initial} deployment={deployment} />

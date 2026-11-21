@@ -10,6 +10,7 @@ import { getTierInfo } from '@/lib/tiers';
 import { STATUS_LABEL, type StatusFilter } from '@/lib/tokens/status';
 import { TokenCard } from '@/components/token/token-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { StatusPill } from '@/components/ui/status-pill';
 import type { AppMode, DisplayStatus } from '@/types/enums';
 
@@ -87,7 +88,19 @@ export function ExploreLive({ home, mode }: { home: ChainInfo; mode: Exclude<App
           );
         })}
       </div>
-      {query.isPending && <EmptyState title="READING TOKENS…">Reading the token list from the chain.</EmptyState>}
+      {query.isPending && (
+        <div className="token-grid" role="status" aria-busy="true">
+          <span className="sr-only">Reading the token list from the chain.</span>
+          {[0, 1, 2].map((index) => (
+            <div key={index} className="token-card is-skeleton" aria-hidden="true">
+              <Skeleton width="60%" height={18} />
+              <Skeleton height={68} />
+              <Skeleton height={6} />
+              <Skeleton width="45%" height={12} />
+            </div>
+          ))}
+        </div>
+      )}
       {query.isError && !tokens && (
         <EmptyState title="TOKENS NOT READ">
           {query.error instanceof ApiError

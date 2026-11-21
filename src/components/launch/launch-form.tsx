@@ -10,6 +10,7 @@ import type { LaunchDraft } from '@/lib/launch-draft';
 import type { LaunchConfig } from '@/lib/tokens/read';
 import { homeContracts, type Deployment } from '@/lib/web3/addresses';
 import { buildLaunch, parseLaunchLogs, validateLaunchInput, ZERO_HASH } from '@/lib/web3/launch';
+import { useLaunchConfig } from '@/lib/client/use-tokens';
 import { useTxFlow } from '@/lib/web3/use-tx-flow';
 import { useDialogFocus } from '@/components/ui/overlay-provider';
 import { TxStatus } from '@/components/ui/tx-status';
@@ -23,7 +24,10 @@ interface LaunchFormProps {
   home: ChainInfo;
   expansions: ChainInfo[];
   deployment: Deployment;
-  /** null = chain tidak terbaca: launch dinonaktifkan, tidak ada yang ditebak. */
+  /**
+   * Pembacaan server. null = belum selesai dalam batas waktu atau gagal; form membacanya sendiri
+   * dan launch tetap nonaktif sampai terbaca. Tidak ada yang ditebak.
+   */
   config: LaunchConfig | null;
   actionTag: string;
   /** Nilai awal dari form pratinjau di landing (query string). Tetap divalidasi di sini. */
@@ -32,9 +36,11 @@ interface LaunchFormProps {
 
 // Form launch sungguhan (USER_FLOWS Flow D). Satu tanda tangan di home chain; token lahir sebagai
 // OFT dengan owner dan delegate = Graduator. Ekspansi dan penguncian adalah langkah terpisah.
-export function LaunchForm({ home, expansions, deployment, config, actionTag, draft }: LaunchFormProps) {
+export function LaunchForm({ home, expansions, deployment, config: initialConfig, actionTag, draft }: LaunchFormProps) {
   const router = useRouter();
   const tx = useTxFlow();
+  const configQuery = useLaunchConfig(initialConfig);
+  const config = configQuery.data ?? null;
   const [name, setName] = useState(draft?.name ?? '');
   const [ticker, setTicker] = useState(draft?.ticker ?? '');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -89,8 +95,12 @@ export function LaunchForm({ home, expansions, deployment, config, actionTag, dr
     }
   }
 
+  // Selagi pembacaan pertama berjalan, form sudah bisa diisi; hanya tombolnya yang menunggu.
+  const configReading = !config && !configQuery.isError;
   const blocked = !config
-    ? 'Launch settings could not be read from the chain. Nothing is assumed; try again when the node is reachable.'
+    ? configReading
+      ? 'Reading launch settings from the chain…'
+      : 'Launch settings could not be read from the chain. Nothing is assumed; try again when the node is reachable.'
     : !config.open
       ? 'Launching is not open on this deployment yet.'
       : null;
@@ -184,12 +194,13 @@ export function LaunchForm({ home, expansions, deployment, config, actionTag, dr
             <br />
             <small>Graduation happens on {home.name} first. Expansion and locking are a separate step.</small>
           </span>
-          <strong>{config ? formatEth(config.graduationThreshold) : 'NOT READ'}</strong>
+          <strong>{config ? formatEth(config.graduationThreshold) : configReading ? 'READING…' : 'NOT READ'}</strong>
         </div>
         <button className="btn primary form-submit" type="submit" disabled={!!blocked}>
-          Review launch configuration <span className="arr">↗</span>
+          {configReading ? 'Reading launch settings…' : 'Review launch configuration'} <span className="arr">↗</span>
         </button>
-        <div className="error-msg" aria-live="polite">
+        {/* Selagi konfigurasi dibaca itu bukan error: teksnya netral, bukan warna peringatan. */}
+        <div className={cn('error-msg', !error && configReading && 'is-info')} aria-live="polite">
           {error || blocked}
         </div>
       </form>
@@ -226,11 +237,13 @@ export function LaunchForm({ home, expansions, deployment, config, actionTag, dr
           {reviewing && (
             <NetworkGuard chain={home.key}>
               <button className="btn primary" type="button" style={{ width: '100%' }} onClick={sign} disabled={tx.busy}>
-                {tx.state.phase === 'wallet'
-                  ? 'Confirm in wallet…'
-                  : tx.state.phase === 'pending'
-                    ? 'Pending…'
-                    : `Sign on ${home.name}`}{' '}
+                {tx.state.phase === 'simulating'
+                  ? 'Checking…'
+                  : tx.state.phase === 'wallet'
+                    ? 'Confirm in wallet…'
+                    : tx.state.phase === 'pending'
+                      ? 'Pending…'
+                      : `Sign on ${home.name}`}{' '}
                 <span className="arr">↗</span>
               </button>
             </NetworkGuard>

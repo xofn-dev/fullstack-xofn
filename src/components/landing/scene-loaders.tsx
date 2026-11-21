@@ -30,8 +30,8 @@ export function GalaxyBackdrop() {
   return <GalaxyLayerScene tier={tier} />;
 }
 
-// Latar halaman aplikasi (D6): heat glow CSS + langit bintang 2D. Tanpa section landing,
+// Latar halaman aplikasi (D6): heat glow CSS + langit bintang 2D STATIS. Tanpa section landing,
 // scene galaxy WebGL tidak dibuat, jadi tidak ada koin pengembara dan tidak ada konteks WebGL.
 export function AppBackdrop() {
-  return <GalaxyLayerScene tier="standard" />;
+  return <GalaxyLayerScene tier="standard" stillSky />;
 }

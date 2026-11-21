@@ -1,19 +1,24 @@
 import { isAddress } from 'viem';
 import type { Address } from '@/lib/chains';
 import {
-  readDetail,
+  readChainState,
   readSummary,
   readTokenAt,
   readTokenCount,
   readTokenMeta,
   readTrades,
+  sparkFromTrades,
+  withTrades,
+  type IndexedTrade,
   type ReadContext,
+  type TokenChainState,
   type TokenMeta,
 } from '@/lib/tokens/read';
 import { matchesFilter, type StatusFilter } from '@/lib/tokens/status';
 import type { TokenIndexStore } from '@/lib/tokens/store';
 import { homeContracts, lc } from '@/lib/web3/addresses';
-import type { TokenDetail, TokenErrorCode, TokenSummary } from '@/types/domain';
+import type { TokenDetail, TokenErrorCode, TokenSummary, Trade } from '@/types/domain';
+import type { DisplayStatus } from '@/types/enums';
 
 // Layanan token untuk route API dan RSC. Sumber kebenaran adalah chain; index hanya menyimpan
 // metadata dan trade agar daftar dan chart tidak membaca ulang seluruh riwayat setiap kali.
@@ -54,6 +59,20 @@ export function parseTokenAddress(value: string): Address {
 // tidak melipatgandakan panggilan RPC.
 const FRESH_MS = 2_000;
 
+// Setiap sync membaca ulang beberapa blok terakhir. Sync hangat meminta log "sampai blok
+// terbaru" bersamaan dengan nomor blok, dan node di belakang load balancer bisa menjawab keduanya
+// dari tinggi yang berbeda; tanpa tumpang-tindih ini trade di selisihnya hilang selamanya.
+// Trade yang terbaca dua kali dibuang oleh store (kunci txHash + logIndex).
+const OVERLAP_BLOCKS = 64n;
+
+// Waktu blok hanya dibaca untuk trade terbaru (yang ditampilkan halaman token), lalu diingat:
+// waktu sebuah blok tidak pernah berubah.
+const TIMED_TRADES = 30;
+const MAX_BLOCK_TIMES = 5_000;
+// Waktu blok yang gagal dibaca baru dicoba lagi setelah jeda ini, supaya RPC yang sedang
+// bermasalah tidak dibebani permintaan yang sama pada setiap polling.
+const BLOCK_TIME_RETRY_MS = 30_000;
+
 interface Timed<T> {
   at: number;
   value: Promise<T>;
@@ -74,16 +93,71 @@ export function createTokenService(ctx: ReadContext, store: TokenIndexStore, now
   const fresh = <T>(entry: Timed<T> | null | undefined): entry is Timed<T> =>
     !!entry && now() - entry.at < FRESH_MS;
 
+  const blockTimes = new Map<string, number>();
+  const blockTimeRetryAt = new Map<string, number>();
+
+  /** Membaca waktu blok yang belum dikenal untuk trade terbaru. Kegagalan dibiarkan: "not read". */
+  async function warmBlockTimes(trades: Trade[]): Promise<void> {
+    const client = ctx.clientFor(homeContracts(ctx.deployment).chain.chain);
+    if (!client) return;
+    const blocks = new Set(trades.slice(-TIMED_TRADES).map((trade) => trade.blockNumber));
+    const at = now();
+    const missing = [...blocks].filter(
+      (block) => !blockTimes.has(block) && (blockTimeRetryAt.get(block) ?? 0) <= at,
+    );
+    if (missing.length === 0) return;
+    if (blockTimes.size + missing.length > MAX_BLOCK_TIMES) blockTimes.clear();
+    await Promise.all(
+      missing.map(async (block) => {
+        try {
+          blockTimes.set(block, Number(await client.getBlockTimestamp(BigInt(block))));
+          blockTimeRetryAt.delete(block);
+        } catch {
+          // Waktu yang tidak terbaca tidak diisi dengan perkiraan; dicoba lagi nanti.
+          blockTimeRetryAt.set(block, at + BLOCK_TIME_RETRY_MS);
+        }
+      }),
+    );
+  }
+
+  /** Trade dengan waktu bloknya; yang belum terbaca tetap null. */
+  async function withBlockTimes(trades: Trade[]): Promise<Trade[]> {
+    await warmBlockTimes(trades);
+    return trades.map((trade) => {
+      const timestamp = blockTimes.get(trade.blockNumber);
+      return timestamp === undefined ? trade : { ...trade, timestamp };
+    });
+  }
+
+  // Status terakhir yang sudah ditulis ke store: polling tidak menulis ulang nilai yang sama.
+  const savedStatus = new Map<Address, DisplayStatus>();
+  async function rememberStatus(address: Address, status: DisplayStatus): Promise<void> {
+    if (savedStatus.get(address) === status) return;
+    await store.saveStatus(address, status);
+    savedStatus.set(address, status);
+  }
+
   async function runSync(): Promise<{ tokens: number; cursor: string }> {
     const home = homeContracts(ctx.deployment);
     const client = ctx.clientFor(home.chain.chain);
     if (!client) throw new TokenServiceError('network_unavailable', 'No RPC is configured for the home chain.');
 
-    const [latest, count] = await Promise.all([client.getBlockNumber(), readTokenCount(ctx)]);
-    let known = await store.listMeta();
-    const cursor = await store.getCursor();
-    // Node Anvil yang diulang dari nol punya riwayat baru: index lama tidak berlaku lagi.
-    const firstOnChain = count > 0 && known.length > 0 ? await readTokenAt(ctx, 0) : null;
+    const [stored, cursor] = await Promise.all([store.listMeta(), store.getCursor()]);
+    let known = stored;
+    // Index hangat: semua yang dibutuhkan sync dibaca dalam SATU putaran RPC. Log diminta sampai
+    // blok terbaru tanpa menunggu nomor bloknya; tumpang-tindih di atas menutup selisihnya.
+    const warm = cursor !== null && known.length > 0;
+    const overlapFrom = cursor === null ? home.chain.deployBlock : cursor + 1n - OVERLAP_BLOCKS;
+    const from = overlapFrom > home.chain.deployBlock ? overlapFrom : home.chain.deployBlock;
+    const [latest, count, firstOnChain, early] = await Promise.all([
+      client.getBlockNumber(),
+      readTokenCount(ctx),
+      // Node Anvil yang diulang dari nol punya riwayat baru: index lama tidak berlaku lagi.
+      known.length > 0 ? readTokenAt(ctx, 0).catch(() => null) : null,
+      warm
+        ? readTrades(ctx, known.map((meta) => meta.curve), from).catch((): IndexedTrade[] | null => null)
+        : null,
+    ]);
     const stale =
       (cursor !== null && cursor > latest) ||
       known.length > count ||
@@ -92,19 +166,28 @@ export function createTokenService(ctx: ReadContext, store: TokenIndexStore, now
       await store.reset();
       known = [];
       details.clear();
+      savedStatus.clear();
+      blockTimes.clear();
+      blockTimeRetryAt.clear();
     }
 
-    const added: TokenMeta[] = [];
-    for (let index = known.length; index < count; index += 1) {
-      const meta = await readTokenMeta(ctx, await readTokenAt(ctx, index));
-      if (meta) added.push(meta);
-    }
+    const indexes = Array.from({ length: Math.max(count - known.length, 0) }, (_, offset) => known.length + offset);
+    const addresses = await Promise.all(indexes.map((index) => readTokenAt(ctx, index)));
+    const added = (await Promise.all(addresses.map((address) => readTokenMeta(ctx, address)))).filter(
+      (meta): meta is TokenMeta => meta !== null,
+    );
     await store.upsertMeta(added);
 
-    const from = stale || cursor === null ? home.chain.deployBlock : cursor + 1n;
-    const curves = [...known, ...added].map((meta) => meta.curve);
-    await store.appendTrades(await readTrades(ctx, curves, from, latest));
-    await store.setCursor(latest);
+    const curveOf = (meta: TokenMeta) => meta.curve;
+    if (!stale && early !== null) {
+      await store.appendTrades(early);
+      // Token baru di-launch setelah sync terakhir, jadi trade-nya ada di rentang yang sama.
+      if (added.length > 0) await store.appendTrades(await readTrades(ctx, added.map(curveOf), from, latest));
+    } else {
+      const scanFrom = stale || cursor === null ? home.chain.deployBlock : from;
+      await store.appendTrades(await readTrades(ctx, [...known, ...added].map(curveOf), scanFrom, latest));
+    }
+    if (stale || cursor !== latest) await store.setCursor(latest);
     return { tokens: known.length + added.length, cursor: latest.toString() };
   }
 
@@ -118,23 +201,57 @@ export function createTokenService(ctx: ReadContext, store: TokenIndexStore, now
     return value;
   }
 
+  // Daftar dan detail membaca state chain BERSAMAAN dengan sync, bukan sesudahnya: token yang
+  // sudah dikenal tidak perlu menunggu index untuk tahu harga dan statusnya. Hanya trade (dari
+  // index) yang digabung setelah sync selesai.
   async function runList(): Promise<TokenSummary[]> {
+    const eager = new Map(
+      (await store.listMeta()).map((meta) => [meta.address, readSummary(ctx, meta, []).catch(() => null)]),
+    );
     await sync();
     const metas = await store.listMeta();
     const summaries = await Promise.all(
-      metas.map(async (meta) => readSummary(ctx, meta, await store.getTrades(meta.curve))),
+      metas.map(async (meta) => {
+        const trades = await store.getTrades(meta.curve);
+        const early = await eager.get(meta.address);
+        // Token baru, atau pembacaan awal gagal: dibaca (ulang) sekarang.
+        if (!early) return readSummary(ctx, meta, trades);
+        return { ...early, spark: sparkFromTrades(meta, trades) };
+      }),
     );
-    await Promise.all(summaries.map((summary) => store.saveStatus(summary.address, summary.status)));
+    await Promise.all(summaries.map((summary) => rememberStatus(summary.address, summary.status)));
     // Terbaru lebih dulu.
     return summaries.reverse();
   }
 
   async function runDetail(address: Address): Promise<TokenDetail> {
+    const known = await store.getMeta(address);
+    let stateError: unknown = null;
+    const eager: Promise<TokenChainState | null> | null = known
+      ? readChainState(ctx, known).catch((error: unknown) => {
+          stateError = error;
+          return null;
+        })
+      : null;
+    // Waktu blok trade yang sudah terindeks dibaca bersamaan dengan sync, bukan sesudahnya.
+    if (known) void store.getTrades(known.curve).then(warmBlockTimes, () => undefined);
+    const shared = fresh(syncing);
     await sync();
-    const meta = await store.getMeta(address);
+    // Dibaca ulang setelah sync: token bisa baru saja terindeks, atau index baru saja dikosongkan.
+    let meta = await store.getMeta(address);
+    if (!meta && shared) {
+      // Sync tadi milik permintaan lain dan bisa dimulai sebelum token ini di-launch (pengguna
+      // diarahkan ke sini tepat setelah receipt launch). Dibaca sekali lagi sebelum menyerah.
+      syncing = null;
+      await sync();
+      meta = await store.getMeta(address);
+    }
     if (!meta) throw new TokenServiceError('not_found', 'This address is not a token launched through XofN.');
-    const detail = await readDetail(ctx, meta, await store.getTrades(meta.curve));
-    await store.saveStatus(address, detail.status);
+    const early = await eager;
+    if (eager && !early) throw stateError;
+    const state = early ?? (await readChainState(ctx, meta));
+    const detail = withTrades(state, meta, await withBlockTimes(await store.getTrades(meta.curve)));
+    await rememberStatus(address, detail.status);
     return detail;
   }
 
